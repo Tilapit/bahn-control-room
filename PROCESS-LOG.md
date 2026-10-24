@@ -649,3 +649,113 @@ third tool, `add_step`, built the same way as `add_finding`.
 - Across both runs, all 3 first `propose` calls were well-formed. The code path that recognised malformed calls is
   gone.
 - Typecheck clean.
+
+---
+
+## Phase 7 — Agents view, Narrator, backfill, fixtures, demo mode
+
+**Built**
+
+- **Narrator** (`lib/agents/narrator.ts`, `prompts/narrator.md`, Haiku): one sentence per run, rewritten each time a run
+  pauses or ends. It reads only what code already wrote about the run: the trigger, the step summaries, the outcome
+  and the card. It never reads raw tool output.
+- **Runs now record** calls, tokens and cost per model (`model_usage`, since a run can use Sonnet, Opus and Haiku
+  helpers), and the real time the agent worked (`wall_ms`). Waiting for a person is not counted.
+- **Agents view** (`/agents`): one row per run with status (Working, Waiting for driver, Waiting for you, Done), the
+  Narrator's sentence, model ("Sonnet → Opus"), tokens, cost, start and next check. Today's totals are in the header,
+  with a filter: Active / Done / Quiet checks. A working run shows its latest step, so the row moves while it works.
+  **Run page** (`/agents/[run]`): why it started, why it moved to Opus, its card, and every step as a sentence (the
+  agent's reasoning in italics, the card-building calls folded into "Put a card together: 7 findings, 3 actions").
+  The raw tool input and output sit behind "Show details". Models and cost per model are at the bottom.
+- **Live via SSE** (`/api/stream`): the server checks a cheap version number every second and sends an event when it
+  changes. Every page's `LiveRefresh` listens and refreshes, but never under an open undo toast or a half-typed
+  reply. It falls back to polling if the stream fails.
+- **Quiet checks** (`lib/quiet-check.ts`): code only, one per order without a live signal, recorded as a run ("Nothing
+  open. On the road to Lahti; last GPS 2 h ago, 233 km to go; delivery promised tomorrow 12:00 in Lahti"), with the
+  next check an hour before the next key time.
+- **Backfill** (`npm run agents:backfill`): the Classifier over every message (one run per order, 8 orders at a time,
+  oldest message first), the Investigator over every live-signal order (4 at a time, the simulated driver and sites
+  answer), quiet checks for the other 70. Then traces, `fixtures/agent-runs.json` and `fixtures/backfill-report.json`.
+  `--resume` redoes only orders whose run failed or never ran; `--report-only` rewrites the report and fixtures from
+  the database.
+- **Fixtures and demo mode**: `npm run fixtures:load` replaces all live work with the recorded runs, through
+  Postgres's own JSON conversion, so every column round-trips. `npm run setup` runs seed → attachments → timeline →
+  alert cards → fixtures. Without an API key the top bar says "Showing recorded agent runs".
+- **Replay** (`lib/recording.ts`, `npm run scenario:record -- <id>`): a live scenario is recorded as every row it
+  writes, with the real time each appeared. The Demo page plays it back at the same speed ("Replay recorded run"),
+  next to "Play live". Replayed runs carry a "Replay" tag in the Agents view and on the run page. Nothing in a
+  replay is generated: every row is what the agents wrote live.
+- **The demo's clock no longer goes back to 09:00.** The scenarios used to reset it. After the backfill, the morning's
+  live entries would then sit in the future. "Back to the start" now means the time the recorded morning ended
+  (stored when the backfill finishes or the fixtures load).
+
+**The backfill, and what went wrong.** The run stopped partway: after 21 of 30 Investigator runs, every call
+returned "Your credit balance is too low to access the Anthropic API". Nine runs failed (CD-420449, 516, 593, 603,
+689, 702, 719, 941, 992). I removed those 9 runs, their entries and their traces, so nobody sees a broken run. Their
+orders now read "4 more with open items, no agent run yet", and the 5 with alerts keep their temporary alert card.
+`npm run agents:backfill -- --resume` finishes them when there is credit again. The numbers below cover the 21 runs
+that finished, plus the Classifier and the quiet checks.
+
+| | |
+|---|---|
+| Orders | 21 investigated (15 cards, 6 closed without a card), 9 waiting for credit, 70 quiet checks by code |
+| Haiku | 75 runs, 326 calls, $0.16. The Classifier is 54 runs (one per order with messages; 251 messages, $0.078). The other 21 are the Investigator runs, which call Haiku for the Verifier, the simulated driver or site, and the Narrator |
+| Sonnet | 20 runs, 78 calls, $1.02. Every Investigator run starts on Sonnet unless safety is involved; 13 ended on Sonnet |
+| Opus | 8 runs, 24 calls, $1.22. Why: 1 safety from the start (CD-420322); 6 because the Verifier found two records that disagree (driver's words vs. GPS or the ops plan, collection screen vs. handover sheet); 1 because the proposal cost about €672, over €500. The agent never called `escalate` itself: every move to Opus was made by code |
+| Cost | $2.39 in total. Investigator $2.31 for 21 runs, **average $0.110** (runs that stayed on Sonnet $0.054, runs that ended on Opus $0.20); average over all 75 model runs $0.032 |
+| Investigator wall clock | **median 69 s, max 133 s**. The 6 runs that closed without a card took 3–9 s (read the case, the records explain it, resolve). The 15 card runs took 48–133 s |
+
+**Scenario 2 and the 60 seconds.** In the backfill, CD-420322's investigation alone took 80 s (Opus, safety, one
+question to the driver, one look-up). Scenario 2 adds the injected message, the Classifier and the Router, and
+earlier live plays were well over a minute. So the Demo page has a real-speed replay next to the live button. **Not
+done yet:** there is no recording, because recording means playing the scenario live once, and the credit is gone.
+`npm run scenario:record -- scenario-2 scenario-1` makes the recordings.
+
+**How I checked it**
+
+- **Fresh clone, empty database, no API key.** I `git clone`d the committed repo into a scratch folder, created an empty
+  database, and ran `npm ci`, `drizzle-kit push` and `npm run setup` with `ANTHROPIC_API_KEY` unset. Then I started
+  the app on its own port. All four steps succeeded ("Loaded recorded agent runs: agent_runs 145, agent_steps 1376,
+  cards 32 …"). For you shows the 15 agent cards with their source chips and "Investigated by the agent · Opus …".
+  The header reads "20 need you · agents are handling 6 · 4 more with open items, no agent run yet · nothing open on
+  70" (20 + 6 + 4 = 30), with the "Showing recorded agent runs" banner. The Agents view and run pages show the
+  recorded runs. On the Demo page, "Play live" is disabled with the reason.
+- Fixture round trip on the working database: export, load, same row counts, same open cards.
+- `curl` on `/api/stream`: a `version` event at once, a new one when a run moved.
+- Screenshots of the Agents view (Active, Done, Quiet checks) and a run page, looked at; see below.
+- Typecheck clean.
+
+**What was wrong in the first attempt, and what changed**
+
+1. **The Narrator guessed pronouns** ("asked her if she is still on the Hamburg run"). The prompt now forbids
+   he/she/him/her/his. Code checks the sentence, asks once more, and otherwise keeps the code-written summary.
+   **The Verifier had the same habit** in its conflict notes ("he cannot see what ops sees"), which end up in the
+   run's escalation reason. Its prompt has the rule now. Card text has a code check (`lint.ts`) that sends the card
+   back; quoted words of real people are exempt. Two cards recorded before the check contain "she" for a site
+   contact. I left them as the agent wrote them; the resume re-runs them.
+2. **The Narrator took a sent-back card for the outcome** ("the proposed card was sent back by checks", on a run with
+   an open card). Send-backs that were fixed are left out of its input now. "Where it stands" and the card come
+   first.
+3. Working runs said "Starting to look into it." for their whole run. They now show their latest step.
+4. **A failed model call showed raw API JSON** as the run's outcome ("Stopped: the model could not be reached (400
+   {"type":"error"…"). It now reads "Stopped: the agent could not reach the model. Nothing was changed; the order
+   needs another run." The API's error is kept in the step's details.
+5. **A failed simulated reply escaped the run**: CD-420516 was left "waiting for site" and the backfill logged an
+   exception. The run now stays waiting, as it would for a real person who does not answer.
+6. `<details>` inside `<p>` on the run page caused a hydration error. Both are `<div>` now.
+7. Every action on the run page was labelled "Did". Only reasoning, replies, outcomes and rejected steps are
+   labelled now.
+
+**Decisions and things left out**
+
+- The fixtures load in `npm run setup`, after the timeline and the alert cards, not inside `db:seed` as the spec
+  says. The recorded cards replace the alert cards they settled, so those must exist first. They load with or
+  without a key; only the banner depends on the key.
+- In the backfill, one Classifier run per order holds one step per message. That gives the Agents view "Read 10
+  messages on this order; filed 5 facts", not 251 rows. A live message still gets a run of its own.
+- "Agents are handling" counts only Investigator and Driver support runs, not the Classifier or a quiet check.
+- Traces are exported for Investigator, Driver support and Classifier runs, not for the 70 quiet checks (code, one
+  step each).
+- The 7 unlinked support inbox messages are not classified yet. The spec asks the Classifier to suggest their order;
+  they stay "may concern this order" for a person.
+- The undo window and the replay use real seconds. Everything a run records uses the simulated clock.
