@@ -1,0 +1,194 @@
+{
+  "run": {
+    "id": "run_18268e23",
+    "orderId": "ord-00384",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:22:00.000Z",
+    "finishedAt": "2026-10-21T09:22:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 6 messages on this order; filed 3 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 2041,
+    "outputTokens": 3352,
+    "cacheReadTokens": 8070,
+    "cacheWriteTokens": 1614,
+    "costUsd": 0.00216255,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 6,
+        "input": 2041,
+        "output": 3352,
+        "costUsd": 0.00216255,
+        "cacheRead": 8070,
+        "cacheWrite": 1614
+      }
+    },
+    "narration": "Read 6 messages on this order; filed 3 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420384"
+  },
+  "steps": [
+    {
+      "id": "run_18268e23:0",
+      "idx": 0,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x77c5e16eda2108e0",
+        "message": "Can you confirm the current collection window for CD-420384?"
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "question",
+        "reason": "The customer only asks to confirm the collection window, which the order already shows, and no new fact or change is reported.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Arventia Autotalo"
+    },
+    {
+      "id": "run_18268e23:1",
+      "idx": 1,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x2a628fe03fe412cf",
+        "message": "The selected collection window is 27 Oct 10:00–13:00 (Europe/Helsinki). That is the full planned slot, not a confirmed arrival minute."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Support desk (colleague at Bahn) says the collection window is 27 Oct 10:00–13:00 (Europe/Helsinki), the full planned slot, not a confirmed arrival minute.",
+            "subject": "Pickup time"
+          }
+        ],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "A colleague is confirming existing scheduling detail, so no one needs to look into it or act on it.",
+        "factIds": [
+          "fact_41aba2c0-a2f"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; filed 1 fact"
+    },
+    {
+      "id": "run_18268e23:2",
+      "idx": 2,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "order_notes:note-x1eefe227cea99a67",
+        "message": "One accepted bundle covers CD-420413 on Monday and CD-420384 on Tuesday. The two legs meet at the same Tampere site, but the driver is not known to remain there overnight. Confirm Tuesday positioning and the second car's overnight custody plan before collection; the Wednesday delivery target is separate from a confirmed handover."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "request",
+        "reason": "The note asks for Tuesday positioning and the second car's overnight custody plan to be confirmed before the Tuesday 10:00 collection, and no plan is recorded yet.",
+        "factIds": [],
+        "urgency": "time",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a request from Driver marketplace; the Investigator looks into it"
+    },
+    {
+      "id": "run_18268e23:3",
+      "idx": 3,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xb03f8088fcee4c09@ord-00384",
+        "message": "I accepted the two Golf job, CD-420413 then CD-420384. The first car ends at the same Tampere branch where the second begins the next day. Am I meant to collect the second set of keys on Monday and keep the car overnight?"
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "question",
+        "reason": "The driver asks whether to collect the keys on Monday and keep the car overnight, which the order records do not answer and which would change the handover and pickup plan.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Hanna Wenverin; the Investigator looks into it"
+    },
+    {
+      "id": "run_18268e23:4",
+      "idx": 4,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x198a5145d80b5c90@ord-00384",
+        "message": "No overnight custody has been agreed. The accepted offer covers both paid legs, but it does not authorize taking the second car a day early or leaving it unattended. We must confirm the branch release time and your Tuesday return plan first."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Support desk (colleague at Bahn) says no overnight custody has been agreed; the accepted offer covers both paid legs but does not authorize taking the second car a day early or leaving it unattended.",
+            "subject": "Handover"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The branch release time and the Tuesday return plan are still unconfirmed and must be settled before the Tuesday 10:00 pickup slot, so the order may be at risk.",
+        "factIds": [
+          "fact_061a85b5-c40"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_18268e23:5",
+      "idx": 5,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xfb907bbd32ffcebd@ord-00384",
+        "message": "Understood. I will only collect the first Golf on Monday. Please tell me who confirms Tuesday's keys and where I should report."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Driver Hanna Wenverin says they will only collect the first Golf on Monday, which differs from the Tuesday 27 Oct pickup slot on the order",
+            "subject": "Pickup time"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "question",
+        "reason": "The driver's stated Monday collection contradicts the recorded Tuesday pickup slot, and they also ask who confirms Tuesday's keys, so someone needs to check the plan.",
+        "factIds": [
+          "fact_81ce21b2-455"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Hanna Wenverin; filed 1 fact; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

@@ -1,0 +1,248 @@
+{
+  "run": {
+    "id": "run_48a7f4e8",
+    "orderId": "ord-00702",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:22:00.000Z",
+    "finishedAt": "2026-10-21T09:22:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 6 messages on this order; filed 11 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 2527,
+    "outputTokens": 4791,
+    "cacheReadTokens": 8070,
+    "cacheWriteTokens": 1614,
+    "costUsd": 0.0029306500000000004,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 6,
+        "input": 2527,
+        "output": 4791,
+        "costUsd": 0.0029306500000000004,
+        "cacheRead": 8070,
+        "cacheWrite": 1614
+      }
+    },
+    "narration": "Read 6 messages on this order; filed 11 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420702"
+  },
+  "steps": [
+    {
+      "id": "run_48a7f4e8:0",
+      "idx": 0,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "order_notes:note-x41e53f8d4f27bead",
+        "message": "Staffed Merivanto Transfer Espoo received the passenger car and keys at 20 Oct 20:30 local. Yard arrival photos record its condition; yard custody continues until a separate release to leg two is logged."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Shift lead (Bahn): Merivanto Transfer Espoo received car and keys 20 Oct 20:30 local; yard custody continues until separate release to leg two logged",
+            "subject": "Handover"
+          }
+        ],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "The note only records the yard receiving the car and keys, which does not require a person to act; the open delivery-promise alert is not changed by it.",
+        "factIds": [
+          "fact_dec2bd08-e23"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Shift lead; filed 1 fact"
+    },
+    {
+      "id": "run_48a7f4e8:1",
+      "idx": 1,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xb32ac1edf6e6f6b7",
+        "message": "I have not reached the Espoo transfer yard. I cannot get there before its 11:00 local staffed release cutoff; please do not leave the car waiting for me."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Driver Noel Jarnwell said at 10:47 on Wed 21 Oct that they have not reached the Espoo transfer yard",
+            "subject": "Car's location (stated)"
+          },
+          {
+            "kind": "fact",
+            "value": "Driver Noel Jarnwell said they cannot reach the Espoo transfer yard before its 11:00 local staffed release cutoff and asked that the car not be left waiting for them",
+            "subject": "Delivery time"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The delivery promise is at risk and the message comes from Noel Jarnwell while the order names Salla Pervalen as driver, so the records need checking.",
+        "factIds": [
+          "fact_a981e055-892",
+          "fact_a018c934-5ef"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Noel Jarnwell; filed 2 facts; the Investigator looks into it"
+    },
+    {
+      "id": "run_48a7f4e8:2",
+      "idx": 2,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x3abf44c57cc57242",
+        "message": "The staffed 09:00-11:00 release window has ended. No collector checked in for this car, and the car and keys remain on our yard register. We have not released them to the booked driver."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Espoo transfer yard desk (site) said the 09:00-11:00 release window ended with no collector checking in, and the car and keys were not released to the booked driver.",
+            "subject": "Handover"
+          },
+          {
+            "kind": "fact",
+            "value": "Espoo transfer yard desk (site) said the car and keys remain on the yard register.",
+            "subject": "Car's location (stated)"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The Espoo release window has passed without a handover, so the Wed 21 Oct 11:00 delivery promise is at risk and needs looking into.",
+        "factIds": [
+          "fact_0d71f097-cef",
+          "fact_6fe333b8-ea8"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Merivanto Transfer Espoo desk; filed 2 facts; the Investigator looks into it"
+    },
+    {
+      "id": "run_48a7f4e8:3",
+      "idx": 3,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x62cdfdf60a47c0a3",
+        "message": "The car and keys are still with our staffed yard. We can release them to a replacement driver tomorrow, 22 October, between 09:00 and 11:00 local time after an ID and condition check."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Merivanto Transfer Espoo desk said the car and keys are still at their staffed yard",
+            "subject": "Car's location (stated)"
+          },
+          {
+            "kind": "fact",
+            "value": "Merivanto Transfer Espoo desk said the car and keys can be released to a replacement driver Thu 22 Oct 09:00-11:00 local time after an ID and condition check",
+            "subject": "Handover"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The delivery promise cannot be met and the site moves release to Thursday 22 October, which changes the booked date and may affect the customer's promise.",
+        "factIds": [
+          "fact_2d3e0c67-dad",
+          "fact_96667b6a-618"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Merivanto Transfer Espoo desk; filed 2 facts; the Investigator looks into it"
+    },
+    {
+      "id": "run_48a7f4e8:4",
+      "idx": 4,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "order_notes:note-xc3931a3ba6dbb085",
+        "message": "First driver completed Oulu to staffed Espoo yard; the 20:30 local arrival and condition photos establish yard custody overnight. Second driver missed the 09:00-11:00 local collection slot. Only the second assignment and offer were withdrawn; the first leg remains complete. A new offer is open without a confirmed driver. Yard release photos are required and not submitted. The new yard slot is tomorrow, after the original customer delivery window. No revised target is approved."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Shift lead (Bahn): second driver's assignment and offer withdrawn after missing the 09:00-11:00 collection slot; new offer open, no confirmed driver",
+            "subject": "Driver change"
+          },
+          {
+            "kind": "agreement",
+            "value": "Shift lead (Bahn): no revised target approved; new yard release slot is tomorrow, after the original customer delivery window",
+            "subject": "Delivery time"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The delivery promise is at risk, the second driver's booking was withdrawn, and the new yard slot falls after the customer's delivery window, so someone needs to look into it.",
+        "factIds": [
+          "fact_85a6c578-314",
+          "fact_d4678670-df7"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Shift lead; filed 2 facts; the Investigator looks into it"
+    },
+    {
+      "id": "run_48a7f4e8:5",
+      "idx": 5,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xa21f0478affd12de",
+        "message": "The first driver handed the car and keys to the staffed yard, but the second driver did not collect it. The yard can release it tomorrow morning. Your current delivery window cannot be met. Please confirm a new acceptable delivery target; we have not changed it in the order."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Shift lead (Bahn) says the first driver handed the car to the staffed yard and the second driver did not collect it",
+            "subject": "Handover"
+          },
+          {
+            "kind": "fact",
+            "value": "Shift lead (Bahn) says the first driver handed the keys to the staffed yard with the car",
+            "subject": "Keys"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "request",
+        "reason": "The delivery promise cannot be met and the colleague asks for a new acceptable delivery target to be confirmed, which changes a customer promise.",
+        "factIds": [
+          "fact_67f2507d-e0a",
+          "fact_7a811a6a-1f1"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read a request from Shift lead; filed 2 facts; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

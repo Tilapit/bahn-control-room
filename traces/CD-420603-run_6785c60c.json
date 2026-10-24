@@ -1,0 +1,172 @@
+{
+  "run": {
+    "id": "run_6785c60c",
+    "orderId": "ord-00603",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:22:00.000Z",
+    "finishedAt": "2026-10-21T09:22:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 5 messages on this order; filed 3 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 1955,
+    "outputTokens": 1842,
+    "cacheReadTokens": 6456,
+    "cacheWriteTokens": 1614,
+    "costUsd": 0.00138281,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 5,
+        "input": 1955,
+        "output": 1842,
+        "costUsd": 0.00138281,
+        "cacheRead": 6456,
+        "cacheWrite": 1614
+      }
+    },
+    "narration": "Read 5 messages on this order; filed 3 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420603"
+  },
+  "steps": [
+    {
+      "id": "run_6785c60c:0",
+      "idx": 0,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xf06d346a050b3e0a",
+        "message": "The queue before the terminal has barely moved. The booked crossing for CD-420603 may close before I reach check-in."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Driver Charlotte Benvik says the car is in the queue before the ferry terminal, and the queue has barely moved.",
+            "subject": "Car's location (stated)"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The driver reports that the ferry check-in closing time may be missed, so someone needs to look into the crossing.",
+        "factIds": [
+          "fact_49b8f637-8d3"
+        ],
+        "urgency": "time",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Charlotte Benvik; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_6785c60c:1",
+      "idx": 1,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x6facdfad04774a58",
+        "message": "I am checking the check-in deadline and next available sailing. Please send your latest ETA when it updates."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "request",
+        "reason": "A colleague asks for the latest ETA while the ferry check-in deadline is at risk, so the order needs someone to look at it and respond.",
+        "factIds": [],
+        "urgency": "time",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a request from Support desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_6785c60c:2",
+      "idx": 2,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x108ad4ae10c6ef5e",
+        "message": "Do not cancel the current booking or promise another crossing until capacity and fare terms are confirmed."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "other",
+        "reason": "The internal note tells staff to hold the current ferry booking and not promise another crossing while the ferry check-in alert is open and check-in closes at 14:00 on 21 Oct, so someone needs to check the booking status.",
+        "factIds": [],
+        "urgency": "time",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Support desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_6785c60c:3",
+      "idx": 3,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x9d7829f6508ab7c0",
+        "message": "I am still in the queue with the car. I have not turned toward another terminal."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Driver Charlotte Benvik says the car is still in a queue and has not turned toward another terminal.",
+            "subject": "Car's location (stated)"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The driver reports still being in a queue with the ferry check-in at risk, so a threatened check-in time needs looking into.",
+        "factIds": [
+          "fact_9acf0827-363"
+        ],
+        "urgency": "time",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Charlotte Benvik; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_6785c60c:4",
+      "idx": 4,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x7074c5c677e14192",
+        "message": "Carrier desk took our request to move this car to a later crossing, but has not confirmed a slot or fare. Keep the original booking active. Do not tell the driver to turn away or change the customer's delivery promise yet."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Driver travel (colleague at Bahn) noted the carrier desk took a request to move the car to a later crossing but has not confirmed a slot or fare; original booking to stay active; driver not to be told to turn away and delivery promise not to change yet.",
+            "subject": "Ferry"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The ferry check-in closes Wed 21 Oct 14:00 and the crossing change is unconfirmed, so someone needs to watch the at-risk booking.",
+        "factIds": [
+          "fact_9bed9380-415"
+        ],
+        "urgency": "time",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Driver travel; filed 1 fact; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

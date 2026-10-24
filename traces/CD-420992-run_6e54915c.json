@@ -1,0 +1,104 @@
+{
+  "run": {
+    "id": "run_6e54915c",
+    "orderId": "ord-00992",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:22:00.000Z",
+    "finishedAt": "2026-10-21T09:22:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 3 messages on this order; filed 0 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 1152,
+    "outputTokens": 1352,
+    "cacheReadTokens": 4842,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.0008396199999999999,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 3,
+        "input": 1152,
+        "output": 1352,
+        "costUsd": 0.0008396199999999999,
+        "cacheRead": 4842,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 3 messages on this order; filed 0 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420992"
+  },
+  "steps": [
+    {
+      "id": "run_6e54915c:0",
+      "idx": 0,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xab439c24fa63e05b",
+        "message": "The Düsseldorf pickup for CD-420735 is recorded. Before we use your Frankfurt collection for CD-420992 tomorrow, please confirm where you finish today's handover and when you can take the next keys. CD-420579 is a later Monday duty and does not establish your current location."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "request",
+        "reason": "The colleague asks for confirmation of the driver's location and next key availability before tomorrow's Frankfurt pickup slot, which may be at risk.",
+        "factIds": [],
+        "urgency": "time",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a request from Driver marketplace; the Investigator looks into it"
+    },
+    {
+      "id": "run_6e54915c:1",
+      "idx": 1,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xcf3ffef32c014e44",
+        "message": "The 735 pickup is recorded, but delivery and release are not. Tomorrow's 992 pickup is in Frankfurt, the planned delivery city of 735; proximity is a route plan, not a verified driver position. Obtain today's actual handover and tomorrow's start confirmation before assuring the buyer. Keep Monday's 579 booking in the later duty view."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "other",
+        "reason": "The colleague asks for today's actual handover and tomorrow's start confirmation before the customer is assured, and the open task is to check the driver can reach the pickup.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Driver marketplace; the Investigator looks into it"
+    },
+    {
+      "id": "run_6e54915c:2",
+      "idx": 2,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x17acbad50c10db24",
+        "message": "No driver response has arrived in this case. The next pickup remains booked, with the prior-duty release and positioning check open. Do not mark today's car delivered from the route endpoint alone."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The colleague reports no driver response and an open prior-duty release and positioning check, so the Thursday 09:00 pickup may be at risk and needs checking.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Shift lead; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

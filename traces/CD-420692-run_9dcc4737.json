@@ -1,0 +1,1696 @@
+{
+  "run": {
+    "id": "run_9dcc4737",
+    "orderId": "ord-00692",
+    "agent": "Investigator",
+    "model": "claude-sonnet-5-5",
+    "trigger": "Monitor: Regional traffic service reports \"Farmers' protest blocking roads around Lille\" (Thu 22 Oct 06:00 CEST to Tue 27 Oct 20:00 CET), published Wed 21 Oct 11:42 CEST.\nMatched by code to 2 orders with this one cause:\n- CD-420692: Delivery in Lille, Mon 26 Oct 10:00–16:00 CET, falls inside the protest near Lille. No driver is booked yet.\n- CD-420697: Delivery in Lille, Tue 27 Oct 11:00–16:00 CET, falls inside the protest near Lille. No driver is booked yet.\nNo driver, site or customer has reported it. Check what it means for each order before anyone is affected.",
+    "startedAt": "2026-10-21T09:42:00.000Z",
+    "finishedAt": "2026-10-21T09:42:00.000Z",
+    "status": "waiting_person",
+    "outcomeSummary": "Lille protest reported over both deliveries; no drivers booked",
+    "nextCheckAt": null,
+    "inputTokens": 5146,
+    "outputTokens": 18557,
+    "cacheReadTokens": 47690,
+    "cacheWriteTokens": 9539,
+    "costUsd": 0.10656697,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 4,
+        "input": 5136,
+        "output": 11780,
+        "costUsd": 0.006456870000000001,
+        "cacheRead": 5327,
+        "cacheWrite": 0
+      },
+      "claude-sonnet-5-5": {
+        "calls": 4,
+        "input": 10,
+        "output": 6777,
+        "costUsd": 0.10011010000000001,
+        "cacheRead": 42363,
+        "cacheWrite": 9539
+      }
+    },
+    "narration": "Checked the Lille protest alert against both deliveries; neither has a driver booked yet, and it was proposed to keep both plans and recheck in 12 hours.",
+    "wallMs": 95094,
+    "replay": false,
+    "reference": "CD-420692"
+  },
+  "steps": [
+    {
+      "id": "run_9dcc4737:0",
+      "idx": 0,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "get_case",
+      "input": {
+        "order": "CD-420692"
+      },
+      "output": null,
+      "summary": "Called get_case"
+    },
+    {
+      "id": "run_9dcc4737:1",
+      "idx": 1,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "get_case",
+      "input": {
+        "order": "CD-420692"
+      },
+      "output": {
+        "data": null,
+        "content": "CD-420692 · Porsche Panamera 2020 · Ready to offer to drivers\nCustomer (pays; any contact needs a person's approval): Calveraine Auto, their reference PO-037-0692\nRoute: Rivellon Marseille, Marseille → Calveraine Lille, Lille · 1042 km\nDriver: none booked\nNow: Wed 21 Oct, 11:42 in Marseille and Lille (09:42 UTC). Timeline times are Marseille time (CEST); key times are in their own place's time.\n\nKEY TIMES\n- Pickup slot, Marseille: Fri 23 Oct 09:00–12:00 CEST. Source: Ops, with the route plan [E1]\n- Delivery promise, Lille: Mon 26 Oct 10:00–16:00 CET. Source: Calveraine Auto, order form [E2]\n\nAGREED AND STATED\n- Handover: Rivellon Marseille desk (site) said CD-420692 is in a separate Friday handover queue, apart from Thursday's collection window, and Thursday's release instruction must not be rolled forward to it. (stated, not confirmed; Rivellon Marseille desk, site chat) [E3]\n- Pickup handover: Wait outside the showroom; branch staff bring the vehicle out for inspection and key release. (confirmed; Site profile, Rivellon Marseille) [E4]\n- Delivery handover: Drive to workshop intake; service staff inspect the car and sign the handover. (confirmed; Site profile, Calveraine Lille) [E5]\n- Delivery contact: Julian Alderfield, site desk (stated, not confirmed; Site profile, Calveraine Lille) [E5]\n\nOPEN\n\nROUTE AND TRAVEL\n- Leg: Rivellon Marseille, Marseille → Calveraine Lille, Lille, drive, 1042 km, ready\nBOOKED: nothing is booked for this order\n\nTIMELINE (newest first; the 13 most recent entries, stage changes left out; use timeline() for older ones)\nWed 21 Oct\n11:42 Regional traffic service: Disruption notice from Regional traffic service: Farmers' protest blocking roads around Lille. Delivery in Lille, Mon 26 Oct 10:00–16:00 CET, falls inside the protest near Lille. No driver is booked … (A SIGNAL, NOT A DIAGNOSIS) [E6]\n10:41 Driver marketplace (Internal (Slack), internal): \"The site's message is a request for separate release instructions, not evidence that the import is cleared or that the domestic market job has a driver. Check 154's travel and release authority; keep 689's live offer and Friday's booked/ready pair distinct when planning site con…\" [E7]\n10:26 Driver marketplace (Site chat): \"CD-420154 has a booked driver; CD-420689 still has a live offer and no booking. We will verify the import documents and named driver for 154 first, then confirm each vehicle's release separately. Please hold the keys against their own references.\" [E8]\n10:08 Rivellon Marseille desk (Site chat): \"For Thursday we see CD-420154 and CD-420689 in the same collection window. Our release desk needs the driver and document set for each vehicle separately. Friday's CD-420656 and CD-420692 are a separate handover queue; please do not roll Thursday's release instruction forward.\" [E3]\nTue 20 Oct\n16:28 Ops, with the route plan: Pickup slot: Fri 23 Oct 09:00–12:00 CEST at Rivellon Marseille, Marseille [E1]\n16:28 Transport planning: Route plan activated [E9]\n16:07 Readiness desk: Pickup availability confirmed [E10]\nSun 18 Oct\n15:17 Transport planning: Route plan drafted [E11]\nWed 14 Oct\n15:00 Calveraine Auto, order form: Pickup availability: Fri 23 Oct 09:00–17:00 CEST at Rivellon Marseille, Marseille [E12]\n15:00 Calveraine Auto, order form: Delivery promise: Mon 26 Oct 10:00–16:00 CET at Calveraine Lille, Lille [E2]\n15:00 Calveraine Auto: Order placed by Calveraine Auto [E13]",
+        "isError": false
+      },
+      "summary": "Read the case file of CD-420692"
+    },
+    {
+      "id": "run_9dcc4737:2",
+      "idx": 2,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "get_case",
+      "input": {
+        "order": "CD-420697"
+      },
+      "output": null,
+      "summary": "Called get_case"
+    },
+    {
+      "id": "run_9dcc4737:3",
+      "idx": 3,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "get_case",
+      "input": {
+        "order": "CD-420697"
+      },
+      "output": {
+        "data": null,
+        "content": "CD-420697 · Mercedes-Benz C-Class 2023 · New order, being prepared\nCustomer (pays; any contact needs a person's approval): Calveraine Auto, their reference PO-037-0697\nRoute: private address, Lyon → Independent vehicle storage, Lille · 697 km\nDriver: none booked\nNow: Wed 21 Oct, 11:42 in Lyon and Lille (09:42 UTC). Timeline times are Lyon time (CEST); key times are in their own place's time.\n\nKEY TIMES\n- Planned pickup, Lyon: Mon 26 Oct 10:00–13:00 CET. Not confirmed yet. Source: Ops, with the route plan [E14]\n- Requested delivery, Lille: Tue 27 Oct 11:00–16:00 CET. Not confirmed yet. Source: Calveraine Auto, order form [E15]\n\nAGREED AND STATED\n- Delivery handover: Use the lower parking entrance in Lille. The listed local contact confirmed this access but has not confirmed attendance, release authority or custody of the keys. (confirmed; Lena Thistlemere) [E16]\n- Pickup handover: The seller asks for a call on arrival; their availability within the requested window is unconfirmed. (stated, not confirmed; Calveraine Auto, order form) [E17]\n- Pickup contact: Jasper Thistlemere, handoff contact (stated, not confirmed; Calveraine Auto, order form) [E17]\n- Delivery contact: Lena Thistlemere, handoff contact (stated, not confirmed; Calveraine Auto, order form) [E18]\n\nOPEN\n- nothing open\n\nROUTE AND TRAVEL\n- Leg: Lyon (private) → Independent vehicle storage, Lille, drive, 697 km, planned\nBOOKED: nothing is booked for this order\n\nTIMELINE (newest first; the 9 most recent entries, stage changes left out; use timeline() for older ones)\nWed 21 Oct\n11:42 Regional traffic service: Disruption notice from Regional traffic service: Farmers' protest blocking roads around Lille. Delivery in Lille, Tue 27 Oct 11:00–16:00 CET, falls inside the protest near Lille. No driver is booked … (A SIGNAL, NOT A DIAGNOSIS) [E19]\nTue 13 Oct\n10:00 Ops, with the route plan: Pickup slot (proposed, not selected): Mon 26 Oct 10:00–13:00 CET at private address in Lyon [E14]\n10:00 Transport planning: Route plan drafted [E20]\n09:19 Lena Thistlemere: Delivery access confirmed [E16]\n09:00 Calveraine Auto, order form: Delivery promise (proposed, not selected): Tue 27 Oct 11:00–16:00 CET at Independent vehicle storage, Lille [E15]\n09:00 Calveraine Auto, order form: Pickup availability: Mon 26 Oct 09:00–17:00 CET at private address in Lyon [E21]\n09:00 Calveraine Auto, order form: Delivery handover: Use the lower parking entrance in Lille. The listed local contact confirmed this access but has not confirmed attendance, release authority or custody of the keys. [E18]\n09:00 Calveraine Auto, order form: Pickup handover: The seller asks for a call on arrival; their availability within the requested window is unconfirmed. [E17]\n09:00 Calveraine Auto: Order placed by Calveraine Auto [E22]",
+        "isError": false
+      },
+      "summary": "Read the case file of CD-420697"
+    },
+    {
+      "id": "run_9dcc4737:4",
+      "idx": 4,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "check_disruptions",
+      "input": {
+        "region": "Lille"
+      },
+      "output": null,
+      "summary": "Called check_disruptions"
+    },
+    {
+      "id": "run_9dcc4737:5",
+      "idx": 5,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "check_disruptions",
+      "input": {
+        "region": "Lille"
+      },
+      "output": {
+        "data": null,
+        "content": "Disruption feed, checked Wed 21 Oct 09:42 UTC. Each notice is what its source reports; no driver has confirmed it unless a message says so.\n- Farmers' protest blocking roads around Lille, Thu 22 Oct 06:00 – Tue 27 Oct 20:00 CET. Tractor blockades on the A1 and A25 and at the Lille ring road junctions. Traffic into and around Lille may be stopped for hours; police advise avoiding the area. Reported by Regional traffic service, Wed 21 Oct 11:42 CEST. [E6]\n  Orders code matched to it: CD-420692 (Delivery in Lille, Mon 26 Oct 10:00–16:00 CET, falls inside the protest near Lille. No driver is booked yet.); CD-420697 (Delivery in Lille, Tue 27 Oct 11:00–16:00 CET, falls inside the protest near Lille. No driver is booked yet.)",
+        "isError": false
+      },
+      "summary": "Checked the disruption feed for Lille: Farmers' protest blocking roads around Lille"
+    },
+    {
+      "id": "run_9dcc4737:6",
+      "idx": 6,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "thought",
+      "tool": null,
+      "input": null,
+      "output": {
+        "text": "With no driver booked yet, there's nothing to actively move, so I'm weighing a simple option: leave a note to recheck later while giving the customer a heads-up, though that message would need approval first. Given pickups fall on Friday and Monday with the protest ending Tuesday at 20:00, I'm leaning toward keeping it simple with a note and a cautious delivery warning rather than deciding delivery timing now.\n\n",
+        "model": "claude-sonnet-5-5"
+      },
+      "summary": "With no driver booked yet, there's nothing to actively move, so I'm weighing a simple option: leave a note to recheck later while giving the customer a heads-up, though that message would need approval first. Given pickups fall on Friday and Monday with the protest ending Tuesday at 20:00, I'm leaning toward keeping it simple with a note and a cautious delivery warning rather than deciding deliver"
+    },
+    {
+      "id": "run_9dcc4737:7",
+      "idx": 7,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The regional traffic service reports tractor blockades on the A1, A25 and Lille ring road junctions from Thu 22 Oct 06:00 CEST to Tue 27 Oct 20:00 CET; no driver has confirmed it.",
+        "source": "E6"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_9dcc4737:8",
+      "idx": 8,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The regional traffic service reports tractor blockades on the A1, A25 and Lille ring road junctions from Thu 22 Oct 06:00 CEST to Tue 27 Oct 20:00 CET; no driver has confirmed it.",
+        "source": "E6"
+      },
+      "output": {
+        "data": {
+          "index": 1,
+          "alsoId": null,
+          "entryId": "disruptions:dis-fr-lille-protest:ord-00692"
+        },
+        "content": "Finding 1 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The regional traffic service reports tractor blockades on the A1, A25 and Lille ring road junctions from Thu 22 Oct 06:00 CEST to Tue 27 Oct 20:00 CET; no driver has confirmed it."
+    },
+    {
+      "id": "run_9dcc4737:9",
+      "idx": 9,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420692 has a Marseille pickup on Fri 23 Oct 09:00–12:00 CEST and a Lille delivery promise on Mon 26 Oct 10:00–16:00 CET; no driver is booked and nothing else is booked.",
+        "source": "E2"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_9dcc4737:10",
+      "idx": 10,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420692 has a Marseille pickup on Fri 23 Oct 09:00–12:00 CEST and a Lille delivery promise on Mon 26 Oct 10:00–16:00 CET; no driver is booked and nothing else is booked.",
+        "source": "E2"
+      },
+      "output": {
+        "data": {
+          "index": 2,
+          "alsoId": null,
+          "entryId": "time_windows:win-x281e1a9bdce07db1"
+        },
+        "content": "Finding 2 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: CD-420692 has a Marseille pickup on Fri 23 Oct 09:00–12:00 CEST and a Lille delivery promise on Mon 26 Oct 10:00–16:00 CET; no driver is booked and nothing else is booked."
+    },
+    {
+      "id": "run_9dcc4737:11",
+      "idx": 11,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420697 has a Lyon pickup planned for Mon 26 Oct 10:00–13:00 CET and a requested Lille delivery on Tue 27 Oct 11:00–16:00 CET, both not yet confirmed; no driver is booked.",
+        "source": "E15"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_9dcc4737:12",
+      "idx": 12,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420697 has a Lyon pickup planned for Mon 26 Oct 10:00–13:00 CET and a requested Lille delivery on Tue 27 Oct 11:00–16:00 CET, both not yet confirmed; no driver is booked.",
+        "source": "E15"
+      },
+      "output": {
+        "data": {
+          "index": 3,
+          "alsoId": null,
+          "entryId": "time_windows:win-xace8a5da4e07e695"
+        },
+        "content": "Finding 3 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: CD-420697 has a Lyon pickup planned for Mon 26 Oct 10:00–13:00 CET and a requested Lille delivery on Tue 27 Oct 11:00–16:00 CET, both not yet confirmed; no driver is booked."
+    },
+    {
+      "id": "run_9dcc4737:13",
+      "idx": 13,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The Marseille site desk wants separate release instructions per car for the Friday queue, which includes CD-420692.",
+        "source": "E3"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_9dcc4737:14",
+      "idx": 14,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The Marseille site desk wants separate release instructions per car for the Friday queue, which includes CD-420692.",
+        "source": "E3"
+      },
+      "output": {
+        "data": {
+          "index": 4,
+          "alsoId": null,
+          "entryId": "messages:msg-xa89af197576aeb8f@ord-00692"
+        },
+        "content": "Finding 4 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The Marseille site desk wants separate release instructions per car for the Friday queue, which includes CD-420692."
+    },
+    {
+      "id": "run_9dcc4737:15",
+      "idx": 15,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_affected_order",
+      "input": {
+        "order": "CD-420692",
+        "effect": "Delivery in Lille on Mon 26 Oct 10:00–16:00 CET falls inside the reported protest; no driver booked yet, so nobody is stuck."
+      },
+      "output": null,
+      "summary": "Called add_affected_order"
+    },
+    {
+      "id": "run_9dcc4737:16",
+      "idx": 16,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_affected_order",
+      "input": {
+        "order": "CD-420692",
+        "effect": "Delivery in Lille on Mon 26 Oct 10:00–16:00 CET falls inside the reported protest; no driver booked yet, so nobody is stuck."
+      },
+      "output": {
+        "data": null,
+        "content": "CD-420692 is on the card (1 of 2 orders this run covers).",
+        "isError": false
+      },
+      "summary": "Put CD-420692 on the card: Delivery in Lille on Mon 26 Oct 10:00–16:00 CET falls inside the reported protest; no driver booked yet, so nobody is stuck."
+    },
+    {
+      "id": "run_9dcc4737:17",
+      "idx": 17,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_affected_order",
+      "input": {
+        "order": "CD-420697",
+        "effect": "Delivery in Lille on Tue 27 Oct 11:00–16:00 CET falls inside the reported protest (ends 20:00 CET); no driver booked, pickup not yet confirmed."
+      },
+      "output": null,
+      "summary": "Called add_affected_order"
+    },
+    {
+      "id": "run_9dcc4737:18",
+      "idx": 18,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_affected_order",
+      "input": {
+        "order": "CD-420697",
+        "effect": "Delivery in Lille on Tue 27 Oct 11:00–16:00 CET falls inside the reported protest (ends 20:00 CET); no driver booked, pickup not yet confirmed."
+      },
+      "output": {
+        "data": null,
+        "content": "CD-420697 is on the card (2 of 2 orders this run covers).",
+        "isError": false
+      },
+      "summary": "Put CD-420697 on the card: Delivery in Lille on Tue 27 Oct 11:00–16:00 CET falls inside the reported protest (ends 20:00 CET); no driver booked, pickup not yet confirmed."
+    },
+    {
+      "id": "run_9dcc4737:19",
+      "idx": 19,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep plan; when a driver is assigned, warn them of the Lille protest and agree a route/arrival time. Recheck the notice.",
+        "order": "CD-420692",
+        "action": "note",
+        "option": 1,
+        "minutes": 720
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_9dcc4737:20",
+      "idx": 20,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep plan; when a driver is assigned, warn them of the Lille protest and agree a route/arrival time. Recheck the notice.",
+        "order": "CD-420692",
+        "action": "note",
+        "option": 1,
+        "minutes": 720
+      },
+      "output": {
+        "data": {
+          "step": 1,
+          "option": 1
+        },
+        "content": "Option 1, step 1 added: Keep the plan and check again later.",
+        "isError": false
+      },
+      "summary": "Option 1: Keep the plan and check again later"
+    },
+    {
+      "id": "run_9dcc4737:21",
+      "idx": 21,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep plan; warn any driver who takes the gig, and recheck the notice before confirming pickup and delivery times.",
+        "order": "CD-420697",
+        "action": "note",
+        "option": 1,
+        "minutes": 720
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_9dcc4737:22",
+      "idx": 22,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep plan; warn any driver who takes the gig, and recheck the notice before confirming pickup and delivery times.",
+        "order": "CD-420697",
+        "action": "note",
+        "option": 1,
+        "minutes": 720
+      },
+      "output": {
+        "data": {
+          "step": 2,
+          "option": 1
+        },
+        "content": "Option 1, step 2 added: Keep the plan and check again later (CD-420697).",
+        "isError": false
+      },
+      "summary": "Option 1: Keep the plan and check again later (CD-420697)"
+    },
+    {
+      "id": "run_9dcc4737:23",
+      "idx": 23,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "to": "Calveraine Auto",
+        "text": "A farmers' protest is reported to block roads around Lille from 22 to 27 Oct. Your Panamera delivery (PO-037-0692) promised Mon 26 Oct 10:00–16:00 may be delayed. We are monitoring and will confirm timing once a driver is booked.",
+        "order": "CD-420692",
+        "action": "message_customer",
+        "option": 2
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_9dcc4737:24",
+      "idx": 24,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "to": "Calveraine Auto",
+        "text": "A farmers' protest is reported to block roads around Lille from 22 to 27 Oct. Your Panamera delivery (PO-037-0692) promised Mon 26 Oct 10:00–16:00 may be delayed. We are monitoring and will confirm timing once a driver is booked.",
+        "order": "CD-420692",
+        "action": "message_customer",
+        "option": 2
+      },
+      "output": {
+        "data": {
+          "step": 1,
+          "option": 2
+        },
+        "content": "Option 2, step 1 added: Email the customer.",
+        "isError": false
+      },
+      "summary": "Option 2: Email the customer"
+    },
+    {
+      "id": "run_9dcc4737:25",
+      "idx": 25,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "to": "Calveraine Auto",
+        "text": "A farmers' protest is reported to block roads around Lille from 22 to 27 Oct. Your C-Class delivery (PO-037-0697) requested Tue 27 Oct 11:00–16:00 may be delayed. We are monitoring and will confirm timing before the Mon 26 Oct pickup.",
+        "order": "CD-420697",
+        "action": "message_customer",
+        "option": 2
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_9dcc4737:26",
+      "idx": 26,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "to": "Calveraine Auto",
+        "text": "A farmers' protest is reported to block roads around Lille from 22 to 27 Oct. Your C-Class delivery (PO-037-0697) requested Tue 27 Oct 11:00–16:00 may be delayed. We are monitoring and will confirm timing before the Mon 26 Oct pickup.",
+        "order": "CD-420697",
+        "action": "message_customer",
+        "option": 2
+      },
+      "output": {
+        "data": {
+          "step": 2,
+          "option": 2
+        },
+        "content": "Option 2, step 2 added: Email the customer (CD-420697).",
+        "isError": false
+      },
+      "summary": "Option 2: Email the customer (CD-420697)"
+    },
+    {
+      "id": "run_9dcc4737:27",
+      "idx": 27,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "headline": "Lille protest reported over both deliveries; no drivers booked",
+        "reject_label": "Reject: do nothing, I'll decide",
+        "what_happened": "The regional traffic service reports a farmers' protest blocking roads around Lille until Tue 27 Oct 20:00 CET. Both Lille deliveries (Mon 26 and Tue 27 Oct) fall inside it; no driver is booked on either and nothing is booked, so nobody is affected yet.",
+        "option_1_label": "Approve: keep both plans, warn drivers when assigned, recheck in 12 hours",
+        "option_2_label": "Send Calveraine Auto a heads-up about possible delay on both orders",
+        "option_1_effect": "Nothing is booked or sent; both orders stay as planned and the notice is rechecked. The delivery promises still stand for now and no customer message goes out.",
+        "option_2_effect": "Emails the customer a possible-delay warning for both deliveries; changes no booking or date."
+      },
+      "output": null,
+      "summary": "Called propose"
+    },
+    {
+      "id": "run_9dcc4737:28",
+      "idx": 28,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "headline": "Lille protest reported over both deliveries; no drivers booked",
+        "reject_label": "Reject: do nothing, I'll decide",
+        "what_happened": "The regional traffic service reports a farmers' protest blocking roads around Lille until Tue 27 Oct 20:00 CET. Both Lille deliveries (Mon 26 and Tue 27 Oct) fall inside it; no driver is booked on either and nothing is booked, so nobody is affected yet.",
+        "option_1_label": "Approve: keep both plans, warn drivers when assigned, recheck in 12 hours",
+        "option_2_label": "Send Calveraine Auto a heads-up about possible delay on both orders",
+        "option_1_effect": "Nothing is booked or sent; both orders stay as planned and the notice is rechecked. The delivery promises still stand for now and no customer message goes out.",
+        "option_2_effect": "Emails the customer a possible-delay warning for both deliveries; changes no booking or date."
+      },
+      "output": {
+        "data": [
+          {
+            "ok": true,
+            "note": "The regional traffic service notice supports the tractor blockades on the A1, A25 and Lille ring road junctions, the 22 to 27 Oct window and that no driver has confirmed it, though the notice gives no time zone for the 22 Oct start, so the CEST label is a minor addition.",
+            "finding": 0
+          },
+          {
+            "ok": false,
+            "note": "The cited Calveraine Auto order form supports only the Mon 26 Oct 10:00–16:00 CET Lille delivery promise, so the Fri 23 Oct Marseille pickup and the claim that nothing else is booked are not in the cited record.",
+            "finding": 1
+          },
+          {
+            "ok": false,
+            "note": "The cited order form shows the Tue 27 Oct Lille slot as a proposed, not selected, delivery promise rather than a requested one, and the Mon 26 Oct Lyon pickup does not appear in the cited record at all.",
+            "finding": 2
+          },
+          {
+            "ok": true,
+            "note": "The Rivellon Marseille desk message says the release desk needs driver and document sets for each vehicle separately and that Friday's CD-420656 and CD-420692 form a separate handover queue, which supports the finding.",
+            "finding": 3
+          },
+          {
+            "ok": true,
+            "note": "Both options do what their labels say, and the customer email in option 2 only goes out if the person chooses that button, so nothing contacts the customer without approval.",
+            "finding": null
+          },
+          {
+            "ok": false,
+            "note": "The card says both Lille deliveries fall inside the protest, but the Tue 27 Oct slot is only a proposed, not selected, promise in its cited record, and the card does not say so.",
+            "finding": null
+          }
+        ],
+        "content": "The verifier checked each claim against its source and found problems. The card was not shown yet, and its findings and steps are cleared. Fix these, then add all findings and steps again and call propose, in one turn:\n- Finding 2: The cited Calveraine Auto order form supports only the Mon 26 Oct 10:00–16:00 CET Lille delivery promise, so the Fri 23 Oct Marseille pickup and the claim that nothing else is booked are not in the cited record.\n- Finding 3: The cited order form shows the Tue 27 Oct Lille slot as a proposed, not selected, delivery promise rather than a requested one, and the Mon 26 Oct Lyon pickup does not appear in the cited record at all.\n- The card says both Lille deliveries fall inside the protest, but the Tue 27 Oct slot is only a proposed, not selected, promise in its cited record, and the card does not say so.",
+        "isError": true
+      },
+      "summary": "Card sent back by the verifier (3 problems)"
+    },
+    {
+      "id": "run_9dcc4737:29",
+      "idx": 29,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The regional traffic service reports tractor blockades on the A1, A25 and Lille ring road junctions from Thu 22 Oct 06:00 CEST to Tue 27 Oct 20:00 CET; no driver has confirmed it.",
+        "source": "E6"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_9dcc4737:30",
+      "idx": 30,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The regional traffic service reports tractor blockades on the A1, A25 and Lille ring road junctions from Thu 22 Oct 06:00 CEST to Tue 27 Oct 20:00 CET; no driver has confirmed it.",
+        "source": "E6"
+      },
+      "output": {
+        "data": {
+          "index": 1,
+          "alsoId": null,
+          "entryId": "disruptions:dis-fr-lille-protest:ord-00692"
+        },
+        "content": "Finding 1 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The regional traffic service reports tractor blockades on the A1, A25 and Lille ring road junctions from Thu 22 Oct 06:00 CEST to Tue 27 Oct 20:00 CET; no driver has confirmed it."
+    },
+    {
+      "id": "run_9dcc4737:31",
+      "idx": 31,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420692 has a delivery promise in Lille on Mon 26 Oct 10:00–16:00 CET.",
+        "source": "E2"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_9dcc4737:32",
+      "idx": 32,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420692 has a delivery promise in Lille on Mon 26 Oct 10:00–16:00 CET.",
+        "source": "E2"
+      },
+      "output": {
+        "data": {
+          "index": 2,
+          "alsoId": null,
+          "entryId": "time_windows:win-x281e1a9bdce07db1"
+        },
+        "content": "Finding 2 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: CD-420692 has a delivery promise in Lille on Mon 26 Oct 10:00–16:00 CET."
+    },
+    {
+      "id": "run_9dcc4737:33",
+      "idx": 33,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420692 pickup in Marseille is set for Fri 23 Oct 09:00–12:00 CEST.",
+        "source": "E1"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_9dcc4737:34",
+      "idx": 34,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420692 pickup in Marseille is set for Fri 23 Oct 09:00–12:00 CEST.",
+        "source": "E1"
+      },
+      "output": {
+        "data": {
+          "index": 3,
+          "alsoId": null,
+          "entryId": "time_windows:win-xe8cf3761be4c288f"
+        },
+        "content": "Finding 3 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: CD-420692 pickup in Marseille is set for Fri 23 Oct 09:00–12:00 CEST."
+    },
+    {
+      "id": "run_9dcc4737:35",
+      "idx": 35,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420697 delivery in Lille on Tue 27 Oct 11:00–16:00 CET is proposed, not selected, and not confirmed.",
+        "source": "E15"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_9dcc4737:36",
+      "idx": 36,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420697 delivery in Lille on Tue 27 Oct 11:00–16:00 CET is proposed, not selected, and not confirmed.",
+        "source": "E15"
+      },
+      "output": {
+        "data": {
+          "index": 4,
+          "alsoId": null,
+          "entryId": "time_windows:win-xace8a5da4e07e695"
+        },
+        "content": "Finding 4 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: CD-420697 delivery in Lille on Tue 27 Oct 11:00–16:00 CET is proposed, not selected, and not confirmed."
+    },
+    {
+      "id": "run_9dcc4737:37",
+      "idx": 37,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420697 pickup in Lyon on Mon 26 Oct 10:00–13:00 CET is proposed, not selected.",
+        "source": "E14"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_9dcc4737:38",
+      "idx": 38,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420697 pickup in Lyon on Mon 26 Oct 10:00–13:00 CET is proposed, not selected.",
+        "source": "E14"
+      },
+      "output": {
+        "data": {
+          "index": 5,
+          "alsoId": null,
+          "entryId": "time_windows:win-x7232d109defa1519"
+        },
+        "content": "Finding 5 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: CD-420697 pickup in Lyon on Mon 26 Oct 10:00–13:00 CET is proposed, not selected."
+    },
+    {
+      "id": "run_9dcc4737:39",
+      "idx": 39,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_affected_order",
+      "input": {
+        "order": "CD-420692",
+        "effect": "Delivery in Lille on Mon 26 Oct 10:00–16:00 CET falls inside the reported protest; no driver booked yet, so nobody is stuck."
+      },
+      "output": null,
+      "summary": "Called add_affected_order"
+    },
+    {
+      "id": "run_9dcc4737:40",
+      "idx": 40,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_affected_order",
+      "input": {
+        "order": "CD-420692",
+        "effect": "Delivery in Lille on Mon 26 Oct 10:00–16:00 CET falls inside the reported protest; no driver booked yet, so nobody is stuck."
+      },
+      "output": {
+        "data": null,
+        "content": "CD-420692 is on the card (1 of 2 orders this run covers).",
+        "isError": false
+      },
+      "summary": "Put CD-420692 on the card: Delivery in Lille on Mon 26 Oct 10:00–16:00 CET falls inside the reported protest; no driver booked yet, so nobody is stuck."
+    },
+    {
+      "id": "run_9dcc4737:41",
+      "idx": 41,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_affected_order",
+      "input": {
+        "order": "CD-420697",
+        "effect": "Proposed (not yet selected) delivery in Lille on Tue 27 Oct 11:00–16:00 CET falls inside the reported protest; no driver booked, pickup not confirmed."
+      },
+      "output": null,
+      "summary": "Called add_affected_order"
+    },
+    {
+      "id": "run_9dcc4737:42",
+      "idx": 42,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_affected_order",
+      "input": {
+        "order": "CD-420697",
+        "effect": "Proposed (not yet selected) delivery in Lille on Tue 27 Oct 11:00–16:00 CET falls inside the reported protest; no driver booked, pickup not confirmed."
+      },
+      "output": {
+        "data": null,
+        "content": "CD-420697 is on the card (2 of 2 orders this run covers).",
+        "isError": false
+      },
+      "summary": "Put CD-420697 on the card: Proposed (not yet selected) delivery in Lille on Tue 27 Oct 11:00–16:00 CET falls inside the reported protest; no driver booked, pickup not confirmed."
+    },
+    {
+      "id": "run_9dcc4737:43",
+      "idx": 43,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep plan; when a driver is assigned, warn them of the Lille protest and agree a route/arrival time. Recheck the notice.",
+        "order": "CD-420692",
+        "action": "note",
+        "option": 1,
+        "minutes": 720
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_9dcc4737:44",
+      "idx": 44,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep plan; when a driver is assigned, warn them of the Lille protest and agree a route/arrival time. Recheck the notice.",
+        "order": "CD-420692",
+        "action": "note",
+        "option": 1,
+        "minutes": 720
+      },
+      "output": {
+        "data": {
+          "step": 1,
+          "option": 1
+        },
+        "content": "Option 1, step 1 added: Keep the plan and check again later.",
+        "isError": false
+      },
+      "summary": "Option 1: Keep the plan and check again later"
+    },
+    {
+      "id": "run_9dcc4737:45",
+      "idx": 45,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep plan; warn any driver who takes the gig, and recheck the notice before confirming pickup and delivery times.",
+        "order": "CD-420697",
+        "action": "note",
+        "option": 1,
+        "minutes": 720
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_9dcc4737:46",
+      "idx": 46,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep plan; warn any driver who takes the gig, and recheck the notice before confirming pickup and delivery times.",
+        "order": "CD-420697",
+        "action": "note",
+        "option": 1,
+        "minutes": 720
+      },
+      "output": {
+        "data": {
+          "step": 2,
+          "option": 1
+        },
+        "content": "Option 1, step 2 added: Keep the plan and check again later (CD-420697).",
+        "isError": false
+      },
+      "summary": "Option 1: Keep the plan and check again later (CD-420697)"
+    },
+    {
+      "id": "run_9dcc4737:47",
+      "idx": 47,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "to": "Calveraine Auto",
+        "text": "A farmers' protest is reported to block roads around Lille from 22 to 27 Oct. Your Panamera delivery (PO-037-0692) promised Mon 26 Oct 10:00–16:00 may be delayed. We are monitoring and will confirm timing once a driver is booked.",
+        "order": "CD-420692",
+        "action": "message_customer",
+        "option": 2
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_9dcc4737:48",
+      "idx": 48,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "to": "Calveraine Auto",
+        "text": "A farmers' protest is reported to block roads around Lille from 22 to 27 Oct. Your Panamera delivery (PO-037-0692) promised Mon 26 Oct 10:00–16:00 may be delayed. We are monitoring and will confirm timing once a driver is booked.",
+        "order": "CD-420692",
+        "action": "message_customer",
+        "option": 2
+      },
+      "output": {
+        "data": {
+          "step": 1,
+          "option": 2
+        },
+        "content": "Option 2, step 1 added: Email the customer.",
+        "isError": false
+      },
+      "summary": "Option 2: Email the customer"
+    },
+    {
+      "id": "run_9dcc4737:49",
+      "idx": 49,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "to": "Calveraine Auto",
+        "text": "A farmers' protest is reported to block roads around Lille from 22 to 27 Oct. Your C-Class delivery (PO-037-0697), proposed for Tue 27 Oct 11:00–16:00, may be delayed. We are monitoring and will confirm timing before pickup.",
+        "order": "CD-420697",
+        "action": "message_customer",
+        "option": 2
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_9dcc4737:50",
+      "idx": 50,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "to": "Calveraine Auto",
+        "text": "A farmers' protest is reported to block roads around Lille from 22 to 27 Oct. Your C-Class delivery (PO-037-0697), proposed for Tue 27 Oct 11:00–16:00, may be delayed. We are monitoring and will confirm timing before pickup.",
+        "order": "CD-420697",
+        "action": "message_customer",
+        "option": 2
+      },
+      "output": {
+        "data": {
+          "step": 2,
+          "option": 2
+        },
+        "content": "Option 2, step 2 added: Email the customer (CD-420697).",
+        "isError": false
+      },
+      "summary": "Option 2: Email the customer (CD-420697)"
+    },
+    {
+      "id": "run_9dcc4737:51",
+      "idx": 51,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "headline": "Lille protest reported over both deliveries; no drivers booked",
+        "reject_label": "Reject: do nothing, I'll decide",
+        "what_happened": "The regional traffic service reports a farmers' protest around Lille until Tue 27 Oct 20:00 CET. The Mon 26 Oct delivery on one order falls inside it, as does the proposed, not yet selected, Tue 27 Oct slot on the other; no driver is booked on either, so nobody is affected yet.",
+        "option_1_label": "Approve: keep both plans, warn drivers when assigned, recheck in 12 hours",
+        "option_2_label": "Send Calveraine Auto a heads-up about possible delay on both orders",
+        "option_1_effect": "Nothing is booked or sent; both orders stay as planned and the notice is rechecked. The delivery promises still stand for now and no customer message goes out.",
+        "option_2_effect": "Emails the customer a possible-delay warning for both deliveries; changes no booking or date."
+      },
+      "output": null,
+      "summary": "Called propose"
+    },
+    {
+      "id": "run_9dcc4737:52",
+      "idx": 52,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "headline": "Lille protest reported over both deliveries; no drivers booked",
+        "reject_label": "Reject: do nothing, I'll decide",
+        "what_happened": "The regional traffic service reports a farmers' protest around Lille until Tue 27 Oct 20:00 CET. The Mon 26 Oct delivery on one order falls inside it, as does the proposed, not yet selected, Tue 27 Oct slot on the other; no driver is booked on either, so nobody is affected yet.",
+        "option_1_label": "Approve: keep both plans, warn drivers when assigned, recheck in 12 hours",
+        "option_2_label": "Send Calveraine Auto a heads-up about possible delay on both orders",
+        "option_1_effect": "Nothing is booked or sent; both orders stay as planned and the notice is rechecked. The delivery promises still stand for now and no customer message goes out.",
+        "option_2_effect": "Emails the customer a possible-delay warning for both deliveries; changes no booking or date."
+      },
+      "output": {
+        "data": [
+          {
+            "ok": true,
+            "note": "The regional traffic service notice gives the farmers' protest and tractor blockades from Thu 22 Oct 06:00 to Tue 27 Oct 20:00 CET, and it states that no driver or site has confirmed it, matching the card's wording.",
+            "finding": 0
+          },
+          {
+            "ok": true,
+            "note": "The order form from Calveraine Auto gives the delivery promise as Mon 26 Oct 10:00–16:00 CET at Calveraine Lille, Lille, which matches the finding.",
+            "finding": 1
+          },
+          {
+            "ok": true,
+            "note": "The ops route plan gives the Marseille pickup at Rivellon Marseille as Fri 23 Oct 09:00–12:00 CEST, which matches the finding.",
+            "finding": 2
+          },
+          {
+            "ok": true,
+            "note": "The order form gives the Tue 27 Oct 11:00–16:00 CET Lille delivery at Independent vehicle storage as proposed, not selected, which matches the finding and its not-confirmed status.",
+            "finding": 3
+          },
+          {
+            "ok": true,
+            "note": "The ops route plan gives the Lyon pickup on Mon 26 Oct 10:00–13:00 CET at a private address as proposed, not selected, which matches the finding.",
+            "finding": 4
+          },
+          {
+            "ok": true,
+            "note": "The headline and what-happened text match the traffic notice's protest window and the Mon 26 and proposed Tue 27 slots falling inside it, and the no-driver-booked point matches the notice's statement that no driver is booked yet.",
+            "finding": null
+          },
+          {
+            "ok": false,
+            "note": "Option 1's label says it will warn drivers when assigned, but its effect and does only keep both plans and recheck later, so the label promises a driver warning the button never performs.",
+            "finding": null
+          },
+          {
+            "ok": true,
+            "note": "Option 2 emails the customer only if the person clicks it, changes no booking or date, and its label matches its effect.",
+            "finding": null
+          }
+        ],
+        "content": "The verifier checked each claim against its source and found problems. The card was not shown yet, and its findings and steps are cleared. Fix these, then add all findings and steps again and call propose, in one turn:\n- Option 1's label says it will warn drivers when assigned, but its effect and does only keep both plans and recheck later, so the label promises a driver warning the button never performs.",
+        "isError": true
+      },
+      "summary": "Card sent back by the verifier (1 problem)"
+    },
+    {
+      "id": "run_9dcc4737:53",
+      "idx": 53,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The regional traffic service reports tractor blockades on the A1, A25 and Lille ring road junctions from Thu 22 Oct 06:00 CEST to Tue 27 Oct 20:00 CET; no driver has confirmed it.",
+        "source": "E6"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_9dcc4737:54",
+      "idx": 54,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The regional traffic service reports tractor blockades on the A1, A25 and Lille ring road junctions from Thu 22 Oct 06:00 CEST to Tue 27 Oct 20:00 CET; no driver has confirmed it.",
+        "source": "E6"
+      },
+      "output": {
+        "data": {
+          "index": 1,
+          "alsoId": null,
+          "entryId": "disruptions:dis-fr-lille-protest:ord-00692"
+        },
+        "content": "Finding 1 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The regional traffic service reports tractor blockades on the A1, A25 and Lille ring road junctions from Thu 22 Oct 06:00 CEST to Tue 27 Oct 20:00 CET; no driver has confirmed it."
+    },
+    {
+      "id": "run_9dcc4737:55",
+      "idx": 55,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420692 has a delivery promise in Lille on Mon 26 Oct 10:00–16:00 CET.",
+        "source": "E2"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_9dcc4737:56",
+      "idx": 56,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420692 has a delivery promise in Lille on Mon 26 Oct 10:00–16:00 CET.",
+        "source": "E2"
+      },
+      "output": {
+        "data": {
+          "index": 2,
+          "alsoId": null,
+          "entryId": "time_windows:win-x281e1a9bdce07db1"
+        },
+        "content": "Finding 2 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: CD-420692 has a delivery promise in Lille on Mon 26 Oct 10:00–16:00 CET."
+    },
+    {
+      "id": "run_9dcc4737:57",
+      "idx": 57,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420692 pickup in Marseille is set for Fri 23 Oct 09:00–12:00 CEST.",
+        "source": "E1"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_9dcc4737:58",
+      "idx": 58,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420692 pickup in Marseille is set for Fri 23 Oct 09:00–12:00 CEST.",
+        "source": "E1"
+      },
+      "output": {
+        "data": {
+          "index": 3,
+          "alsoId": null,
+          "entryId": "time_windows:win-xe8cf3761be4c288f"
+        },
+        "content": "Finding 3 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: CD-420692 pickup in Marseille is set for Fri 23 Oct 09:00–12:00 CEST."
+    },
+    {
+      "id": "run_9dcc4737:59",
+      "idx": 59,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420697 delivery in Lille on Tue 27 Oct 11:00–16:00 CET is proposed, not selected, and not confirmed.",
+        "source": "E15"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_9dcc4737:60",
+      "idx": 60,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420697 delivery in Lille on Tue 27 Oct 11:00–16:00 CET is proposed, not selected, and not confirmed.",
+        "source": "E15"
+      },
+      "output": {
+        "data": {
+          "index": 4,
+          "alsoId": null,
+          "entryId": "time_windows:win-xace8a5da4e07e695"
+        },
+        "content": "Finding 4 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: CD-420697 delivery in Lille on Tue 27 Oct 11:00–16:00 CET is proposed, not selected, and not confirmed."
+    },
+    {
+      "id": "run_9dcc4737:61",
+      "idx": 61,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420697 pickup in Lyon on Mon 26 Oct 10:00–13:00 CET is proposed, not selected.",
+        "source": "E14"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_9dcc4737:62",
+      "idx": 62,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "CD-420697 pickup in Lyon on Mon 26 Oct 10:00–13:00 CET is proposed, not selected.",
+        "source": "E14"
+      },
+      "output": {
+        "data": {
+          "index": 5,
+          "alsoId": null,
+          "entryId": "time_windows:win-x7232d109defa1519"
+        },
+        "content": "Finding 5 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: CD-420697 pickup in Lyon on Mon 26 Oct 10:00–13:00 CET is proposed, not selected."
+    },
+    {
+      "id": "run_9dcc4737:63",
+      "idx": 63,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_affected_order",
+      "input": {
+        "order": "CD-420692",
+        "effect": "Delivery in Lille on Mon 26 Oct 10:00–16:00 CET falls inside the reported protest; no driver booked yet, so nobody is stuck."
+      },
+      "output": null,
+      "summary": "Called add_affected_order"
+    },
+    {
+      "id": "run_9dcc4737:64",
+      "idx": 64,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_affected_order",
+      "input": {
+        "order": "CD-420692",
+        "effect": "Delivery in Lille on Mon 26 Oct 10:00–16:00 CET falls inside the reported protest; no driver booked yet, so nobody is stuck."
+      },
+      "output": {
+        "data": null,
+        "content": "CD-420692 is on the card (1 of 2 orders this run covers).",
+        "isError": false
+      },
+      "summary": "Put CD-420692 on the card: Delivery in Lille on Mon 26 Oct 10:00–16:00 CET falls inside the reported protest; no driver booked yet, so nobody is stuck."
+    },
+    {
+      "id": "run_9dcc4737:65",
+      "idx": 65,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_affected_order",
+      "input": {
+        "order": "CD-420697",
+        "effect": "Proposed (not yet selected) delivery in Lille on Tue 27 Oct 11:00–16:00 CET falls inside the reported protest; no driver booked, pickup not confirmed."
+      },
+      "output": null,
+      "summary": "Called add_affected_order"
+    },
+    {
+      "id": "run_9dcc4737:66",
+      "idx": 66,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_affected_order",
+      "input": {
+        "order": "CD-420697",
+        "effect": "Proposed (not yet selected) delivery in Lille on Tue 27 Oct 11:00–16:00 CET falls inside the reported protest; no driver booked, pickup not confirmed."
+      },
+      "output": {
+        "data": null,
+        "content": "CD-420697 is on the card (2 of 2 orders this run covers).",
+        "isError": false
+      },
+      "summary": "Put CD-420697 on the card: Proposed (not yet selected) delivery in Lille on Tue 27 Oct 11:00–16:00 CET falls inside the reported protest; no driver booked, pickup not confirmed."
+    },
+    {
+      "id": "run_9dcc4737:67",
+      "idx": 67,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep plan; recheck the protest notice and the driver offer.",
+        "order": "CD-420692",
+        "action": "note",
+        "option": 1,
+        "minutes": 720
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_9dcc4737:68",
+      "idx": 68,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep plan; recheck the protest notice and the driver offer.",
+        "order": "CD-420692",
+        "action": "note",
+        "option": 1,
+        "minutes": 720
+      },
+      "output": {
+        "data": {
+          "step": 1,
+          "option": 1
+        },
+        "content": "Option 1, step 1 added: Keep the plan and check again later.",
+        "isError": false
+      },
+      "summary": "Option 1: Keep the plan and check again later"
+    },
+    {
+      "id": "run_9dcc4737:69",
+      "idx": 69,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep plan; recheck the protest notice before confirming pickup and delivery times.",
+        "order": "CD-420697",
+        "action": "note",
+        "option": 1,
+        "minutes": 720
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_9dcc4737:70",
+      "idx": 70,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep plan; recheck the protest notice before confirming pickup and delivery times.",
+        "order": "CD-420697",
+        "action": "note",
+        "option": 1,
+        "minutes": 720
+      },
+      "output": {
+        "data": {
+          "step": 2,
+          "option": 1
+        },
+        "content": "Option 1, step 2 added: Keep the plan and check again later (CD-420697).",
+        "isError": false
+      },
+      "summary": "Option 1: Keep the plan and check again later (CD-420697)"
+    },
+    {
+      "id": "run_9dcc4737:71",
+      "idx": 71,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "to": "Calveraine Auto",
+        "text": "A farmers' protest is reported to block roads around Lille from 22 to 27 Oct. Your Panamera delivery (PO-037-0692) promised Mon 26 Oct 10:00–16:00 may be delayed. We are monitoring and will confirm timing once a driver is booked.",
+        "order": "CD-420692",
+        "action": "message_customer",
+        "option": 2
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_9dcc4737:72",
+      "idx": 72,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "to": "Calveraine Auto",
+        "text": "A farmers' protest is reported to block roads around Lille from 22 to 27 Oct. Your Panamera delivery (PO-037-0692) promised Mon 26 Oct 10:00–16:00 may be delayed. We are monitoring and will confirm timing once a driver is booked.",
+        "order": "CD-420692",
+        "action": "message_customer",
+        "option": 2
+      },
+      "output": {
+        "data": {
+          "step": 1,
+          "option": 2
+        },
+        "content": "Option 2, step 1 added: Email the customer.",
+        "isError": false
+      },
+      "summary": "Option 2: Email the customer"
+    },
+    {
+      "id": "run_9dcc4737:73",
+      "idx": 73,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "to": "Calveraine Auto",
+        "text": "A farmers' protest is reported to block roads around Lille from 22 to 27 Oct. Your C-Class delivery (PO-037-0697), proposed for Tue 27 Oct 11:00–16:00, may be delayed. We are monitoring and will confirm timing before pickup.",
+        "order": "CD-420697",
+        "action": "message_customer",
+        "option": 2
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_9dcc4737:74",
+      "idx": 74,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "to": "Calveraine Auto",
+        "text": "A farmers' protest is reported to block roads around Lille from 22 to 27 Oct. Your C-Class delivery (PO-037-0697), proposed for Tue 27 Oct 11:00–16:00, may be delayed. We are monitoring and will confirm timing before pickup.",
+        "order": "CD-420697",
+        "action": "message_customer",
+        "option": 2
+      },
+      "output": {
+        "data": {
+          "step": 2,
+          "option": 2
+        },
+        "content": "Option 2, step 2 added: Email the customer (CD-420697).",
+        "isError": false
+      },
+      "summary": "Option 2: Email the customer (CD-420697)"
+    },
+    {
+      "id": "run_9dcc4737:75",
+      "idx": 75,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "headline": "Lille protest reported over both deliveries; no drivers booked",
+        "reject_label": "Reject: do nothing, I'll decide",
+        "what_happened": "The regional traffic service reports a farmers' protest around Lille until Tue 27 Oct 20:00 CET. The Mon 26 Oct delivery on one order falls inside it, as does the proposed, not yet selected, Tue 27 Oct slot on the other; no driver is booked on either, so nobody is affected yet.",
+        "option_1_label": "Approve: keep both plans as they are and recheck in 12 hours",
+        "option_2_label": "Send Calveraine Auto a heads-up about possible delay on both orders",
+        "option_1_effect": "Nothing is booked or sent; both orders stay as planned and are rechecked in 12 hours. The delivery promises still stand for now and no customer message goes out.",
+        "option_2_effect": "Emails the customer a possible-delay warning for both deliveries; changes no booking or date."
+      },
+      "output": null,
+      "summary": "Called propose"
+    },
+    {
+      "id": "run_9dcc4737:76",
+      "idx": 76,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "headline": "Lille protest reported over both deliveries; no drivers booked",
+        "reject_label": "Reject: do nothing, I'll decide",
+        "what_happened": "The regional traffic service reports a farmers' protest around Lille until Tue 27 Oct 20:00 CET. The Mon 26 Oct delivery on one order falls inside it, as does the proposed, not yet selected, Tue 27 Oct slot on the other; no driver is booked on either, so nobody is affected yet.",
+        "option_1_label": "Approve: keep both plans as they are and recheck in 12 hours",
+        "option_2_label": "Send Calveraine Auto a heads-up about possible delay on both orders",
+        "option_1_effect": "Nothing is booked or sent; both orders stay as planned and are rechecked in 12 hours. The delivery promises still stand for now and no customer message goes out.",
+        "option_2_effect": "Emails the customer a possible-delay warning for both deliveries; changes no booking or date."
+      },
+      "output": {
+        "data": {
+          "cardId": "card_1783d6ba-1c7",
+          "verifier": [
+            {
+              "ok": true,
+              "note": "The regional traffic service's notice supports the protest dates, the A1, A25 and ring road junctions, and that no driver or site has confirmed it; the start time's CEST label is added by the finding, but the record shows the same 06:00 start.",
+              "finding": 0
+            },
+            {
+              "ok": true,
+              "note": "The Calveraine Auto order form states the Mon 26 Oct 10:00–16:00 CET delivery promise at Calveraine Lille, Lille.",
+              "finding": 1
+            },
+            {
+              "ok": true,
+              "note": "The ops route plan states the Fri 23 Oct 09:00–12:00 CEST pickup at Rivellon Marseille.",
+              "finding": 2
+            },
+            {
+              "ok": true,
+              "note": "The order form marks the Tue 27 Oct 11:00–16:00 CET Lille delivery as proposed, not selected, so the finding's 'not confirmed' is correct.",
+              "finding": 3
+            },
+            {
+              "ok": true,
+              "note": "The ops route plan marks the Mon 26 Oct 10:00–13:00 CET Lyon pickup as proposed, not selected.",
+              "finding": 4
+            },
+            {
+              "ok": false,
+              "note": "The card's claim that nobody is affected yet is contradicted by Finding 2: the customer's Mon 26 Oct delivery promise falls inside the protest, so the customer is affected even though no driver is booked.",
+              "finding": null
+            },
+            {
+              "ok": false,
+              "note": "The headline and the second option's 'both deliveries' wording treat the Tue 27 Oct slot as a delivery, but Finding 4 says it is only proposed and not selected, so a delay warning to the customer about it would be misleading.",
+              "finding": null
+            },
+            {
+              "ok": true,
+              "note": "The first option's label and effect match its action: it keeps both plans and sends no customer message.",
+              "finding": null
+            }
+          ]
+        },
+        "content": "The card is in front of a person now. Your run ends here.",
+        "isError": false
+      },
+      "summary": "Proposed to a person: Approve: keep both plans as they are and recheck in 12 hours"
+    }
+  ],
+  "cards": [
+    {
+      "id": "card_1783d6ba-1c7",
+      "orderId": "ord-00692",
+      "runId": "run_9dcc4737",
+      "createdAt": "2026-10-21T09:42:00.000Z",
+      "kind": "decision",
+      "status": "open",
+      "headline": "2 orders: Lille protest reported over both deliveries; no drivers booked",
+      "whatHappened": "The regional traffic service reports a farmers' protest around Lille until Tue 27 Oct 20:00 CET. The Mon 26 Oct delivery on one order falls inside it, as does the proposed, not yet selected, Tue 27 Oct slot on the other; no driver is booked on either, so nobody is affected yet.",
+      "findings": [
+        {
+          "at": "2026-10-21T09:42:00.000Z",
+          "also": null,
+          "text": "The regional traffic service reports tractor blockades on the A1, A25 and Lille ring road junctions from Thu 22 Oct 06:00 CEST to Tue 27 Oct 20:00 CET; no driver has confirmed it.",
+          "source_label": "Regional traffic service",
+          "source_entry_id": "disruptions:dis-fr-lille-protest:ord-00692"
+        },
+        {
+          "at": "2026-10-14T13:00:00.000Z",
+          "also": null,
+          "text": "CD-420692 has a delivery promise in Lille on Mon 26 Oct 10:00–16:00 CET.",
+          "source_label": "Calveraine Auto, order form",
+          "source_entry_id": "time_windows:win-x281e1a9bdce07db1"
+        },
+        {
+          "at": "2026-10-20T14:28:31.751Z",
+          "also": null,
+          "text": "CD-420692 pickup in Marseille is set for Fri 23 Oct 09:00–12:00 CEST.",
+          "source_label": "Ops, with the route plan",
+          "source_entry_id": "time_windows:win-xe8cf3761be4c288f"
+        },
+        {
+          "at": "2026-10-13T07:00:00.000Z",
+          "also": null,
+          "text": "CD-420697 delivery in Lille on Tue 27 Oct 11:00–16:00 CET is proposed, not selected, and not confirmed.",
+          "reference": "CD-420697",
+          "source_label": "Calveraine Auto, order form",
+          "source_entry_id": "time_windows:win-xace8a5da4e07e695"
+        },
+        {
+          "at": "2026-10-13T08:00:23.923Z",
+          "also": null,
+          "text": "CD-420697 pickup in Lyon on Mon 26 Oct 10:00–13:00 CET is proposed, not selected.",
+          "reference": "CD-420697",
+          "source_label": "Ops, with the route plan",
+          "source_entry_id": "time_windows:win-x7232d109defa1519"
+        }
+      ],
+      "proposal": {
+        "action": "note",
+        "params": {
+          "text": "Keep plan; recheck the protest notice and the driver offer.",
+          "minutes": 720
+        },
+        "cost_eur": null,
+        "effect_text": "Nothing is booked or sent; both orders stay as planned and are rechecked in 12 hours. The delivery promises still stand for now and no customer message goes out.",
+        "requires_approval_reason": null
+      },
+      "options": [
+        {
+          "id": "opt-1",
+          "kind": "approve",
+          "label": "Approve: keep both plans as they are and recheck in 12 hours",
+          "steps": [
+            {
+              "action": "note",
+              "params": {
+                "text": "Keep plan; recheck the protest notice and the driver offer.",
+                "minutes": 720
+              }
+            },
+            {
+              "action": "note",
+              "params": {
+                "text": "Keep plan; recheck the protest notice before confirming pickup and delivery times.",
+                "order": "CD-420697",
+                "minutes": 720,
+                "order_id": "ord-00697"
+              }
+            }
+          ],
+          "action": "note",
+          "params": {
+            "text": "Keep plan; recheck the protest notice and the driver offer.",
+            "minutes": 720
+          },
+          "effect_text": "Nothing is booked or sent; both orders stay as planned and are rechecked in 12 hours. The delivery promises still stand for now and no customer message goes out."
+        },
+        {
+          "id": "opt-2",
+          "kind": "approve",
+          "label": "Send Calveraine Auto a heads-up about possible delay on both orders",
+          "steps": [
+            {
+              "action": "message_customer",
+              "params": {
+                "to": "Calveraine Auto",
+                "text": "A farmers' protest is reported to block roads around Lille from 22 to 27 Oct. Your Panamera delivery (PO-037-0692) promised Mon 26 Oct 10:00–16:00 may be delayed. We are monitoring and will confirm timing once a driver is booked."
+              }
+            },
+            {
+              "action": "message_customer",
+              "params": {
+                "to": "Calveraine Auto",
+                "text": "A farmers' protest is reported to block roads around Lille from 22 to 27 Oct. Your C-Class delivery (PO-037-0697), proposed for Tue 27 Oct 11:00–16:00, may be delayed. We are monitoring and will confirm timing before pickup.",
+                "order": "CD-420697",
+                "order_id": "ord-00697"
+              }
+            }
+          ],
+          "action": "message_customer",
+          "params": {
+            "to": "Calveraine Auto",
+            "text": "A farmers' protest is reported to block roads around Lille from 22 to 27 Oct. Your Panamera delivery (PO-037-0692) promised Mon 26 Oct 10:00–16:00 may be delayed. We are monitoring and will confirm timing once a driver is booked."
+          },
+          "effect_text": "Emails the customer a possible-delay warning for both deliveries; changes no booking or date."
+        },
+        {
+          "id": "reject",
+          "kind": "reject",
+          "label": "Reject: do nothing, I'll decide",
+          "action": "reject",
+          "params": {}
+        }
+      ],
+      "consequenceAt": "2026-10-23T07:00:00.000Z",
+      "consequenceText": "Pickup in Marseille starts Fri 23 Oct 09:00",
+      "severity": "normal",
+      "verifierNotes": [
+        {
+          "ok": true,
+          "note": "The regional traffic service's notice supports the protest dates, the A1, A25 and ring road junctions, and that no driver or site has confirmed it; the start time's CEST label is added by the finding, but the record shows the same 06:00 start.",
+          "finding": 0
+        },
+        {
+          "ok": true,
+          "note": "The Calveraine Auto order form states the Mon 26 Oct 10:00–16:00 CET delivery promise at Calveraine Lille, Lille.",
+          "finding": 1
+        },
+        {
+          "ok": true,
+          "note": "The ops route plan states the Fri 23 Oct 09:00–12:00 CEST pickup at Rivellon Marseille.",
+          "finding": 2
+        },
+        {
+          "ok": true,
+          "note": "The order form marks the Tue 27 Oct 11:00–16:00 CET Lille delivery as proposed, not selected, so the finding's 'not confirmed' is correct.",
+          "finding": 3
+        },
+        {
+          "ok": true,
+          "note": "The ops route plan marks the Mon 26 Oct 10:00–13:00 CET Lyon pickup as proposed, not selected.",
+          "finding": 4
+        },
+        {
+          "ok": false,
+          "note": "The card's claim that nobody is affected yet is contradicted by Finding 2: the customer's Mon 26 Oct delivery promise falls inside the protest, so the customer is affected even though no driver is booked.",
+          "finding": null
+        },
+        {
+          "ok": false,
+          "note": "The headline and the second option's 'both deliveries' wording treat the Tue 27 Oct slot as a delivery, but Finding 4 says it is only proposed and not selected, so a delay warning to the customer about it would be misleading.",
+          "finding": null
+        },
+        {
+          "ok": true,
+          "note": "The first option's label and effect match its action: it keeps both plans and sends no customer message.",
+          "finding": null
+        }
+      ],
+      "group": [
+        {
+          "car": "Porsche Panamera",
+          "effect": "Delivery in Lille on Mon 26 Oct 10:00–16:00 CET falls inside the reported protest; no driver booked yet, so nobody is stuck.",
+          "order_id": "ord-00692",
+          "reference": "CD-420692"
+        },
+        {
+          "car": "Mercedes-Benz C-Class",
+          "effect": "Proposed (not yet selected) delivery in Lille on Tue 27 Oct 11:00–16:00 CET falls inside the reported protest; no driver booked, pickup not confirmed.",
+          "order_id": "ord-00697",
+          "reference": "CD-420697"
+        }
+      ],
+      "origin": "agent"
+    }
+  ],
+  "decisions": []
+}

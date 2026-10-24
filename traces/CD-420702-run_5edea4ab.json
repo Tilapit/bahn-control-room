@@ -1,0 +1,1861 @@
+{
+  "run": {
+    "id": "run_5edea4ab",
+    "orderId": "ord-00702",
+    "agent": "Investigator",
+    "model": "claude-sonnet-5-5",
+    "trigger": "Backfill. Open signals on this order: open alert: delivery promise cannot be met.",
+    "startedAt": "2026-10-21T09:34:00.000Z",
+    "finishedAt": "2026-10-21T09:38:00.000Z",
+    "status": "waiting_person",
+    "outcomeSummary": "delivery today missed; yard releases car only Thu 22 Oct",
+    "nextCheckAt": null,
+    "inputTokens": 4810,
+    "outputTokens": 24787,
+    "cacheReadTokens": 61907,
+    "cacheWriteTokens": 10301,
+    "costUsd": 0.11933107,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 4,
+        "input": 4798,
+        "output": 17491,
+        "costUsd": 0.009278570000000002,
+        "cacheRead": 5327,
+        "cacheWrite": 0
+      },
+      "claude-sonnet-5-5": {
+        "calls": 5,
+        "input": 12,
+        "output": 7296,
+        "costUsd": 0.1100525,
+        "cacheRead": 56580,
+        "cacheWrite": 10301
+      }
+    },
+    "narration": "Read the case file and found an open alert that the delivery promise cannot be met; the yard releases the car only on Thu 22 Oct.",
+    "wallMs": 115712,
+    "replay": false,
+    "reference": "CD-420702"
+  },
+  "steps": [
+    {
+      "id": "run_5edea4ab:0",
+      "idx": 0,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_call",
+      "tool": "get_case",
+      "input": {
+        "order": "CD-420702"
+      },
+      "output": null,
+      "summary": "Called get_case"
+    },
+    {
+      "id": "run_5edea4ab:1",
+      "idx": 1,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_result",
+      "tool": "get_case",
+      "input": {
+        "order": "CD-420702"
+      },
+      "output": {
+        "data": null,
+        "content": "CD-420702 · Toyota Corolla 2025 · plate DEMO-FI-K9R2B5 · At the transfer yard\nCustomer (pays; any contact needs a person's approval): Calverin Car Centre, their reference PO-016-0702\nRoute: Merovanelle Oulu, Oulu → Merivanto Transfer Espoo, Espoo → Calverin Espoo, Espoo · 670 km\nDriver: Salla Pervalen, finished, lives in Oulu, FI · other drivers: Noel Jarnwell (cancelled)\nNow: Wed 21 Oct, 12:34 in Espoo and Oulu (09:34 UTC). Timeline times are Espoo time (EEST); key times are in their own place's time.\n\nKEY TIMES\n- Picked up, Oulu: Tue 20 Oct 09:00 EEST. Source: Salla Pervalen [E1]\n- Yard release slot, Espoo: Thu 22 Oct 09:00–11:00 EEST. Merivanto Transfer Espoo, Espoo. Source: Shift lead [E2]\n- Delivery promise, Espoo: Wed 21 Oct 11:00–14:00 EEST. Source: Calverin Car Centre, order form [E3]\n\nAGREED AND STATED\n- Delivery time: Shift lead (Bahn): no revised target approved; new yard release slot is tomorrow, after the original customer delivery window (stated, not confirmed; Shift lead, internal note) [E4]\n- Keys: Shift lead (Bahn) says the first driver handed the keys to the staffed yard with the car (stated, not confirmed; Shift lead, email) [E5]\n- Handover: Shift lead (Bahn) says the first driver handed the car to the staffed yard and the second driver did not collect it (stated, not confirmed; Shift lead, email) [E5]\n- Driver change: Shift lead (Bahn): second driver's assignment and offer withdrawn after missing the 09:00-11:00 collection slot; new offer open, no confirmed driver (stated, not confirmed; Shift lead, internal note) [E4]\n- Car's location (stated): Merivanto Transfer Espoo desk said the car and keys are still at their staffed yard (stated, not confirmed; Merivanto Transfer Espoo desk, phone) [E6]\n- Delivery handover: Use the staffed rear gate and get the guard's receiving signature. No after-hours drop. (confirmed; Site profile, Calverin Espoo) [E7]\n- Delivery contact: Staffed handover desk, site desk (confirmed; Site profile, Calverin Espoo) [E7]\n- (3 details from before the pickup are historical, left out)\n\nOPEN\n- Alert (high, nobody has taken it), raised Wed 21 Oct 11:28 EEST: Delivery promise cannot be met. \"Original customer delivery window ends today, but the next confirmed yard release window is tomorrow. No revised customer delivery promise is approved.\" A signal, not a diagnosis [E8]\n\nROUTE AND TRAVEL\n- Leg: Merovanelle Oulu, Oulu → Merivanto Transfer Espoo, Espoo, drive, 645 km, completed, Salla Pervalen\n- Leg: Merivanto Transfer Espoo, Espoo → Calverin Espoo, Espoo, drive, 25 km, offered\n- Driver gig: offered to drivers, not taken yet, fee €125\nBOOKED: nothing is booked for this order\n\nTIMELINE (newest first; the 37 most recent entries, stage changes left out; use timeline() for older ones)\nWed 21 Oct\n11:32 Shift lead (Email): \"The first driver handed the car and keys to the staffed yard, but the second driver did not collect it. The yard can release it tomorrow morning. Your current delivery window cannot be met. Please confirm a new acceptable delivery target; we have not changed it in the order.\" [E5]\n11:28 Monitoring: Delivery promise cannot be met (high alert) (A SIGNAL, NOT A DIAGNOSIS) [E8]\n11:27 Shift lead (Internal (Slack), internal): \"First driver completed Oulu to staffed Espoo yard; the 20:30 local arrival and condition photos establish yard custody overnight. Second driver missed the 09:00-11:00 local collection slot. Only the second assignment and offer were withdrawn; the first leg remains complete. A ne…\" [E4]\n11:26 Shift lead: Yard release photos required by Thu 22 Oct 08:00 UTC [E9]\n11:25 Dispatch agent: Gig offered to drivers at €125 [E10]\n11:23 Shift lead: Pickup slot: Thu 22 Oct 09:00–11:00 EEST at Merivanto Transfer Espoo, Espoo [E2]\n11:23 Shift lead: Pickup slot selected [E11]\n11:19 Merivanto Transfer Espoo desk (Phone call with the site): \"The car and keys are still with our staffed yard. We can release them to a replacement driver tomorrow, 22 October, between 09:00 and 11:00 local time after an ID and condition check.\" [E6]\n11:16 Shift lead: Gig offer withdrawn (second-leg assignment cancelled; first leg remains completed) [E12]\n11:15 Shift lead: Driver booking cancelled [E13]\n11:11 Merivanto Transfer Espoo desk (Phone call with the site): \"The staffed 09:00-11:00 release window has ended. No collector checked in for this car, and the car and keys remain on our yard register. We have not released them to the booked driver.\" [E14]\n10:47 Noel Jarnwell (Driver chat): \"I have not reached the Espoo transfer yard. I cannot get there before its 11:00 local staffed release cutoff; please do not leave the car waiting for me.\" [E15]\nTue 20 Oct\n20:40 Salla Pervalen: Salla Pervalen finished the gig [E16]\n20:34 Shift lead (Internal (Slack), internal): \"Staffed Merivanto Transfer Espoo received the passenger car and keys at 20 Oct 20:30 local. Yard arrival photos record its condition; yard custody continues until a separate release to leg two is logged.\" [E17]\n20:33 Driver app: Yard arrival photos sent by the driver (5 files), not reviewed yet [E18]\n20:30 Salla Pervalen: Car dropped at the transfer yard (Merivanto Transfer Espoo, Espoo) [E19]\n14:22 Salla Pervalen: Fuel cost claimed by the driver: €62.60 at Aster Road Fuel [E20]\n09:05 Driver app: Pickup photos sent by the driver (4 files), not reviewed yet [E21]\n09:00 Salla Pervalen: Car picked up at Merovanelle Oulu, Oulu [E1]\n08:00 Salla Pervalen: Salla Pervalen started the gig [E22]\nSat 17 Oct\n13:00 Noel Jarnwell: Noel Jarnwell took the gig [E23]\n12:00 Dispatch agent: Gig offered to drivers at €95 [E24]\nFri 16 Oct\n15:40 Salla Pervalen: Salla Pervalen took the gig [E25]\n13:40 Dispatch agent: Gig offered to drivers at €284 [E26]\n11:40 Ops, with the route plan: Pickup availability: Wed 21 Oct 09:00–12:00 EEST at Merivanto Transfer Espoo, Espoo [E27]\n11:40 Ops, with the route plan: Pickup slot (proposed, not selected): Wed 21 Oct 09:00–11:00 EEST at Merivanto Transfer Espoo, Espoo [E28]\n11:40 Ops, with the route plan: Pickup slot: Tue 20 Oct 09:00–11:00 EEST at Merovanelle Oulu, Oulu [E29]\n11:40 Site: Pickup availability: Thu 22 Oct 09:00–17:00 EEST at Merivanto Transfer Espoo, Espoo [E30]\n11:40 Transport planning: Route plan activated [E31]\n11:30 Transport planning: Route plan drafted [E32]\n11:20 Calverin Car Centre, order form: Delivery promise: Wed 21 Oct 11:00–14:00 EEST at Calverin Espoo, Espoo [E3]\n11:20 Calverin Car Centre, order form: Pickup availability: Tue 20 Oct 08:00–13:00 EEST at Merovanelle Oulu, Oulu [E33]\n11:20 Calverin Car Centre: Order placed by Calverin Car Centre [E34]",
+        "isError": false
+      },
+      "summary": "Read the case file of CD-420702"
+    },
+    {
+      "id": "run_5edea4ab:2",
+      "idx": 2,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "thought",
+      "tool": null,
+      "input": null,
+      "output": {
+        "text": "Since the delivery will be missed, I should notify the customer with a revised window — given the yard only releases Thursday 09:00-11:00 and the 25km distance, delivery would realistically land around 12:00-15:00 EEST on Thu 22 Oct. I'll keep the message simple: propose this new window and ask for confirmation.\n\n",
+        "model": "claude-sonnet-5-5"
+      },
+      "summary": "Since the delivery will be missed, I should notify the customer with a revised window — given the yard only releases Thursday 09:00-11:00 and the 25km distance, delivery would realistically land around 12:00-15:00 EEST on Thu 22 Oct. I'll keep the message simple: propose this new window and ask for confirmation."
+    },
+    {
+      "id": "run_5edea4ab:3",
+      "idx": 3,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The customer's delivery promise in Espoo was Wed 21 Oct 11:00–14:00 EEST.",
+        "source": "E3"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:4",
+      "idx": 4,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The customer's delivery promise in Espoo was Wed 21 Oct 11:00–14:00 EEST.",
+        "source": "E3"
+      },
+      "output": {
+        "data": {
+          "index": 1,
+          "alsoId": null,
+          "entryId": "time_windows:win-xe120091bc74a3767"
+        },
+        "content": "Finding 1 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The customer's delivery promise in Espoo was Wed 21 Oct 11:00–14:00 EEST."
+    },
+    {
+      "id": "run_5edea4ab:5",
+      "idx": 5,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The yard desk says the car and keys are still at its staffed yard and can be released to a replacement driver Thu 22 Oct 09:00–11:00 EEST after an ID and condition check.",
+        "source": "E6"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:6",
+      "idx": 6,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The yard desk says the car and keys are still at its staffed yard and can be released to a replacement driver Thu 22 Oct 09:00–11:00 EEST after an ID and condition check.",
+        "source": "E6"
+      },
+      "output": {
+        "data": {
+          "index": 2,
+          "alsoId": null,
+          "entryId": "messages:msg-x62cdfdf60a47c0a3"
+        },
+        "content": "Finding 2 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The yard desk says the car and keys are still at its staffed yard and can be released to a replacement driver Thu 22 Oct 09:00–11:00 EEST after an ID and condition check."
+    },
+    {
+      "id": "run_5edea4ab:7",
+      "idx": 7,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The second driver, Noel Jarnwell, wrote at 10:47 EEST that they could not reach the yard before the 11:00 cutoff; their booking was cancelled.",
+        "source": "E15"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:8",
+      "idx": 8,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The second driver, Noel Jarnwell, wrote at 10:47 EEST that they could not reach the yard before the 11:00 cutoff; their booking was cancelled.",
+        "source": "E15"
+      },
+      "output": {
+        "data": {
+          "index": 3,
+          "alsoId": null,
+          "entryId": "messages:msg-xb32ac1edf6e6f6b7"
+        },
+        "content": "Finding 3 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The second driver, Noel Jarnwell, wrote at 10:47 EEST that they could not reach the yard before the 11:00 cutoff; their booking was cancelled."
+    },
+    {
+      "id": "run_5edea4ab:9",
+      "idx": 9,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The 25 km second leg is offered at €125 with no driver confirmed; nothing is booked.",
+        "source": "E10"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:10",
+      "idx": 10,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The 25 km second leg is offered at €125 with no driver confirmed; nothing is booked.",
+        "source": "E10"
+      },
+      "output": {
+        "data": {
+          "index": 4,
+          "alsoId": null,
+          "entryId": "operational_events:evt-x37a53e790d0c8d40"
+        },
+        "content": "Finding 4 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The 25 km second leg is offered at €125 with no driver confirmed; nothing is booked."
+    },
+    {
+      "id": "run_5edea4ab:11",
+      "idx": 11,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The shift lead emailed the customer at 11:32 EEST that the window cannot be met and asked for a new acceptable target; no revised target is approved.",
+        "source": "E5"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:12",
+      "idx": 12,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The shift lead emailed the customer at 11:32 EEST that the window cannot be met and asked for a new acceptable target; no revised target is approved.",
+        "source": "E5"
+      },
+      "output": {
+        "data": {
+          "index": 5,
+          "alsoId": null,
+          "entryId": "messages:msg-xa21f0478affd12de"
+        },
+        "content": "Finding 5 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The shift lead emailed the customer at 11:32 EEST that the window cannot be met and asked for a new acceptable target; no revised target is approved."
+    },
+    {
+      "id": "run_5edea4ab:13",
+      "idx": 13,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "Calverin Espoo requires delivery at the staffed rear gate with the guard's signature; no after-hours drop.",
+        "source": "E7"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:14",
+      "idx": 14,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "Calverin Espoo requires delivery at the staffed rear gate with the guard's signature; no after-hours drop.",
+        "source": "E7"
+      },
+      "output": {
+        "data": {
+          "index": 6,
+          "alsoId": null,
+          "entryId": "order_endpoint_details:ep-x5558f354d4a0dcc4"
+        },
+        "content": "Finding 6 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: Calverin Espoo requires delivery at the staffed rear gate with the guard's signature; no after-hours drop."
+    },
+    {
+      "id": "run_5edea4ab:15",
+      "idx": 15,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "to": "Calverin Car Centre",
+        "text": "Your Toyota Corolla (PO-016-0702) arrived safely at our Espoo transfer yard, but the yard can only release it on Thu 22 Oct 09:00–11:00 EEST. Delivery to Calverin Espoo today, 11:00–14:00, cannot be met. We propose delivery on Thu 22 Oct, 12:00–15:00 EEST, at your staffed rear gate. Please confirm this works or tell us another time. We apologise for the delay.",
+        "action": "message_customer",
+        "option": 1
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_5edea4ab:16",
+      "idx": 16,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "to": "Calverin Car Centre",
+        "text": "Your Toyota Corolla (PO-016-0702) arrived safely at our Espoo transfer yard, but the yard can only release it on Thu 22 Oct 09:00–11:00 EEST. Delivery to Calverin Espoo today, 11:00–14:00, cannot be met. We propose delivery on Thu 22 Oct, 12:00–15:00 EEST, at your staffed rear gate. Please confirm this works or tell us another time. We apologise for the delay.",
+        "action": "message_customer",
+        "option": 1
+      },
+      "output": {
+        "data": {
+          "step": 1,
+          "option": 1
+        },
+        "content": "Option 1, step 1 added: Email the customer.",
+        "isError": false
+      },
+      "summary": "Option 1: Email the customer"
+    },
+    {
+      "id": "run_5edea4ab:17",
+      "idx": 17,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep the €125 offer open for the Thu 22 Oct 09:00–11:00 EEST yard slot; check for a confirmed driver and the customer's reply.",
+        "action": "note",
+        "option": 1,
+        "minutes": 120
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_5edea4ab:18",
+      "idx": 18,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep the €125 offer open for the Thu 22 Oct 09:00–11:00 EEST yard slot; check for a confirmed driver and the customer's reply.",
+        "action": "note",
+        "option": 1,
+        "minutes": 120
+      },
+      "output": {
+        "data": {
+          "step": 2,
+          "option": 1
+        },
+        "content": "Option 1, step 2 added: Keep the plan and check again later.",
+        "isError": false
+      },
+      "summary": "Option 1: Keep the plan and check again later"
+    },
+    {
+      "id": "run_5edea4ab:19",
+      "idx": 19,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "to": "Calverin Car Centre",
+        "text": "Explain the car is safe at the Espoo yard, release is Thu 22 Oct 09:00–11:00 EEST, and agree a new delivery time that day.",
+        "action": "call_customer",
+        "option": 2
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_5edea4ab:20",
+      "idx": 20,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "to": "Calverin Car Centre",
+        "text": "Explain the car is safe at the Espoo yard, release is Thu 22 Oct 09:00–11:00 EEST, and agree a new delivery time that day.",
+        "action": "call_customer",
+        "option": 2
+      },
+      "output": {
+        "data": {
+          "step": 1,
+          "option": 2
+        },
+        "content": "Option 2, step 1 added: Call the customer.",
+        "isError": false
+      },
+      "summary": "Option 2: Call the customer"
+    },
+    {
+      "id": "run_5edea4ab:21",
+      "idx": 21,
+      "at": "2026-10-21T09:34:00.000Z",
+      "type": "tool_call",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "cost_eur": null,
+        "headline": "delivery today missed; yard releases car only Thu 22 Oct",
+        "reject_label": "Reject: tell the customer nothing, I'll decide",
+        "what_happened": "The second driver missed the yard's Wed 09:00–11:00 EEST release, so the car stays at the Espoo yard until Thu 22 Oct 09:00–11:00 EEST. Today's 11:00–14:00 EEST delivery to Calverin Espoo will be missed, and the customer has not yet been given a new target.",
+        "option_1_label": "Approve: email Calverin proposing delivery Thu 22 Oct 12:00–15:00 EEST",
+        "option_2_label": "Call Calverin instead of emailing",
+        "option_1_effect": "Sends the customer the delay notice with a proposed new window and keeps the €125 offer open; it does not change the order's delivery time or assign a driver.",
+        "option_2_effect": "A person phones the customer to agree the new time; nothing is sent automatically."
+      },
+      "output": null,
+      "summary": "Called propose"
+    },
+    {
+      "id": "run_5edea4ab:22",
+      "idx": 22,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "cost_eur": null,
+        "headline": "delivery today missed; yard releases car only Thu 22 Oct",
+        "reject_label": "Reject: tell the customer nothing, I'll decide",
+        "what_happened": "The second driver missed the yard's Wed 09:00–11:00 EEST release, so the car stays at the Espoo yard until Thu 22 Oct 09:00–11:00 EEST. Today's 11:00–14:00 EEST delivery to Calverin Espoo will be missed, and the customer has not yet been given a new target.",
+        "option_1_label": "Approve: email Calverin proposing delivery Thu 22 Oct 12:00–15:00 EEST",
+        "option_2_label": "Call Calverin instead of emailing",
+        "option_1_effect": "Sends the customer the delay notice with a proposed new window and keeps the €125 offer open; it does not change the order's delivery time or assign a driver.",
+        "option_2_effect": "A person phones the customer to agree the new time; nothing is sent automatically."
+      },
+      "output": {
+        "data": [
+          {
+            "ok": true,
+            "note": "The order form states the Wed 21 Oct 11:00–14:00 EEST delivery promise at Calverin Espoo, matching the finding.",
+            "finding": 0
+          },
+          {
+            "ok": true,
+            "note": "The Merivanto Transfer Espoo desk message confirms the car and keys are still at the staffed yard and can be released Thu 22 Oct 09:00–11:00 after an ID and condition check.",
+            "finding": 1
+          },
+          {
+            "ok": false,
+            "note": "Noel Jarnwell's 10:47 message says they cannot reach the yard before the 11:00 cutoff, but it says nothing about a booking being cancelled, so that part is unsupported.",
+            "finding": 2
+          },
+          {
+            "ok": false,
+            "note": "The Dispatch agent record only says the gig was offered to drivers at €125; the 25 km distance and the statement that no driver is confirmed are not in the record.",
+            "finding": 3
+          },
+          {
+            "ok": true,
+            "note": "The Ops shift lead's message is addressed to the customer and asks for a new acceptable target while stating the order has not changed, so the email and the open target are supported.",
+            "finding": 4
+          },
+          {
+            "ok": true,
+            "note": "The Calverin Espoo site profile requires the staffed rear gate, a guard's receiving signature, and states no after-hours drop.",
+            "finding": 5
+          },
+          {
+            "ok": false,
+            "note": "The What happened section says the second driver missed the yard's Wed 09:00–11:00 release, but no record gives a 09:00 start; the driver's 11:00 is a cutoff, and the card should not state a release window that no record holds.",
+            "finding": null
+          },
+          {
+            "ok": true,
+            "note": "Option 1 emails the customer only after the person approves it, and its effect matches its does-list of emailing and keeping the plan; the proposed Thu 12:00–15:00 window is labelled as a proposal.",
+            "finding": null
+          },
+          {
+            "ok": true,
+            "note": "Option 2 is a phone call that a person makes, with nothing sent automatically, matching its label and does-list.",
+            "finding": null
+          },
+          {
+            "ok": true,
+            "note": "The language is plain, with no internal codes or ids shown to the person.",
+            "finding": null
+          }
+        ],
+        "content": "The verifier checked each claim against its source and found problems. The card was not shown yet, and its findings and steps are cleared. Fix these, then add all findings and steps again and call propose, in one turn:\n- Finding 3: Noel Jarnwell's 10:47 message says they cannot reach the yard before the 11:00 cutoff, but it says nothing about a booking being cancelled, so that part is unsupported.\n- Finding 4: The Dispatch agent record only says the gig was offered to drivers at €125; the 25 km distance and the statement that no driver is confirmed are not in the record.\n- The What happened section says the second driver missed the yard's Wed 09:00–11:00 release, but no record gives a 09:00 start; the driver's 11:00 is a cutoff, and the card should not state a release window that no record holds.",
+        "isError": true
+      },
+      "summary": "Card sent back by the verifier (3 problems)"
+    },
+    {
+      "id": "run_5edea4ab:23",
+      "idx": 23,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The customer's delivery promise in Espoo was Wed 21 Oct 11:00–14:00 EEST.",
+        "source": "E3"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:24",
+      "idx": 24,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The customer's delivery promise in Espoo was Wed 21 Oct 11:00–14:00 EEST.",
+        "source": "E3"
+      },
+      "output": {
+        "data": {
+          "index": 1,
+          "alsoId": null,
+          "entryId": "time_windows:win-xe120091bc74a3767"
+        },
+        "content": "Finding 1 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The customer's delivery promise in Espoo was Wed 21 Oct 11:00–14:00 EEST."
+    },
+    {
+      "id": "run_5edea4ab:25",
+      "idx": 25,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The yard desk says the car and keys are still at its staffed yard and can be released to a replacement driver Thu 22 Oct 09:00–11:00 EEST after an ID and condition check.",
+        "source": "E6"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:26",
+      "idx": 26,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The yard desk says the car and keys are still at its staffed yard and can be released to a replacement driver Thu 22 Oct 09:00–11:00 EEST after an ID and condition check.",
+        "source": "E6"
+      },
+      "output": {
+        "data": {
+          "index": 2,
+          "alsoId": null,
+          "entryId": "messages:msg-x62cdfdf60a47c0a3"
+        },
+        "content": "Finding 2 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The yard desk says the car and keys are still at its staffed yard and can be released to a replacement driver Thu 22 Oct 09:00–11:00 EEST after an ID and condition check."
+    },
+    {
+      "id": "run_5edea4ab:27",
+      "idx": 27,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The second driver, Noel Jarnwell, wrote at 10:47 EEST that they could not reach the yard before its 11:00 cutoff.",
+        "source": "E15"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:28",
+      "idx": 28,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The second driver, Noel Jarnwell, wrote at 10:47 EEST that they could not reach the yard before its 11:00 cutoff.",
+        "source": "E15"
+      },
+      "output": {
+        "data": {
+          "index": 3,
+          "alsoId": null,
+          "entryId": "messages:msg-xb32ac1edf6e6f6b7"
+        },
+        "content": "Finding 3 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The second driver, Noel Jarnwell, wrote at 10:47 EEST that they could not reach the yard before its 11:00 cutoff."
+    },
+    {
+      "id": "run_5edea4ab:29",
+      "idx": 29,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The shift lead's note says the second driver's assignment and offer were withdrawn and a new offer is open with no confirmed driver.",
+        "source": "E4"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:30",
+      "idx": 30,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The shift lead's note says the second driver's assignment and offer were withdrawn and a new offer is open with no confirmed driver.",
+        "source": "E4"
+      },
+      "output": {
+        "data": {
+          "problems": [
+            "The finding uses the internal word \"assignment\"; say it in ops words"
+          ]
+        },
+        "content": "Not added:\n- The finding uses the internal word \"assignment\"; say it in ops words",
+        "isError": true
+      },
+      "summary": "Finding not added (1 problem)"
+    },
+    {
+      "id": "run_5edea4ab:31",
+      "idx": 31,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The shift lead emailed the customer at 11:32 EEST that the window cannot be met and asked for a new acceptable target; no revised target is approved.",
+        "source": "E5"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:32",
+      "idx": 32,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The shift lead emailed the customer at 11:32 EEST that the window cannot be met and asked for a new acceptable target; no revised target is approved.",
+        "source": "E5"
+      },
+      "output": {
+        "data": {
+          "index": 4,
+          "alsoId": null,
+          "entryId": "messages:msg-xa21f0478affd12de"
+        },
+        "content": "Finding 4 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The shift lead emailed the customer at 11:32 EEST that the window cannot be met and asked for a new acceptable target; no revised target is approved."
+    },
+    {
+      "id": "run_5edea4ab:33",
+      "idx": 33,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "Calverin Espoo requires delivery at the staffed rear gate with the guard's signature; no after-hours drop.",
+        "source": "E7"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:34",
+      "idx": 34,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "Calverin Espoo requires delivery at the staffed rear gate with the guard's signature; no after-hours drop.",
+        "source": "E7"
+      },
+      "output": {
+        "data": {
+          "index": 5,
+          "alsoId": null,
+          "entryId": "order_endpoint_details:ep-x5558f354d4a0dcc4"
+        },
+        "content": "Finding 5 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: Calverin Espoo requires delivery at the staffed rear gate with the guard's signature; no after-hours drop."
+    },
+    {
+      "id": "run_5edea4ab:35",
+      "idx": 35,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "to": "Calverin Car Centre",
+        "text": "Your Toyota Corolla (PO-016-0702) arrived safely at our Espoo transfer yard, but the yard can only release it on Thu 22 Oct 09:00–11:00 EEST. Delivery to Calverin Espoo today, 11:00–14:00, cannot be met. We propose delivery on Thu 22 Oct, 12:00–15:00 EEST, at your staffed rear gate. Please confirm this works or tell us another time. We apologise for the delay.",
+        "action": "message_customer",
+        "option": 1
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_5edea4ab:36",
+      "idx": 36,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "to": "Calverin Car Centre",
+        "text": "Your Toyota Corolla (PO-016-0702) arrived safely at our Espoo transfer yard, but the yard can only release it on Thu 22 Oct 09:00–11:00 EEST. Delivery to Calverin Espoo today, 11:00–14:00, cannot be met. We propose delivery on Thu 22 Oct, 12:00–15:00 EEST, at your staffed rear gate. Please confirm this works or tell us another time. We apologise for the delay.",
+        "action": "message_customer",
+        "option": 1
+      },
+      "output": {
+        "data": {
+          "step": 1,
+          "option": 1
+        },
+        "content": "Option 1, step 1 added: Email the customer.",
+        "isError": false
+      },
+      "summary": "Option 1: Email the customer"
+    },
+    {
+      "id": "run_5edea4ab:37",
+      "idx": 37,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep the €125 offer open for the Thu 22 Oct yard slot; check for a confirmed driver and the customer's reply.",
+        "action": "note",
+        "option": 1,
+        "minutes": 120
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_5edea4ab:38",
+      "idx": 38,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep the €125 offer open for the Thu 22 Oct yard slot; check for a confirmed driver and the customer's reply.",
+        "action": "note",
+        "option": 1,
+        "minutes": 120
+      },
+      "output": {
+        "data": {
+          "step": 2,
+          "option": 1
+        },
+        "content": "Option 1, step 2 added: Keep the plan and check again later.",
+        "isError": false
+      },
+      "summary": "Option 1: Keep the plan and check again later"
+    },
+    {
+      "id": "run_5edea4ab:39",
+      "idx": 39,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "to": "Calverin Car Centre",
+        "text": "Explain the car is safe at the Espoo yard, release is Thu 22 Oct 09:00–11:00 EEST, and agree a new delivery time that day.",
+        "action": "call_customer",
+        "option": 2
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_5edea4ab:40",
+      "idx": 40,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "to": "Calverin Car Centre",
+        "text": "Explain the car is safe at the Espoo yard, release is Thu 22 Oct 09:00–11:00 EEST, and agree a new delivery time that day.",
+        "action": "call_customer",
+        "option": 2
+      },
+      "output": {
+        "data": {
+          "step": 1,
+          "option": 2
+        },
+        "content": "Option 2, step 1 added: Call the customer.",
+        "isError": false
+      },
+      "summary": "Option 2: Call the customer"
+    },
+    {
+      "id": "run_5edea4ab:41",
+      "idx": 41,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "cost_eur": null,
+        "headline": "delivery today missed; yard releases car only Thu 22 Oct",
+        "reject_label": "Reject: tell the customer nothing, I'll decide",
+        "what_happened": "The second driver did not collect the car from the Espoo yard, and the yard says it can release it only on Thu 22 Oct 09:00–11:00 EEST. Today's 11:00–14:00 EEST delivery to Calverin Espoo will be missed, and the customer has no new target yet.",
+        "option_1_label": "Approve: email Calverin proposing delivery Thu 22 Oct 12:00–15:00 EEST",
+        "option_2_label": "Call Calverin instead of emailing",
+        "option_1_effect": "Sends the customer the delay notice with a proposed new window and keeps the offer open; it does not change the order's delivery time or assign a driver.",
+        "option_2_effect": "A person phones the customer to agree the new time; nothing is sent automatically."
+      },
+      "output": null,
+      "summary": "Called propose"
+    },
+    {
+      "id": "run_5edea4ab:42",
+      "idx": 42,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "cost_eur": null,
+        "headline": "delivery today missed; yard releases car only Thu 22 Oct",
+        "reject_label": "Reject: tell the customer nothing, I'll decide",
+        "what_happened": "The second driver did not collect the car from the Espoo yard, and the yard says it can release it only on Thu 22 Oct 09:00–11:00 EEST. Today's 11:00–14:00 EEST delivery to Calverin Espoo will be missed, and the customer has no new target yet.",
+        "option_1_label": "Approve: email Calverin proposing delivery Thu 22 Oct 12:00–15:00 EEST",
+        "option_2_label": "Call Calverin instead of emailing",
+        "option_1_effect": "Sends the customer the delay notice with a proposed new window and keeps the offer open; it does not change the order's delivery time or assign a driver.",
+        "option_2_effect": "A person phones the customer to agree the new time; nothing is sent automatically."
+      },
+      "output": {
+        "data": {
+          "problems": [
+            "One add_finding or add_step call in this turn failed, so the card would be missing what you meant to put on it: The finding uses the internal word \"assignment\"; say it in ops words"
+          ]
+        },
+        "content": "The card was not shown to anyone. Its findings and steps are cleared. Fix these, then add all findings and steps again and call propose, in one turn:\n- One add_finding or add_step call in this turn failed, so the card would be missing what you meant to put on it: The finding uses the internal word \"assignment\"; say it in ops words",
+        "isError": true
+      },
+      "summary": "Card held back: a finding or step in the same turn failed"
+    },
+    {
+      "id": "run_5edea4ab:43",
+      "idx": 43,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The customer's delivery promise in Espoo was Wed 21 Oct 11:00–14:00 EEST.",
+        "source": "E3"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:44",
+      "idx": 44,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The customer's delivery promise in Espoo was Wed 21 Oct 11:00–14:00 EEST.",
+        "source": "E3"
+      },
+      "output": {
+        "data": {
+          "index": 1,
+          "alsoId": null,
+          "entryId": "time_windows:win-xe120091bc74a3767"
+        },
+        "content": "Finding 1 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The customer's delivery promise in Espoo was Wed 21 Oct 11:00–14:00 EEST."
+    },
+    {
+      "id": "run_5edea4ab:45",
+      "idx": 45,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The yard desk says the car and keys are still at its staffed yard and can be released to a replacement driver Thu 22 Oct 09:00–11:00 EEST after an ID and condition check.",
+        "source": "E6"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:46",
+      "idx": 46,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The yard desk says the car and keys are still at its staffed yard and can be released to a replacement driver Thu 22 Oct 09:00–11:00 EEST after an ID and condition check.",
+        "source": "E6"
+      },
+      "output": {
+        "data": {
+          "index": 2,
+          "alsoId": null,
+          "entryId": "messages:msg-x62cdfdf60a47c0a3"
+        },
+        "content": "Finding 2 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The yard desk says the car and keys are still at its staffed yard and can be released to a replacement driver Thu 22 Oct 09:00–11:00 EEST after an ID and condition check."
+    },
+    {
+      "id": "run_5edea4ab:47",
+      "idx": 47,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The second driver, Noel Jarnwell, wrote at 10:47 EEST that they could not reach the yard before its 11:00 cutoff.",
+        "source": "E15"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:48",
+      "idx": 48,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The second driver, Noel Jarnwell, wrote at 10:47 EEST that they could not reach the yard before its 11:00 cutoff.",
+        "source": "E15"
+      },
+      "output": {
+        "data": {
+          "index": 3,
+          "alsoId": null,
+          "entryId": "messages:msg-xb32ac1edf6e6f6b7"
+        },
+        "content": "Finding 3 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The second driver, Noel Jarnwell, wrote at 10:47 EEST that they could not reach the yard before its 11:00 cutoff."
+    },
+    {
+      "id": "run_5edea4ab:49",
+      "idx": 49,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The shift lead's note says the second driver was withdrawn and a new offer is open with no confirmed driver.",
+        "source": "E4"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:50",
+      "idx": 50,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The shift lead's note says the second driver was withdrawn and a new offer is open with no confirmed driver.",
+        "source": "E4"
+      },
+      "output": {
+        "data": {
+          "index": 4,
+          "alsoId": null,
+          "entryId": "order_notes:note-xc3931a3ba6dbb085"
+        },
+        "content": "Finding 4 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The shift lead's note says the second driver was withdrawn and a new offer is open with no confirmed driver."
+    },
+    {
+      "id": "run_5edea4ab:51",
+      "idx": 51,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The shift lead emailed the customer at 11:32 EEST that the window cannot be met and asked for a new acceptable target; no revised target is approved.",
+        "source": "E5"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:52",
+      "idx": 52,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The shift lead emailed the customer at 11:32 EEST that the window cannot be met and asked for a new acceptable target; no revised target is approved.",
+        "source": "E5"
+      },
+      "output": {
+        "data": {
+          "index": 5,
+          "alsoId": null,
+          "entryId": "messages:msg-xa21f0478affd12de"
+        },
+        "content": "Finding 5 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The shift lead emailed the customer at 11:32 EEST that the window cannot be met and asked for a new acceptable target; no revised target is approved."
+    },
+    {
+      "id": "run_5edea4ab:53",
+      "idx": 53,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "Calverin Espoo requires delivery at the staffed rear gate with the guard's signature; no after-hours drop.",
+        "source": "E7"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:54",
+      "idx": 54,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "Calverin Espoo requires delivery at the staffed rear gate with the guard's signature; no after-hours drop.",
+        "source": "E7"
+      },
+      "output": {
+        "data": {
+          "index": 6,
+          "alsoId": null,
+          "entryId": "order_endpoint_details:ep-x5558f354d4a0dcc4"
+        },
+        "content": "Finding 6 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: Calverin Espoo requires delivery at the staffed rear gate with the guard's signature; no after-hours drop."
+    },
+    {
+      "id": "run_5edea4ab:55",
+      "idx": 55,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "to": "Calverin Car Centre",
+        "text": "Your Toyota Corolla (PO-016-0702) arrived safely at our Espoo transfer yard, but the yard can only release it on Thu 22 Oct 09:00–11:00 EEST. Delivery to Calverin Espoo today, 11:00–14:00, cannot be met. We propose delivery on Thu 22 Oct, 12:00–15:00 EEST, at your staffed rear gate. Please confirm this works or tell us another time. We apologise for the delay.",
+        "action": "message_customer",
+        "option": 1
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_5edea4ab:56",
+      "idx": 56,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "to": "Calverin Car Centre",
+        "text": "Your Toyota Corolla (PO-016-0702) arrived safely at our Espoo transfer yard, but the yard can only release it on Thu 22 Oct 09:00–11:00 EEST. Delivery to Calverin Espoo today, 11:00–14:00, cannot be met. We propose delivery on Thu 22 Oct, 12:00–15:00 EEST, at your staffed rear gate. Please confirm this works or tell us another time. We apologise for the delay.",
+        "action": "message_customer",
+        "option": 1
+      },
+      "output": {
+        "data": {
+          "step": 1,
+          "option": 1
+        },
+        "content": "Option 1, step 1 added: Email the customer.",
+        "isError": false
+      },
+      "summary": "Option 1: Email the customer"
+    },
+    {
+      "id": "run_5edea4ab:57",
+      "idx": 57,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep the €125 offer open for the Thu 22 Oct yard slot; check for a confirmed driver and the customer's reply.",
+        "action": "note",
+        "option": 1,
+        "minutes": 120
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_5edea4ab:58",
+      "idx": 58,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep the €125 offer open for the Thu 22 Oct yard slot; check for a confirmed driver and the customer's reply.",
+        "action": "note",
+        "option": 1,
+        "minutes": 120
+      },
+      "output": {
+        "data": {
+          "step": 2,
+          "option": 1
+        },
+        "content": "Option 1, step 2 added: Keep the plan and check again later.",
+        "isError": false
+      },
+      "summary": "Option 1: Keep the plan and check again later"
+    },
+    {
+      "id": "run_5edea4ab:59",
+      "idx": 59,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "to": "Calverin Car Centre",
+        "text": "Explain the car is safe at the Espoo yard, release is Thu 22 Oct 09:00–11:00 EEST, and agree a new delivery time that day.",
+        "action": "call_customer",
+        "option": 2
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_5edea4ab:60",
+      "idx": 60,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "to": "Calverin Car Centre",
+        "text": "Explain the car is safe at the Espoo yard, release is Thu 22 Oct 09:00–11:00 EEST, and agree a new delivery time that day.",
+        "action": "call_customer",
+        "option": 2
+      },
+      "output": {
+        "data": {
+          "step": 1,
+          "option": 2
+        },
+        "content": "Option 2, step 1 added: Call the customer.",
+        "isError": false
+      },
+      "summary": "Option 2: Call the customer"
+    },
+    {
+      "id": "run_5edea4ab:61",
+      "idx": 61,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "cost_eur": null,
+        "headline": "delivery today missed; yard releases car only Thu 22 Oct",
+        "reject_label": "Reject: tell the customer nothing, I'll decide",
+        "what_happened": "The second driver did not collect the car from the Espoo yard, and the yard says it can release it only on Thu 22 Oct 09:00–11:00 EEST. Today's 11:00–14:00 EEST delivery to Calverin Espoo will be missed, and the customer has no new target yet.",
+        "option_1_label": "Approve: email Calverin proposing delivery Thu 22 Oct 12:00–15:00 EEST",
+        "option_2_label": "Call Calverin instead of emailing",
+        "option_1_effect": "Sends the customer the delay notice with a proposed new window and keeps the offer open; it does not change the order's delivery time or assign a driver.",
+        "option_2_effect": "A person phones the customer to agree the new time; nothing is sent automatically."
+      },
+      "output": null,
+      "summary": "Called propose"
+    },
+    {
+      "id": "run_5edea4ab:62",
+      "idx": 62,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "cost_eur": null,
+        "headline": "delivery today missed; yard releases car only Thu 22 Oct",
+        "reject_label": "Reject: tell the customer nothing, I'll decide",
+        "what_happened": "The second driver did not collect the car from the Espoo yard, and the yard says it can release it only on Thu 22 Oct 09:00–11:00 EEST. Today's 11:00–14:00 EEST delivery to Calverin Espoo will be missed, and the customer has no new target yet.",
+        "option_1_label": "Approve: email Calverin proposing delivery Thu 22 Oct 12:00–15:00 EEST",
+        "option_2_label": "Call Calverin instead of emailing",
+        "option_1_effect": "Sends the customer the delay notice with a proposed new window and keeps the offer open; it does not change the order's delivery time or assign a driver.",
+        "option_2_effect": "A person phones the customer to agree the new time; nothing is sent automatically."
+      },
+      "output": {
+        "data": [
+          {
+            "ok": true,
+            "note": "The order form's delivery promise of Wed 21 Oct 11:00–14:00 EEST at Calverin Espoo matches the finding.",
+            "finding": 0
+          },
+          {
+            "ok": true,
+            "note": "The Merivanto Transfer Espoo desk message gives the release to a replacement driver on Thu 22 Oct 09:00–11:00 local time after an ID and condition check, as stated.",
+            "finding": 1
+          },
+          {
+            "ok": true,
+            "note": "Noel Jarnwell's 10:47 EEST message says they had not reached the yard and could not get there before its 11:00 cutoff, as stated.",
+            "finding": 2
+          },
+          {
+            "ok": true,
+            "note": "The shift lead's internal note supports the second assignment and offer being withdrawn and a new offer being open without a confirmed driver, though it is a colleague's status record rather than a system record.",
+            "finding": 3
+          },
+          {
+            "ok": true,
+            "note": "The shift lead's 11:32 EEST message to the customer says the window cannot be met and asks for a new target, and the no-revised-target status comes from the internal note at 11:27.",
+            "finding": 4
+          },
+          {
+            "ok": true,
+            "note": "The site profile requires the staffed rear gate, a guard's receiving signature and no after-hours drop, as stated.",
+            "finding": 5
+          },
+          {
+            "ok": true,
+            "note": "The headline and what happened match the desk, shift lead and driver records: the second driver did not collect the car, release is only Thu 22 Oct 09:00–11:00 EEST, and the Wed 11:00–14:00 EEST window will be missed.",
+            "finding": null
+          },
+          {
+            "ok": false,
+            "note": "The card does not tell the person that the shift lead already emailed the customer at 11:32 EEST that the window cannot be met, and the Approve option's 'Sends the customer the delay notice' implies no notice has gone out yet.",
+            "finding": null
+          },
+          {
+            "ok": true,
+            "note": "Both options do what their labels say and contact the customer only when the person chooses them, with the phone option calling and the approve option emailing.",
+            "finding": null
+          },
+          {
+            "ok": true,
+            "note": "The Reject option tells the customer nothing and matches the card's decision to hold the customer contact.",
+            "finding": null
+          }
+        ],
+        "content": "The verifier checked each claim against its source and found problems. The card was not shown yet, and its findings and steps are cleared. Fix these, then add all findings and steps again and call propose, in one turn:\n- The card does not tell the person that the shift lead already emailed the customer at 11:32 EEST that the window cannot be met, and the Approve option's 'Sends the customer the delay notice' implies no notice has gone out yet.",
+        "isError": true
+      },
+      "summary": "Card sent back by the verifier (1 problem)"
+    },
+    {
+      "id": "run_5edea4ab:63",
+      "idx": 63,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The customer's delivery promise in Espoo was Wed 21 Oct 11:00–14:00 EEST.",
+        "source": "E3"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:64",
+      "idx": 64,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The customer's delivery promise in Espoo was Wed 21 Oct 11:00–14:00 EEST.",
+        "source": "E3"
+      },
+      "output": {
+        "data": {
+          "index": 1,
+          "alsoId": null,
+          "entryId": "time_windows:win-xe120091bc74a3767"
+        },
+        "content": "Finding 1 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The customer's delivery promise in Espoo was Wed 21 Oct 11:00–14:00 EEST."
+    },
+    {
+      "id": "run_5edea4ab:65",
+      "idx": 65,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The yard desk says the car and keys are still at its staffed yard and can be released to a replacement driver Thu 22 Oct 09:00–11:00 EEST after an ID and condition check.",
+        "source": "E6"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:66",
+      "idx": 66,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The yard desk says the car and keys are still at its staffed yard and can be released to a replacement driver Thu 22 Oct 09:00–11:00 EEST after an ID and condition check.",
+        "source": "E6"
+      },
+      "output": {
+        "data": {
+          "index": 2,
+          "alsoId": null,
+          "entryId": "messages:msg-x62cdfdf60a47c0a3"
+        },
+        "content": "Finding 2 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The yard desk says the car and keys are still at its staffed yard and can be released to a replacement driver Thu 22 Oct 09:00–11:00 EEST after an ID and condition check."
+    },
+    {
+      "id": "run_5edea4ab:67",
+      "idx": 67,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The second driver, Noel Jarnwell, wrote at 10:47 EEST that they could not reach the yard before its 11:00 cutoff.",
+        "source": "E15"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:68",
+      "idx": 68,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The second driver, Noel Jarnwell, wrote at 10:47 EEST that they could not reach the yard before its 11:00 cutoff.",
+        "source": "E15"
+      },
+      "output": {
+        "data": {
+          "index": 3,
+          "alsoId": null,
+          "entryId": "messages:msg-xb32ac1edf6e6f6b7"
+        },
+        "content": "Finding 3 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The second driver, Noel Jarnwell, wrote at 10:47 EEST that they could not reach the yard before its 11:00 cutoff."
+    },
+    {
+      "id": "run_5edea4ab:69",
+      "idx": 69,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The shift lead's note says the second driver was withdrawn and a new offer is open with no confirmed driver.",
+        "source": "E4"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:70",
+      "idx": 70,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The shift lead's note says the second driver was withdrawn and a new offer is open with no confirmed driver.",
+        "source": "E4"
+      },
+      "output": {
+        "data": {
+          "index": 4,
+          "alsoId": null,
+          "entryId": "order_notes:note-xc3931a3ba6dbb085"
+        },
+        "content": "Finding 4 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The shift lead's note says the second driver was withdrawn and a new offer is open with no confirmed driver."
+    },
+    {
+      "id": "run_5edea4ab:71",
+      "idx": 71,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "The shift lead already emailed the customer at 11:32 EEST that the window cannot be met and asked for a new acceptable target; no revised target is approved.",
+        "source": "E5"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:72",
+      "idx": 72,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "The shift lead already emailed the customer at 11:32 EEST that the window cannot be met and asked for a new acceptable target; no revised target is approved.",
+        "source": "E5"
+      },
+      "output": {
+        "data": {
+          "index": 5,
+          "alsoId": null,
+          "entryId": "messages:msg-xa21f0478affd12de"
+        },
+        "content": "Finding 5 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: The shift lead already emailed the customer at 11:32 EEST that the window cannot be met and asked for a new acceptable target; no revised target is approved."
+    },
+    {
+      "id": "run_5edea4ab:73",
+      "idx": 73,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_finding",
+      "input": {
+        "text": "Calverin Espoo requires delivery at the staffed rear gate with the guard's signature; no after-hours drop.",
+        "source": "E7"
+      },
+      "output": null,
+      "summary": "Called add_finding"
+    },
+    {
+      "id": "run_5edea4ab:74",
+      "idx": 74,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_finding",
+      "input": {
+        "text": "Calverin Espoo requires delivery at the staffed rear gate with the guard's signature; no after-hours drop.",
+        "source": "E7"
+      },
+      "output": {
+        "data": {
+          "index": 6,
+          "alsoId": null,
+          "entryId": "order_endpoint_details:ep-x5558f354d4a0dcc4"
+        },
+        "content": "Finding 6 added.",
+        "isError": false
+      },
+      "summary": "Noted a finding: Calverin Espoo requires delivery at the staffed rear gate with the guard's signature; no after-hours drop."
+    },
+    {
+      "id": "run_5edea4ab:75",
+      "idx": 75,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "to": "Calverin Car Centre",
+        "text": "Following our earlier email: your Toyota Corolla (PO-016-0702) is safe at our Espoo transfer yard, which can release it on Thu 22 Oct 09:00–11:00 EEST. We propose delivery to your staffed rear gate on Thu 22 Oct, 12:00–15:00 EEST. Please confirm this works or tell us another time. We apologise for the delay.",
+        "action": "message_customer",
+        "option": 1
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_5edea4ab:76",
+      "idx": 76,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "to": "Calverin Car Centre",
+        "text": "Following our earlier email: your Toyota Corolla (PO-016-0702) is safe at our Espoo transfer yard, which can release it on Thu 22 Oct 09:00–11:00 EEST. We propose delivery to your staffed rear gate on Thu 22 Oct, 12:00–15:00 EEST. Please confirm this works or tell us another time. We apologise for the delay.",
+        "action": "message_customer",
+        "option": 1
+      },
+      "output": {
+        "data": {
+          "step": 1,
+          "option": 1
+        },
+        "content": "Option 1, step 1 added: Email the customer.",
+        "isError": false
+      },
+      "summary": "Option 1: Email the customer"
+    },
+    {
+      "id": "run_5edea4ab:77",
+      "idx": 77,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep the €125 offer open for the Thu 22 Oct yard slot; check for a confirmed driver and the customer's reply.",
+        "action": "note",
+        "option": 1,
+        "minutes": 120
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_5edea4ab:78",
+      "idx": 78,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "text": "Keep the €125 offer open for the Thu 22 Oct yard slot; check for a confirmed driver and the customer's reply.",
+        "action": "note",
+        "option": 1,
+        "minutes": 120
+      },
+      "output": {
+        "data": {
+          "step": 2,
+          "option": 1
+        },
+        "content": "Option 1, step 2 added: Keep the plan and check again later.",
+        "isError": false
+      },
+      "summary": "Option 1: Keep the plan and check again later"
+    },
+    {
+      "id": "run_5edea4ab:79",
+      "idx": 79,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "add_step",
+      "input": {
+        "to": "Calverin Car Centre",
+        "text": "Follow up the 11:32 EEST email: the car is safe at the Espoo yard, release is Thu 22 Oct 09:00–11:00 EEST, agree a new delivery time that day.",
+        "action": "call_customer",
+        "option": 2
+      },
+      "output": null,
+      "summary": "Called add_step"
+    },
+    {
+      "id": "run_5edea4ab:80",
+      "idx": 80,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_result",
+      "tool": "add_step",
+      "input": {
+        "to": "Calverin Car Centre",
+        "text": "Follow up the 11:32 EEST email: the car is safe at the Espoo yard, release is Thu 22 Oct 09:00–11:00 EEST, agree a new delivery time that day.",
+        "action": "call_customer",
+        "option": 2
+      },
+      "output": {
+        "data": {
+          "step": 1,
+          "option": 2
+        },
+        "content": "Option 2, step 1 added: Call the customer.",
+        "isError": false
+      },
+      "summary": "Option 2: Call the customer"
+    },
+    {
+      "id": "run_5edea4ab:81",
+      "idx": 81,
+      "at": "2026-10-21T09:36:00.000Z",
+      "type": "tool_call",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "cost_eur": null,
+        "headline": "delivery today missed; yard releases car only Thu 22 Oct",
+        "reject_label": "Reject: tell the customer nothing more, I'll decide",
+        "what_happened": "The second driver did not collect the car from the Espoo yard, which can release it only on Thu 22 Oct 09:00–11:00 EEST, so today's 11:00–14:00 EEST delivery to Calverin Espoo will be missed. The shift lead emailed the customer at 11:32 EEST asking for a new target; no reply or approved target yet.",
+        "option_1_label": "Approve: email Calverin a proposed delivery Thu 22 Oct 12:00–15:00 EEST",
+        "option_2_label": "Call Calverin instead of emailing",
+        "option_1_effect": "Sends a follow-up to the earlier email with a concrete proposed window and keeps the offer open; it does not change the order's delivery time or assign a driver.",
+        "option_2_effect": "A person phones the customer to agree the new time; nothing is sent automatically."
+      },
+      "output": null,
+      "summary": "Called propose"
+    },
+    {
+      "id": "run_5edea4ab:82",
+      "idx": 82,
+      "at": "2026-10-21T09:38:00.000Z",
+      "type": "tool_result",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "cost_eur": null,
+        "headline": "delivery today missed; yard releases car only Thu 22 Oct",
+        "reject_label": "Reject: tell the customer nothing more, I'll decide",
+        "what_happened": "The second driver did not collect the car from the Espoo yard, which can release it only on Thu 22 Oct 09:00–11:00 EEST, so today's 11:00–14:00 EEST delivery to Calverin Espoo will be missed. The shift lead emailed the customer at 11:32 EEST asking for a new target; no reply or approved target yet.",
+        "option_1_label": "Approve: email Calverin a proposed delivery Thu 22 Oct 12:00–15:00 EEST",
+        "option_2_label": "Call Calverin instead of emailing",
+        "option_1_effect": "Sends a follow-up to the earlier email with a concrete proposed window and keeps the offer open; it does not change the order's delivery time or assign a driver.",
+        "option_2_effect": "A person phones the customer to agree the new time; nothing is sent automatically."
+      },
+      "output": {
+        "data": {
+          "cardId": "card_0e2aa7c8-3e3",
+          "verifier": [
+            {
+              "ok": true,
+              "note": "The order form dated Fri 16 Oct 11:20 EEST states the delivery promise as Wed 21 Oct 11:00–14:00 EEST at Calverin Espoo, which matches the finding.",
+              "finding": 0
+            },
+            {
+              "ok": true,
+              "note": "The Merivanto Transfer Espoo desk message of Wed 21 Oct 11:19 EEST says the car and keys are at the staffed yard and can be released to a replacement driver Thu 22 Oct 09:00–11:00 after an ID and condition check, as the finding states.",
+              "finding": 1
+            },
+            {
+              "ok": true,
+              "note": "Noel Jarnwell's message at 10:47 EEST says they had not reached the Espoo transfer yard and could not get there before the 11:00 cutoff, which matches the finding.",
+              "finding": 2
+            },
+            {
+              "ok": true,
+              "note": "The shift lead's internal note is correctly attributed as a note and says the second assignment and offer were withdrawn, the first leg is complete, and a new offer is open with no confirmed driver.",
+              "finding": 3
+            },
+            {
+              "ok": true,
+              "note": "The shift lead's message to the customer at 11:32 EEST says the current window cannot be met, asks for a new acceptable target, and states the order has not been changed, which matches the finding.",
+              "finding": 4
+            },
+            {
+              "ok": true,
+              "note": "The Calverin Espoo site profile requires the staffed rear gate, a guard's receiving signature, and has no after-hours drop, as the finding states.",
+              "finding": 5
+            },
+            {
+              "ok": true,
+              "note": "The headline and what happened match the yard desk, shift lead and driver records on the missed delivery and the Thu 22 Oct 09:00–11:00 EEST release; the records do not show a customer reply, so no reply yet is consistent with them.",
+              "finding": null
+            },
+            {
+              "ok": false,
+              "note": "Option 2's effect says a person phones the customer and nothing is sent automatically, but its does-entry says the code will call the customer, so it is unclear whether an automatic call is made.",
+              "finding": null
+            },
+            {
+              "ok": true,
+              "note": "Option 1 emails the customer only after the person approves it, does not change the delivery time or assign a driver, and its does-entry matches its label.",
+              "finding": null
+            },
+            {
+              "ok": true,
+              "note": "The card wording is plain, with no internal codes or ids in the card text.",
+              "finding": null
+            }
+          ]
+        },
+        "content": "The card is in front of a person now. Your run ends here.",
+        "isError": false
+      },
+      "summary": "Proposed to a person: Approve: email Calverin a proposed delivery Thu 22 Oct 12:00–15:00 EEST"
+    }
+  ],
+  "cards": [
+    {
+      "id": "card_0e2aa7c8-3e3",
+      "orderId": "ord-00702",
+      "runId": "run_5edea4ab",
+      "createdAt": "2026-10-21T09:38:00.000Z",
+      "kind": "decision",
+      "status": "open",
+      "headline": "Toyota Corolla: delivery today missed; yard releases car only Thu 22 Oct",
+      "whatHappened": "The second driver did not collect the car from the Espoo yard, which can release it only on Thu 22 Oct 09:00–11:00 EEST, so today's 11:00–14:00 EEST delivery to Calverin Espoo will be missed. The shift lead emailed the customer at 11:32 EEST asking for a new target; no reply or approved target yet.",
+      "findings": [
+        {
+          "at": "2026-10-16T08:20:00.000Z",
+          "also": null,
+          "text": "The customer's delivery promise in Espoo was Wed 21 Oct 11:00–14:00 EEST.",
+          "source_label": "Calverin Car Centre, order form",
+          "source_entry_id": "time_windows:win-xe120091bc74a3767"
+        },
+        {
+          "at": "2026-10-21T08:19:00.000Z",
+          "also": null,
+          "text": "The yard desk says the car and keys are still at its staffed yard and can be released to a replacement driver Thu 22 Oct 09:00–11:00 EEST after an ID and condition check.",
+          "source_label": "Site, phone",
+          "source_entry_id": "messages:msg-x62cdfdf60a47c0a3"
+        },
+        {
+          "at": "2026-10-21T07:47:00.000Z",
+          "also": null,
+          "text": "The second driver, Noel Jarnwell, wrote at 10:47 EEST that they could not reach the yard before its 11:00 cutoff.",
+          "source_label": "Driver",
+          "source_entry_id": "messages:msg-xb32ac1edf6e6f6b7"
+        },
+        {
+          "at": "2026-10-21T08:27:00.000Z",
+          "also": null,
+          "text": "The shift lead's note says the second driver was withdrawn and a new offer is open with no confirmed driver.",
+          "source_label": "Internal note",
+          "source_entry_id": "order_notes:note-xc3931a3ba6dbb085"
+        },
+        {
+          "at": "2026-10-21T08:32:00.000Z",
+          "also": null,
+          "text": "The shift lead already emailed the customer at 11:32 EEST that the window cannot be met and asked for a new acceptable target; no revised target is approved.",
+          "source_label": "Email from Ops",
+          "source_entry_id": "messages:msg-xa21f0478affd12de"
+        },
+        {
+          "at": "2026-10-16T08:20:00.000Z",
+          "also": null,
+          "text": "Calverin Espoo requires delivery at the staffed rear gate with the guard's signature; no after-hours drop.",
+          "source_label": "Site profile, Calverin Espoo",
+          "source_entry_id": "order_endpoint_details:ep-x5558f354d4a0dcc4"
+        }
+      ],
+      "proposal": {
+        "action": "message_customer",
+        "params": {
+          "to": "Calverin Car Centre",
+          "text": "Following our earlier email: your Toyota Corolla (PO-016-0702) is safe at our Espoo transfer yard, which can release it on Thu 22 Oct 09:00–11:00 EEST. We propose delivery to your staffed rear gate on Thu 22 Oct, 12:00–15:00 EEST. Please confirm this works or tell us another time. We apologise for the delay."
+        },
+        "cost_eur": null,
+        "effect_text": "Sends a follow-up to the earlier email with a concrete proposed window and keeps the offer open; it does not change the order's delivery time or assign a driver.",
+        "requires_approval_reason": "it contacts a customer"
+      },
+      "options": [
+        {
+          "id": "opt-1",
+          "kind": "approve",
+          "label": "Approve: email Calverin a proposed delivery Thu 22 Oct 12:00–15:00 EEST",
+          "steps": [
+            {
+              "action": "message_customer",
+              "params": {
+                "to": "Calverin Car Centre",
+                "text": "Following our earlier email: your Toyota Corolla (PO-016-0702) is safe at our Espoo transfer yard, which can release it on Thu 22 Oct 09:00–11:00 EEST. We propose delivery to your staffed rear gate on Thu 22 Oct, 12:00–15:00 EEST. Please confirm this works or tell us another time. We apologise for the delay."
+              }
+            },
+            {
+              "action": "note",
+              "params": {
+                "text": "Keep the €125 offer open for the Thu 22 Oct yard slot; check for a confirmed driver and the customer's reply.",
+                "minutes": 120
+              }
+            }
+          ],
+          "action": "message_customer",
+          "params": {
+            "to": "Calverin Car Centre",
+            "text": "Following our earlier email: your Toyota Corolla (PO-016-0702) is safe at our Espoo transfer yard, which can release it on Thu 22 Oct 09:00–11:00 EEST. We propose delivery to your staffed rear gate on Thu 22 Oct, 12:00–15:00 EEST. Please confirm this works or tell us another time. We apologise for the delay."
+          },
+          "effect_text": "Sends a follow-up to the earlier email with a concrete proposed window and keeps the offer open; it does not change the order's delivery time or assign a driver."
+        },
+        {
+          "id": "opt-2",
+          "kind": "approve",
+          "label": "Call Calverin instead of emailing",
+          "steps": [
+            {
+              "action": "call_customer",
+              "params": {
+                "to": "Calverin Car Centre",
+                "text": "Follow up the 11:32 EEST email: the car is safe at the Espoo yard, release is Thu 22 Oct 09:00–11:00 EEST, agree a new delivery time that day."
+              }
+            }
+          ],
+          "action": "call_customer",
+          "params": {
+            "to": "Calverin Car Centre",
+            "text": "Follow up the 11:32 EEST email: the car is safe at the Espoo yard, release is Thu 22 Oct 09:00–11:00 EEST, agree a new delivery time that day."
+          },
+          "effect_text": "A person phones the customer to agree the new time; nothing is sent automatically."
+        },
+        {
+          "id": "reject",
+          "kind": "reject",
+          "label": "Reject: tell the customer nothing more, I'll decide",
+          "action": "reject",
+          "params": {}
+        }
+      ],
+      "consequenceAt": "2026-10-21T11:00:00.000Z",
+      "consequenceText": "Customer was promised delivery in Espoo by today 14:00",
+      "severity": "high",
+      "verifierNotes": [
+        {
+          "ok": true,
+          "note": "The order form dated Fri 16 Oct 11:20 EEST states the delivery promise as Wed 21 Oct 11:00–14:00 EEST at Calverin Espoo, which matches the finding.",
+          "finding": 0
+        },
+        {
+          "ok": true,
+          "note": "The Merivanto Transfer Espoo desk message of Wed 21 Oct 11:19 EEST says the car and keys are at the staffed yard and can be released to a replacement driver Thu 22 Oct 09:00–11:00 after an ID and condition check, as the finding states.",
+          "finding": 1
+        },
+        {
+          "ok": true,
+          "note": "Noel Jarnwell's message at 10:47 EEST says they had not reached the Espoo transfer yard and could not get there before the 11:00 cutoff, which matches the finding.",
+          "finding": 2
+        },
+        {
+          "ok": true,
+          "note": "The shift lead's internal note is correctly attributed as a note and says the second assignment and offer were withdrawn, the first leg is complete, and a new offer is open with no confirmed driver.",
+          "finding": 3
+        },
+        {
+          "ok": true,
+          "note": "The shift lead's message to the customer at 11:32 EEST says the current window cannot be met, asks for a new acceptable target, and states the order has not been changed, which matches the finding.",
+          "finding": 4
+        },
+        {
+          "ok": true,
+          "note": "The Calverin Espoo site profile requires the staffed rear gate, a guard's receiving signature, and has no after-hours drop, as the finding states.",
+          "finding": 5
+        },
+        {
+          "ok": true,
+          "note": "The headline and what happened match the yard desk, shift lead and driver records on the missed delivery and the Thu 22 Oct 09:00–11:00 EEST release; the records do not show a customer reply, so no reply yet is consistent with them.",
+          "finding": null
+        },
+        {
+          "ok": false,
+          "note": "Option 2's effect says a person phones the customer and nothing is sent automatically, but its does-entry says the code will call the customer, so it is unclear whether an automatic call is made.",
+          "finding": null
+        },
+        {
+          "ok": true,
+          "note": "Option 1 emails the customer only after the person approves it, does not change the delivery time or assign a driver, and its does-entry matches its label.",
+          "finding": null
+        },
+        {
+          "ok": true,
+          "note": "The card wording is plain, with no internal codes or ids in the card text.",
+          "finding": null
+        }
+      ],
+      "group": null,
+      "origin": "agent"
+    }
+  ],
+  "decisions": []
+}

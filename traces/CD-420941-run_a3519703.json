@@ -1,0 +1,112 @@
+{
+  "run": {
+    "id": "run_a3519703",
+    "orderId": "ord-00941",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:22:00.000Z",
+    "finishedAt": "2026-10-21T09:22:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 3 messages on this order; filed 1 fact and agreement, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 1035,
+    "outputTokens": 1773,
+    "cacheReadTokens": 4842,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00103842,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 3,
+        "input": 1035,
+        "output": 1773,
+        "costUsd": 0.00103842,
+        "cacheRead": 4842,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 3 messages on this order; filed 1 fact and agreement, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420941"
+  },
+  "steps": [
+    {
+      "id": "run_a3519703:0",
+      "idx": 0,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x87b3e65c2d8124f9",
+        "message": "We received the returned trade-in for CD-420177 yesterday. CD-420941 is listed for Friday collection and CD-420413 for Monday. Please send the vehicle references and key contacts separately; the returned car is not one of those outbound releases."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "request",
+        "reason": "The site asks for vehicle references and key contacts to be sent separately for CD-420941, which someone needs to act on under the open release-request task.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a request from Kervandorio Tampere desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_a3519703:1",
+      "idx": 1,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x468ec71a6d048648",
+        "message": "Thank you. We will check the Friday vehicle identity and collection authority for CD-420941 before assigning a driver. The Monday bundle driver for CD-420413 will receive only that car's release instruction after the site confirms it."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The support desk says the Friday vehicle identity and collection authority checks must finish before a driver is assigned, which may threaten the Friday 10:00 pickup slot.",
+        "factIds": [],
+        "urgency": "time",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_a3519703:2",
+      "idx": 2,
+      "at": "2026-10-21T09:22:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x1ec4c9ccb77e5875",
+        "message": "The 177 trade-in has a recorded delivery to this site; that historical receipt does not authorize a new release. The 941 job has no driver yet, while 413 is booked as the first bundle leg. Verify vehicle and key custody per reference; do not use the bundle booking as authority for Friday's car."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Support desk (Bahn) noted that the 177 trade-in delivery receipt and the 413 bundle booking do not authorize release of this car; vehicle and key custody must be verified per reference.",
+            "subject": "Handover"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "other",
+        "reason": "The note says the car's release is not covered by existing records and custody must be verified before Friday's pickup, so someone needs to check it.",
+        "factIds": [
+          "fact_8c02b260-c1f"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Support desk; filed 1 fact; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}
