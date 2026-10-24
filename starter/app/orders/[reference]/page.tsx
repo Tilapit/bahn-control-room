@@ -3,6 +3,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
 import { type CaseFact, type CaseFile, type CasePlace, getCase, timeline } from "@/lib/case"
+import { sweepDecisions } from "@/lib/decisions"
 import { cardsForOrder, orderView } from "@/lib/queue"
 import { liveSignals } from "@/lib/signals"
 import { statusLine } from "@/lib/status"
@@ -24,6 +25,7 @@ const placeName = (place: CasePlace | null) => !place ? "Unknown" : place.kind =
 
 export default async function OrderPage({ params }: Props) {
   await connection()
+  await sweepDecisions()
   const { reference } = await params
   const file = await getCase(reference)
   if (!file) notFound()

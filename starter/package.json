@@ -16,9 +16,12 @@
     "case": "tsx scripts/case.ts",
     "urgency": "tsx scripts/urgency.ts",
     "cards:alerts": "tsx scripts/cards-from-alerts.ts",
-    "screens": "tsx scripts/screens.ts"
+    "screens": "tsx scripts/screens.ts",
+    "agents:investigate": "tsx scripts/investigate.ts",
+    "scenario": "tsx scripts/scenario.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0",
     "@aws-sdk/client-s3": "^3.1155.0",
     "@aws-sdk/s3-request-presigner": "^3.1155.0",
     "dotenv": "^18.0.8",

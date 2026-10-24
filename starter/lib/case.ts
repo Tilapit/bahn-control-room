@@ -12,9 +12,10 @@ import {
 } from "./present/bundle"
 import { label } from "./present/labels"
 import {
-  addresses, alerts, cards, conversations, customers, drivers, facts as factsTable, operationalEvents, orderItems,
+  addresses, alerts, cards, conversations, customers, decisions, drivers, facts as factsTable, operationalEvents, orderItems,
   orders, relatedRecords, searchDocuments, sites, timelineEntries, vehicles,
 } from "./schema"
+import type { ExecutedEffect } from "./schema"
 import { SEARCH_SEPARATOR } from "./timeline/build"
 import { chipLabel, chipWho, sourceLabel } from "./timeline/sources"
 import { clock } from "./time"
@@ -112,7 +113,7 @@ export type CaseFile = {
     alerts: { id: string; signal: string; label: string; severity: string; taken: boolean; owner: string | null; summary: string; at: string; conversationId: string | null; source: SourceRef }[]
     tasks: { id: string; label: string; owner: string | null; dueAt: string | null; summary: string | null; nextAction: string | null; source: SourceRef }[]
     incidents: { id: string; label: string; status: string; owner: string | null; notes: string | null; source: SourceRef }[]
-    cards: { id: string; headline: string; severity: string; createdAt: string }[]
+    cards: { id: string; headline: string; severity: string; createdAt: string; origin: string }[]
     proposals: { id: string; summary: string; state: "waiting for review" | "approved, not carried out yet" | "failed"; detail: string | null; agent: string; source: SourceRef }[]
     claims: { id: string; text: string; source: SourceRef }[]
     conversations: {
@@ -132,6 +133,8 @@ export type CaseFile = {
     bookings: { id: string; kind: string; summary: string; state: "booked" | "lost"; departureAt: string | null; cutoffAt: string | null; zone: string | null; source: SourceRef }[]
     quotes: { id: string; kind: string; summary: string; state: "quote" | "sold out"; checkedAt: string; source: SourceRef }[]
     lastPosition: { at: string; receivedAt: string | null; kmToGo: number | null; eta: string | null; quality: string; source: SourceRef } | null
+    /** Planning range from the pickup city to the ferry terminal. Not live, not a position. */
+    terminalDrive: { from: string; terminal: string; city: string; km: number | null; minutesLow: number | null; minutesHigh: number | null; source: SourceRef } | null
   }
   timeline: TimelineItem[]
 }
@@ -160,7 +163,7 @@ async function loadBundles(orderIds: string[] | null) {
     db.select().from(sites),
     db.select().from(addresses),
     db.select().from(drivers),
-    db.select().from(relatedRecords).where(inArray(relatedRecords.collection, ["operators", "agents", "support_inbox_threads", "ferry_terminals"])),
+    db.select().from(relatedRecords).where(inArray(relatedRecords.collection, ["operators", "agents", "support_inbox_threads", "ferry_terminals", "terminal_road_estimates"])),
     db.select().from(relatedRecords).where(eq(relatedRecords.collection, "order_endpoint_details")),
   ])
   const ids = orderRows.map((order) => order.id)
@@ -273,13 +276,16 @@ type CompileInput = {
   messageThreads: Map<string, string>
   entries: EntryRow[]
   factRows: (typeof factsTable.$inferSelect)[]
-  openCards: { id: string; headline: string; severity: string; createdAt: Date }[]
+  openCards: { id: string; headline: string; severity: string; createdAt: Date; origin: string }[]
   inboxEntries: EntryRow[]
   asOf: Date
   terminals: Map<string, RelatedRow>
+  roadEstimates: RelatedRow[]
+  /** What the Executor did on this order after a person approved it. */
+  effects: ExecutedEffect[]
 }
 
-function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEntries, asOf, terminals }: CompileInput): CaseFile {
+function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEntries, asOf, terminals, roadEstimates, effects }: CompileInput): CaseFile {
   const { dir } = bundle
   const entryById = new Map(entries.map((entry) => [entry.id, entry]))
   const ref = (entryId: string, fallbackLabel?: string): SourceRef => {
@@ -421,6 +427,21 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
     keyTimes.push({ key: "delivered", label: "Delivered", start: deliveredAt, end: null, zone: delivery?.zone ?? null, place: delivery?.city ?? null, note: null, source: ref(`operational_events:${event?.id}`, "Driver app") })
   }
 
+  // A time a person changed through an approved card replaces the recorded one.
+  for (const window of effects.flatMap((effect) => effect.windows)) {
+    const index = keyTimes.findIndex((time) => time.key === window.key || (window.key === "pickup_slot" && time.key === "pickup_planned"))
+    const changed: KeyTime = {
+      key: window.key, label: window.key === "pickup_slot" ? "Pickup slot" : "Delivery promise", start: window.start, end: window.end, zone: window.zone,
+      place: window.place, note: "Changed by Ops through the control room", source: ref(window.entryId, "Ops"),
+    }
+    if (index >= 0) keyTimes[index] = changed
+    else keyTimes.push(changed)
+  }
+  for (const booking of effects.flatMap((effect) => effect.bookings)) {
+    if (booking.kind !== "Ferry" || !booking.cutoffAt) continue
+    keyTimes.push({ key: "ferry_cutoff", label: "Ferry check-in closes", start: booking.cutoffAt, end: null, zone: booking.zone, place: "Hamburg", note: "Booked through the control room (simulated)", source: ref(booking.entryId, "Executor") })
+  }
+
   // ---- facts ------------------------------------------------------------------
   const historicalBoundary = (subject: string) => subject.includes("transfer yard")
     ? !!releasedFromTransfer
@@ -525,7 +546,12 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
       state: lost ? "lost" as const : "booked" as const, departureAt: str(d.departure_at), cutoffAt: str(d.check_in_cutoff_at),
       zone: str(terminal?.details.timezone), source: ref(`travel_reservations:${row.id}`),
     }
-  }).sort((a, b) => String(a.departureAt).localeCompare(String(b.departureAt)))
+  })
+  // Simulated bookings made by the Executor after a person approved them.
+  for (const booking of effects.flatMap((effect) => effect.bookings)) {
+    bookings.push({ id: booking.entryId, kind: booking.kind, summary: booking.summary, state: "booked", departureAt: booking.departureAt, cutoffAt: booking.cutoffAt, zone: booking.zone, source: ref(booking.entryId, "Executor") })
+  }
+  bookings.sort((a, b) => String(a.departureAt).localeCompare(String(b.departureAt)))
   const quotes = rows(bundle, "travel_options").map((row) => ({
     id: row.id, kind: travelLabel(str(row.details.kind)), summary: entryById.get(`travel_options:${row.id}`)?.summary ?? "Quote",
     state: row.details.status === "SOLD_OUT" ? "sold out" as const : "quote" as const, checkedAt: String(row.details.checked_at ?? ""),
@@ -537,6 +563,17 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
     at: String(lastObservation.details.observed_at), receivedAt: str(lastObservation.details.received_at),
     kmToGo: num(lastObservation.details.distance_remaining_km), eta: str(lastObservation.details.estimated_delivery_at),
     quality: String(lastObservation.details.location_quality ?? "COARSE").toLowerCase(), source: ref(`tracking_observations:${lastObservation.id}`, "GPS"),
+  } : null
+
+  // The drive to the terminal of the booked (or else quoted) ferry, from the planning matrix.
+  const ferryRow = rows(bundle, "travel_reservations").find((row) => row.details.kind === "FERRY" && row.details.status === "BOOKED")
+  const terminalId = str(ferryRow?.details.origin_terminal_id) ?? (rows(bundle, "travel_options").some((row) => row.details.kind === "FERRY" && String(row.details.from_city ?? "").startsWith("West Baltic")) ? "terminal-west-baltic" : null)
+  const estimate = terminalId ? roadEstimates.find((row) => row.details.to_terminal_id === terminalId && row.details.from_city === pickup?.city) : undefined
+  const terminal = terminalId ? terminals.get(terminalId) : undefined
+  const terminalDrive = estimate && terminal ? {
+    from: String(estimate.details.from_city), terminal: String(terminal.details.name ?? "").replace(" Vehicle Terminal", " terminal"), city: String(terminal.details.city ?? ""),
+    km: num(estimate.details.approximate_road_distance_km), minutesLow: num(estimate.details.drive_minutes_low), minutesHigh: num(estimate.details.drive_minutes_high),
+    source: ref(`terminal_road_estimates:${estimate.id}@${bundle.order.id}`, "Route planning table"),
   } : null
 
   return {
@@ -564,7 +601,7 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
     facts: factList,
     open: {
       alerts: openAlerts, tasks, incidents,
-      cards: openCards.map((card) => ({ id: card.id, headline: card.headline, severity: card.severity, createdAt: iso(card.createdAt) })),
+      cards: openCards.map((card) => ({ id: card.id, headline: card.headline, severity: card.severity, createdAt: iso(card.createdAt), origin: card.origin })),
       proposals, claims, conversations: openThreads, supportInbox, documents,
     },
     plan: {
@@ -573,7 +610,7 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
         state: offer.details.status === "PUBLISHED" ? "offered to drivers, not taken yet" : offer.details.status === "ACCEPTED" ? "taken by a driver" : label(str(offer.details.status)).toLowerCase(),
         fee: money(num(offer.details.fee_cents), str(offer.details.currency)) || null, at: str(offer.details.accepted_at) ?? str(offer.details.published_at),
       } : null,
-      bookings, quotes, lastPosition,
+      bookings, quotes, lastPosition, terminalDrive,
     },
     timeline: [...entries].reverse().slice(0, 40).map(toItem),
   }
@@ -593,18 +630,21 @@ export async function getCases(orderIds?: string[]): Promise<CaseFile[]> {
   const { bundles, shared } = await loadBundles(orderIds ?? null)
   if (!bundles.length) return []
   const ids = bundles.map((bundle) => bundle.order.id)
-  const [entryRows, factRows, cardRows, threadMessages] = await Promise.all([
+  const [entryRows, factRows, cardRows, threadMessages, effectRows] = await Promise.all([
     db.select().from(timelineEntries).where(inArray(timelineEntries.orderId, ids)).orderBy(asc(timelineEntries.occurredAt), asc(timelineEntries.id)),
     db.select().from(factsTable).where(inArray(factsTable.orderId, ids)),
-    db.select({ id: cards.id, orderId: cards.orderId, headline: cards.headline, severity: cards.severity, createdAt: cards.createdAt })
+    db.select({ id: cards.id, orderId: cards.orderId, headline: cards.headline, severity: cards.severity, createdAt: cards.createdAt, origin: cards.origin })
       .from(cards).where(and(inArray(cards.orderId, ids), eq(cards.status, "open"))),
     db.execute<{ id: string; conversation_id: string }>(sql`select id, conversation_id from messages`),
+    db.select({ orderId: cards.orderId, effect: decisions.executedEffect }).from(decisions).innerJoin(cards, eq(cards.id, decisions.cardId))
+      .where(and(inArray(cards.orderId, ids), isNull(decisions.undoneAt))),
   ])
   const messageThreads = new Map([...threadMessages].map((row) => [row.id, row.conversation_id]))
   const inboxEntryRows = await db.select().from(timelineEntries).where(and(isNull(timelineEntries.orderId), sql`${timelineEntries.evidence}->>'table' = 'support_inbox_messages'`))
   const inboxMessages = await db.select({ id: relatedRecords.id, details: relatedRecords.details }).from(relatedRecords).where(eq(relatedRecords.collection, "support_inbox_messages"))
   const threadOfInbox = new Map(inboxMessages.map((row) => [row.id, String(row.details.thread_id ?? "")]))
   const terminals = new Map(shared.filter((row) => row.collection === "ferry_terminals").map((row) => [row.id, { id: row.id, details: row.details }]))
+  const roadEstimates = shared.filter((row) => row.collection === "terminal_road_estimates").map((row) => ({ id: row.id, details: row.details }))
   const by = <T extends { orderId: string | null }>(list: T[]) => {
     const map = new Map<string, T[]>()
     for (const item of list) if (item.orderId) { const bucket = map.get(item.orderId) ?? []; bucket.push(item); map.set(item.orderId, bucket) }
@@ -616,7 +656,8 @@ export async function getCases(orderIds?: string[]): Promise<CaseFile[]> {
   return bundles.map((bundle) => {
     const threadIds = new Set(bundle.inboxThreads.map((thread) => thread.id))
     return compile({
-      bundle, asOf, terminals, messageThreads,
+      bundle, asOf, terminals, roadEstimates, messageThreads,
+      effects: effectRows.filter((row) => row.orderId === bundle.order.id && row.effect).map((row) => row.effect as ExecutedEffect),
       entries: entriesByOrder.get(bundle.order.id) ?? [],
       factRows: factsByOrder.get(bundle.order.id) ?? [],
       openCards: cardsByOrder.get(bundle.order.id) ?? [],
@@ -693,4 +734,11 @@ export async function search(query: string, limit = 20): Promise<SearchHit[]> {
       snippet,
     }
   })
+}
+
+/** Timeline entries by id, for checking what a card cites. */
+export async function entriesById(ids: string[]): Promise<Map<string, TimelineItem>> {
+  if (!ids.length) return new Map()
+  const found = await db.select().from(timelineEntries).where(inArray(timelineEntries.id, [...new Set(ids)]))
+  return new Map(found.map((entry) => [entry.id, toItem(entry)]))
 }

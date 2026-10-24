@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { connection } from "next/server"
+import { sweepDecisions } from "@/lib/decisions"
 import { getQueue, type QueueCounts } from "@/lib/queue"
 import { Queue } from "./ui/queue"
 
@@ -15,6 +16,7 @@ function countsLine(counts: QueueCounts): string {
 
 export default async function ForYou() {
   await connection()
+  await sweepDecisions()
   const { now, items, counts } = await getQueue()
   const others = [
     counts.handling ? `Agents are handling ${counts.handling} orders.` : null,

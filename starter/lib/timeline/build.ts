@@ -319,7 +319,8 @@ export function buildTimeline(data: DatasetRows): { entries: NewEntry[]; facts: 
       summary = `Hotel booked for the driver in ${str(d.city) ?? "the pickup city"}: ${at(d.check_in_at ?? d.departure_at, zone)} to ${at(d.check_out_at ?? d.expected_arrival_at, zone)}`
       body = ref ? `Booking ${ref}. A booking does not prove the driver stayed there.` : null
     } else {
-      const zone = zoneOfCity(d.from_city)
+      // A city outside the address records falls back to the pickup's zone; positioning travel heads there.
+      const zone = zoneOfCity(d.from_city) ?? (row.orderId ? orderZone(row.orderId, "pickup") : null)
       summary = `${travelLabel(kind)} booked for the driver: ${str(d.from_city) ?? "?"} to ${str(d.to_city) ?? "?"}, departs ${at(d.departure_at, zone)}`
       body = ref ? `Booking ${ref}. A ticket does not prove the driver travelled.` : null
     }
@@ -339,7 +340,7 @@ export function buildTimeline(data: DatasetRows): { entries: NewEntry[]; facts: 
     if (!row.orderId) continue
     const kind = str(d.kind)
     const soldOut = d.status === "SOLD_OUT"
-    const zone = kind === "FERRY" ? terminalZone(null, d.from_city) : zoneOfCity(d.from_city)
+    const zone = kind === "FERRY" ? terminalZone(null, d.from_city) : zoneOfCity(d.from_city) ?? orderZone(row.orderId, "pickup")
     const price = money(num(d.quote_cents), str(d.currency))
     const summary = soldOut
       ? `${travelLabel(kind)} sold out: the ${at(d.departure_at, zone)} ${kind === "FERRY" ? "sailing" : "departure"} has no ${kind === "FERRY" ? "vehicle space" : "seats"}`
@@ -350,6 +351,31 @@ export function buildTimeline(data: DatasetRows): { entries: NewEntry[]; facts: 
       kind: "quote", summary, body: [sentence(str(d.capacity_note)), kind === "FERRY" && d.check_in_cutoff_at ? `Check-in would close ${at(str(d.check_in_cutoff_at), zone)}.` : null, `Checked ${at(str(d.checked_at), zone)}; availability can change.`].filter(Boolean).join(" ") || null,
       // A sold-out check has no price: it is not a quote, and not a booking.
       status: soldOut ? null : "quote", visibility: "internal", evidence: { table: "travel_options", id: row.id },
+    })
+  }
+
+  // Planning estimate of the drive from the pickup city to the ferry terminal, for orders that book or quote a
+  // crossing. A range from a planning table: not live traffic and not a position, but a fact an agent can cite.
+  const roadEstimates = related("terminal_road_estimates")
+  const terminalByName = (name: unknown) => [...terminals.values()].find((terminal) => String(name ?? "").toLowerCase().startsWith(String(terminal.details.name ?? "").toLowerCase().replace(" vehicle terminal", "")))
+  for (const order of data.orders) {
+    const reservation = related("travel_reservations").find((row) => row.orderId === order.id && row.details.kind === "FERRY")
+    const quote = related("travel_options").find((row) => row.orderId === order.id && row.details.kind === "FERRY")
+    const terminal = terminals.get(String(reservation?.details.origin_terminal_id ?? "")) ?? terminalByName(quote?.details.from_city)
+    const city = addresses.get(String(order.details.pickup_address_id ?? ""))?.city
+    const estimate = terminal && roadEstimates.find((row) => row.details.to_terminal_id === terminal.id && row.details.from_city === city)
+    if (!terminal || !estimate) continue
+    const e = estimate.details
+    // The whole route's length, from the active plan's segments, so km to go can be set against the terminal distance.
+    const planId = str(order.details.active_plan_id)
+    const routeKm = related("transport_segments").filter((row) => row.orderId === order.id && row.details.plan_id === planId).reduce((sum, row) => sum + (num(row.details.distance_km) ?? 0), 0)
+    const hours = (minutes: unknown) => { const m = num(minutes) ?? 0; return m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m / 60} h` }
+    push({
+      id: `terminal_road_estimates:${estimate.id}@${order.id}`, orderId: order.id, occurredAt: order.createdAt,
+      source: "order", channel: "planning_estimate", authorType: "system", authorLabel: "Route planning table", kind: "fact",
+      summary: `Planning estimate: ${city} to ${String(terminal.details.name).replace(" Vehicle Terminal", " terminal")} in ${terminal.details.city} is about ${num(e.approximate_road_distance_km) ?? "?"} km, ${hours(e.drive_minutes_low)} to ${hours(e.drive_minutes_high)} of driving${routeKm ? `; the whole route is ${routeKm.toLocaleString("en-GB")} km` : ""}`,
+      body: "A planning range from city centre to terminal. It leaves out breaks, traffic, vehicle handling and check-in, and it is not a live ETA or a position.",
+      visibility: "internal", evidence: { table: "terminal_road_estimates", id: estimate.id },
     })
   }
 

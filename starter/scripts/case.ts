@@ -1,7 +1,10 @@
-// npm run case CD-420322 [--json]
+// npm run case CD-420322 [--json | --agent]
 // Prints the compiled case file the agents and the order screen read.
+// --agent prints the compact text the agents' get_case tool returns.
 
 import "dotenv/config"
+import { caseText } from "@/lib/agents/case-text"
+import { Refs } from "@/lib/agents/refs"
 import { type CaseFile, getCase } from "@/lib/case"
 import { closeDb } from "@/lib/db"
 import { at, range } from "@/lib/time"
@@ -62,10 +65,11 @@ function print(file: CaseFile) {
 async function main() {
   const args = process.argv.slice(2)
   const reference = args.find((arg) => !arg.startsWith("--"))
-  if (!reference) throw new Error("Usage: npm run case CD-420322 [--json]")
+  if (!reference) throw new Error("Usage: npm run case CD-420322 [--json | --agent]")
   const file = await getCase(reference)
   if (!file) throw new Error(`No order ${reference}`)
   if (args.includes("--json")) console.log(JSON.stringify(file, null, 2))
+  else if (args.includes("--agent")) console.log(caseText(file, new Refs()))
   else print(file)
 }
 

@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm"
-import { boolean, customType, index, integer, jsonb, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core"
+import { boolean, customType, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core"
 
 export const datasetMetadata = pgTable("dataset_metadata", {
   id: text("id").primaryKey(),
@@ -190,11 +190,19 @@ export const agentRuns = pgTable("agent_runs", {
   trigger: text("trigger").notNull(),
   startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
   finishedAt: timestamp("finished_at", { withTimezone: true }),
-  status: text("status").notNull(), // running | waiting_driver | waiting_person | done | failed
+  status: text("status").notNull(), // running | waiting_driver | waiting_site | waiting_person | done | failed
   outcomeSummary: text("outcome_summary"),
   nextCheckAt: timestamp("next_check_at", { withTimezone: true }),
   inputTokens: integer("input_tokens").notNull().default(0),
   outputTokens: integer("output_tokens").notNull().default(0),
+  cacheReadTokens: integer("cache_read_tokens").notNull().default(0),
+  cacheWriteTokens: integer("cache_write_tokens").notNull().default(0),
+  // Computed in code from the prices in lib/models.ts, per model call.
+  costUsd: doublePrecision("cost_usd").notNull().default(0),
+  // Why the run moved to a stronger model, when it did ("Driver's words and GPS disagree").
+  escalation: text("escalation"),
+  // A paused run's conversation and the questions it waits on, so a reply can resume it.
+  state: jsonb("state").$type<Record<string, unknown>>(),
 }, (table) => [index("agent_runs_order_idx").on(table.orderId, table.startedAt)])
 
 export const agentSteps = pgTable("agent_steps", {
@@ -209,9 +217,24 @@ export const agentSteps = pgTable("agent_steps", {
   summary: text("summary"),
 }, (table) => [index("agent_steps_run_idx").on(table.runId, table.idx)])
 
-export type CardFinding = { text: string; source_entry_id: string; source_label: string; at: string }
-export type CardProposal = { action: string; params: Record<string, unknown>; effect_text: string; requires_approval_reason: string | null }
-export type CardOption = { id: string; label: string; action: string; params: Record<string, unknown> }
+export type CardFinding = {
+  text: string; source_entry_id: string; source_label: string; at: string
+  /** A second record, when the finding combines two (GPS km to go against a planning distance). */
+  also?: { source_entry_id: string; source_label: string; at: string } | null
+}
+export type CardProposal = { action: string; params: Record<string, unknown>; effect_text: string; requires_approval_reason: string | null; cost_eur?: number | null }
+/** One thing the Executor does when an option is approved. An option can hold several (ferry + hotel). */
+export type CardStep = { action: string; params: Record<string, unknown> }
+export type CardOption = {
+  id: string; label: string; action: string; params: Record<string, unknown>
+  /** Agent cards: everything the option does, in order. `action`/`params` repeat the first step. */
+  steps?: CardStep[]
+  /** What happens when this option is chosen, in one sentence. */
+  effect_text?: string
+  /** approve | reject | answer: how the decision is recorded. */
+  kind?: "approve" | "reject" | "answer"
+}
+export type VerifierNote = { finding: number | null; ok: boolean; note: string }
 
 export const cards = pgTable("cards", {
   id: text("id").primaryKey(),
@@ -228,7 +251,7 @@ export const cards = pgTable("cards", {
   consequenceAt: timestamp("consequence_at", { withTimezone: true }),
   consequenceText: text("consequence_text"),
   severity: text("severity").notNull(), // safety | high | normal
-  verifierNotes: jsonb("verifier_notes").$type<unknown[]>(),
+  verifierNotes: jsonb("verifier_notes").$type<VerifierNote[]>(),
   // alert: a temporary card built by code from a dataset alert (phase 2); agent: written by an agent run.
   origin: text("origin").notNull().default("agent"),
 }, (table) => [index("cards_status_idx").on(table.status, table.orderId)])
@@ -240,9 +263,24 @@ export const decisions = pgTable("decisions", {
   actor: text("actor").notNull(),
   choice: text("choice").notNull(),
   replyText: text("reply_text"),
-  executedEffect: jsonb("executed_effect"),
+  executedEffect: jsonb("executed_effect").$type<ExecutedEffect>(),
   undoneAt: timestamp("undone_at", { withTimezone: true }),
+  // The undo window is a person's reaction time, so it is measured in real seconds (wall clock), not on the
+  // simulated clock. Everything the decision records (decided_at, the effect's entries) uses the simulated clock.
+  executeAfter: timestamp("execute_after", { withTimezone: true }),
+  // Set when the decision was carried out: the Executor ran, the agent got the reply, or the rejection was filed.
+  finalizedAt: timestamp("finalized_at", { withTimezone: true }),
 }, (table) => [index("decisions_card_idx").on(table.cardId)])
+
+/** What the Executor did for one approved option, step by step. */
+export type ExecutedEffect = {
+  ok: boolean
+  steps: { action: string; ok: boolean; summary: string; entryId: string | null; error?: string }[]
+  /** Simulated bookings made, shown on the order with the dataset's reservations. */
+  bookings: { kind: string; summary: string; departureAt: string | null; cutoffAt: string | null; zone: string | null; entryId: string; reference: string; priceCents: number | null }[]
+  /** Pickup or delivery windows that were changed. */
+  windows: { key: "pickup_slot" | "delivery_promise"; start: string; end: string | null; zone: string | null; place: string | null; entryId: string }[]
+}
 
 export const policies = pgTable("policies", {
   action: text("action").primaryKey(),
@@ -285,3 +323,9 @@ export const searchDocuments = pgTable("search_documents", {
   tsv: tsvector("tsv").generatedAlwaysAs(sql`to_tsvector('simple', content)`),
 }, (table) => [index("search_documents_tsv_idx").using("gin", table.tsv)])
 
+
+/** Demo switches (SPEC 8.6), such as whether the simulated driver answers agent questions. Key/value. */
+export const demoSettings = pgTable("demo_settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").$type<unknown>().notNull(),
+})

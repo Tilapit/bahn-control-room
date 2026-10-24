@@ -3,6 +3,7 @@ import { connection } from "next/server"
 import { now } from "@/lib/clock"
 import { openCardCount } from "@/lib/queue"
 import { at } from "@/lib/time"
+import { LiveRefresh } from "./ui/live-refresh"
 import { Nav } from "./ui/nav"
 import { TopSearch } from "./ui/top-search"
 import "./globals.css"
@@ -29,7 +30,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <aside className="rail">
           <div className="brand"><span className="brand-mark" aria-hidden="true">B</span>Control Room</div>
           <Nav openCards={openCards} />
-          <div className="rail-foot"><b>Fictional data</b>No real people, cars or bookings.</div>
+          <div className="rail-foot"><b>Fictional data</b>No real people, cars or bookings.<a className="rail-demo" href="/demo">Demo controls</a></div>
         </aside>
         <div className="main">
           <header className="topbar">
@@ -40,6 +41,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           </header>
           {children}
         </div>
+        <LiveRefresh />
       </div>
     </body>
   </html>
