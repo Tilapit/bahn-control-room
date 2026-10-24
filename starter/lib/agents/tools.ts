@@ -43,6 +43,8 @@ export type RunCtx = {
   group: string[]
   /** Why the run started: a Monitor rule's finding, a message, the backfill. */
   trigger: string
+  /** Set by the Monitor's no-reply rule: nobody answered since this time ("10:42"); the card must say so. */
+  noReplySince: string | null
 }
 
 export type DraftFinding = { text: string; source: string; also: string | null; entryId: string; alsoId: string | null }

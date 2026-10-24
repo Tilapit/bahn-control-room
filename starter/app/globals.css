@@ -480,3 +480,27 @@ a.filter { text-decoration: none; }
 .run-link:hover { color: var(--text-2); }
 /* Red is for safety only: a decision that did not save reads in amber. */
 .failed-note { color: var(--amber); }
+.suggestion { display: grid; gap: 8px; padding: 12px 14px; margin-bottom: 18px; border-radius: var(--radius); background: var(--raised); border: 1px solid var(--line); font-size: 14px; }
+.suggestion > p:first-child { font-weight: 500; }
+.suggestion-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.suggestion.done { font-weight: 400; color: var(--text-2); }
+
+/* ---------- Settings ---------- */
+
+.lead { font-size: 14px; color: var(--text-2); max-width: 72ch; margin: 4px 0 22px; }
+.permission-group { margin-bottom: 26px; }
+.permission-group > .note { margin: -6px 0 8px; }
+.permissions { border-top: 1px solid var(--line); }
+.permissions li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.permission-label { display: grid; gap: 1px; }
+.permission-label .sub, .changes .sub, .cases .sub { font-size: 13px; color: var(--text-2); }
+.permission-control { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.limit { font-size: 13px; color: var(--text-2); display: inline-flex; align-items: center; gap: 2px; }
+.limit input { width: 72px; height: 32px; padding: 0 8px; border-radius: var(--radius-s); border: 1px solid var(--line-2); background: var(--surface); }
+.changes { display: grid; }
+.changes li { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.cases { border-top: 1px solid var(--line); }
+.cases li { display: grid; gap: 3px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.case-top { display: flex; gap: 10px; align-items: baseline; font-size: 13px; }
+.case-line { font-weight: 500; }
+.demo-select.small { height: 28px; font-size: 13px; }

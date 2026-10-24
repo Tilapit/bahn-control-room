@@ -63,6 +63,8 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
   const customer = order.customer
   const tone = urgency.safety ? "safety" : urgency.timeRisk ? "time" : ""
   const fromAgent = !!card.runId
+  // Built by a Monitor rule in code (a driver cancelled a gig): a proposal, but no agent waits for a reply.
+  const fromMonitor = card.origin === "monitor"
   const proposalSource = card.proposal?.params as { source_entry_id?: string; source_label?: string; source_at?: string } | undefined
   const primary = fromAgent ? card.options.find((option) => option.kind !== "reject") ?? null : null
   const others = fromAgent ? card.options.filter((option) => option !== primary && option.kind !== "reject") : []
@@ -104,7 +106,7 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
           {urgency.relative && <span className={`when rel ${tone}`}>· {urgency.relative}</span>}
         </span>
         {proposalLine && !open && <span className="row-proposal">
-          <b>{fromAgent ? (card.kind === "question" ? "Agent asks: " : "Agent proposes: ") : "Next step noted: "}</b>{proposalLine}
+          <b>{fromMonitor ? "Proposed by code: " : fromAgent ? (card.kind === "question" ? "Agent asks: " : "Agent proposes: ") : "Next step noted: "}</b>{proposalLine}
         </span>}
       </span>
     </button>}
@@ -145,7 +147,7 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
         </p>}
       </section>}
       {fromAgent && primary && <section>
-        <h3>{card.kind === "question" ? "Agent asks you" : "Agent proposes"}</h3>
+        <h3>{fromMonitor ? "Proposed by code" : card.kind === "question" ? "Agent asks you" : "Agent proposes"}</h3>
         <div className="proposal">
           <OptionDetail option={primary} customer={customer} />
           {(card.proposal?.cost_eur || card.proposal?.requires_approval_reason) && <p className="note">
@@ -185,7 +187,8 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
       {!onOrderPage && <Link className="btn small quiet" href={orderHref(order.reference)}>Open order<Icon name="arrow" size={14} /></Link>}
       {error && <span className="note failed-note" role="alert">{error}</span>}
     </div>}
-    {fromAgent && open && <div className="row-reply">
+    {fromMonitor && open && <p className="note row-reply">Built by the Monitor: a rule in code noticed it and wrote this card from the records. No model was used.</p>}
+    {fromAgent && !fromMonitor && open && <div className="row-reply">
       <form className="reply" onSubmit={(event) => { event.preventDefault(); if (reply.trim()) decide("reply", "Reply sent to the agent", reply.trim()) }}>
         <input value={reply} onChange={(event) => setReply(event.target.value)} placeholder="Or tell the agent what to do instead" aria-label="Reply to the agent" />
         <button type="submit" className="btn small" disabled={!reply.trim() || !!busy}>Send to agent</button>

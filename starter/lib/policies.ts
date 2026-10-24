@@ -2,9 +2,10 @@
 // the card builder ask this module, never the prompt. Levels can be raised as
 // agents earn trust, except contact with a customer, which never becomes automatic.
 
+import { randomUUID } from "node:crypto"
 import { eq, sql } from "drizzle-orm"
 import { db } from "./db"
-import { policies } from "./schema"
+import { policies, policyChanges } from "./schema"
 
 export type Level = "auto" | "approval" | "never"
 
@@ -59,19 +60,41 @@ export function describe(action: string): PolicyAction | null {
   return BY_ACTION.get(action) ?? null
 }
 
-/** The level that applies now. Unknown actions are never allowed; customer contact is never automatic. */
-export async function levelFor(action: string): Promise<Level> {
+/**
+ * The level that applies now. Unknown actions are never allowed; customer contact is never automatic.
+ * An automatic action with a cost limit needs approval again when it costs more, or when its cost is not known.
+ */
+export async function levelFor(action: string, costEur?: number | null): Promise<Level> {
   const known = BY_ACTION.get(action)
   if (!known) return "never"
   const [row] = await db.select().from(policies).where(eq(policies.action, action)).limit(1)
   const level = (row?.level ?? known.level) as Level
-  if (known.customerContact && level === "auto") return "approval"
+  if ((known.customerContact || NEVER_AUTO.has(action)) && level === "auto") return "approval"
+  if (level === "auto" && row?.autoLimitEur != null && (costEur == null || costEur > row.autoLimitEur)) return "approval"
   return level
 }
 
+/** Never automatic, whatever the table says: contact with a customer, and the date a customer was promised. */
+export const NEVER_AUTO = new Set(["message_customer", "call_customer", "change_delivery_time"])
+
+/** Change what an agent may do on its own. Logged with who and why; customer contact cannot become automatic. */
+export async function setPolicy(action: string, level: Level, options: { limitEur?: number | null; actor: string; reason: string; at: Date }): Promise<void> {
+  const known = BY_ACTION.get(action)
+  if (!known) throw new Error(`Unknown action ${action}`)
+  if (level === "auto" && (known.customerContact || NEVER_AUTO.has(action))) throw new Error(`${known.label} always needs a person.`)
+  await ensurePolicies()
+  const [row] = await db.select().from(policies).where(eq(policies.action, action)).limit(1)
+  const limit = level === "auto" ? options.limitEur ?? null : null
+  await db.update(policies).set({ level, autoLimitEur: limit }).where(eq(policies.action, action))
+  await db.insert(policyChanges).values({
+    id: `pol_${randomUUID().slice(0, 12)}`, at: options.at, action, fromLevel: row?.level ?? known.level, toLevel: level, limitEur: limit,
+    actor: options.actor, reason: options.reason,
+  })
+}
+
 /** The strictest level across several steps of one option. */
-export async function levelForAll(actions: string[]): Promise<Level> {
-  const levels = await Promise.all(actions.map(levelFor))
+export async function levelForAll(actions: string[], costs: (number | null)[] = []): Promise<Level> {
+  const levels = await Promise.all(actions.map((action, index) => levelFor(action, costs[index])))
   if (levels.includes("never")) return "never"
   if (levels.includes("approval")) return "approval"
   return "auto"

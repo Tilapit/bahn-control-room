@@ -10,6 +10,8 @@ type State = {
   start: string
   autoReply: boolean
   replay: { scenario: string; order: string; startedAt: string; durationMs: number } | null
+  answers: Record<string, "always" | "sometimes" | "never">
+  threshold: number
   driver: string | null
   thread: { id: string; at: string; who: string; mine: boolean; text: string; simulated: boolean }[]
   runs: { id: string; agent: string; status: string; outcome: string | null; startedAt: string; reference: string | null }[]
@@ -78,6 +80,14 @@ export function DemoControls({ events, orders, defaultOrder, live }: { events: (
         <input type="checkbox" checked={state?.autoReply ?? true} onChange={(event) => post("/api/demo/settings", { autoReply: event.target.checked }, "switch")} />
         <span>The simulated driver and sites answer agent questions by themselves. Turn off to answer as the driver on the phone below.</span>
       </label>
+      <p className="note">When an agent waits for an answer, the Monitor follows up after 15 simulated minutes and hands it to a person 30 minutes later. Use +15 min to see it.</p>
+      <label className="demo-switch">
+        <span>For you suggests letting the agent act alone after</span>
+        <select className="demo-select" value={state?.threshold ?? 5} onChange={(event) => post("/api/demo/settings", { autonomyThreshold: Number(event.target.value) }, "threshold")} aria-label="Approvals before the autonomy suggestion">
+          {[2, 3, 5, 10].map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+        <span>approvals of the same kind, unchanged.</span>
+      </label>
     </section>
 
     <section className="demo-block" aria-label="Scripted events">
@@ -88,6 +98,12 @@ export function DemoControls({ events, orders, defaultOrder, live }: { events: (
         {events.map((event) => <li key={event.id}>
           <div><div className="demo-event-title">{event.label}</div><div className="note">{event.detail}</div></div>
           <div className="demo-row">
+            {event.id !== "gig-cancelled" && <select className="demo-select small" value={state?.answers[event.order] ?? "always"} aria-label={`Does the simulated driver on ${event.order} answer?`} title="Does the simulated driver or site answer agent questions?"
+              onChange={(eventChange) => post("/api/demo/settings", { answers: { order: event.order, value: eventChange.target.value } }, "answers")}>
+              <option value="always">Driver answers</option>
+              <option value="sometimes">Sometimes no answer</option>
+              <option value="never">Driver does not answer</option>
+            </select>}
             {event.recorded && <button type="button" className="btn small" disabled={!!busy} title="Plays back the rows a live run of this event wrote, at the speed they were written." onClick={() => post("/api/demo/event", { id: event.id, mode: "replay" }, `${event.id}:replay`)}>{busy === `${event.id}:replay` ? "Starting…" : "Replay recorded run"}</button>}
             <button type="button" className={`btn small${live ? "" : " quiet"}`} disabled={!!busy || !live} title={live ? "Real agents, with the simulated driver." : "Needs an API key."} onClick={() => post("/api/demo/event", { id: event.id, mode: "live" }, event.id)}>{busy === event.id ? "Starting…" : "Play live"}</button>
           </div>

@@ -5,11 +5,13 @@
 // to the model; the full result stays in agent_steps. A question to the driver or
 // a site pauses the run; the reply resumes it with the conversation intact.
 
+import { createHash } from "node:crypto"
 import type Anthropic from "@anthropic-ai/sdk"
 import { eq } from "drizzle-orm"
 import { getCase } from "../case"
 import { now as clockNow } from "../clock"
 import { db } from "../db"
+import { answersOn } from "../demo"
 import { costUsd, MODELS, modelName, ROLE_MODEL, usageOf } from "../models"
 import { orderView } from "../queue"
 import { orders } from "../schema"
@@ -42,12 +44,17 @@ type RunState = {
   draft?: CardDraft
   /** One cause, several orders: every order this run covers, the run's own order first. */
   group?: string[]
+  /** The Monitor's no-reply rule: when it followed up, and since when nobody answers ("10:42"). */
+  followUp?: { sentAt: string; askedAt: string }
+  noReplySince?: string | null
   verifierRounds: number
   modelCalls: number
   pending: Pending[]
   /** Results of the other tool calls in the turn that paused, sent together with the reply. */
   readyResults: ToolResult[]
 }
+
+export type { RunState }
 
 export type RunOutcome = { runId: string; status: string; summary: string; cardId?: string | null; pending?: Pending[] }
 
@@ -136,6 +143,15 @@ export async function answerWithSimulation(runId: string, options: Omit<StartOpt
     if (pending.party === "person") continue
     // In a run that covers several orders, a question can go to another order's driver.
     const asked = pending.orderId && pending.orderId !== file.order.id ? await getCase(pending.orderId) ?? file : file
+    // Demo: the simulated person can be set not to answer (always, or about every other question). The run then
+    // waits like it would for a real person, and the Monitor's no-reply rule follows up and escalates.
+    const willAnswer = await answersOn(asked.order.reference)
+    if (willAnswer === "never" || (willAnswer === "sometimes" && parseInt(createHash("sha1").update(pending.questionEntryId).digest("hex").slice(0, 2), 16) % 2 === 0)) {
+      await addStep(runId, idx++, { at: await clockNow(), type: "message", tool: pending.party === "driver" ? "ask_driver" : "ask_site", output: { reply: null }, summary: `No reply yet from the ${pending.party}.` })
+      await addWallTime(runId, Date.now() - started)
+      await updateRun(runId, { state: { ...state, refs: refs.toJSON() } as unknown as Record<string, unknown> })
+      return { runId, status: run.status, summary: `Waiting for the ${pending.party}`, pending: state.pending }
+    }
     let reply: Awaited<ReturnType<typeof simulateReply>>
     try {
       reply = await simulateReply(asked, pending.party, pending.question, { side: pending.side, questionEntryId: pending.questionEntryId })
@@ -163,7 +179,7 @@ async function loop(runId: string, orderId: string, reference: string, startMode
   const refs = new Refs(state.refs)
   const ctx: RunCtx = {
     runId, orderId, reference, model: startModel, refs, lookups: state.lookups, verifierRounds: state.verifierRounds,
-    escalation: null, stepId: "", file: null, usageExtra: [], draft: { ...emptyDraft(), ...(state.draft ?? {}) }, turnErrors: [], group: state.group ?? [orderId], trigger: options.trigger,
+    escalation: null, stepId: "", file: null, usageExtra: [], draft: { ...emptyDraft(), ...(state.draft ?? {}) }, turnErrors: [], group: state.group ?? [orderId], trigger: options.trigger, noReplySince: state.noReplySince ?? null,
   }
   let idx = await nextStepIndex(runId)
   const segmentStart = Date.now()

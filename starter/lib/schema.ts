@@ -308,6 +308,22 @@ export const policies = pgTable("policies", {
   approvedUnchangedCount: integer("approved_unchanged_count").notNull().default(0),
   decidedCount: integer("decided_count").notNull().default(0),
   note: text("note"),
+  // "auto" up to this cost in euros; above it the action needs approval again. Null: no cost limit.
+  autoLimitEur: doublePrecision("auto_limit_eur"),
+  // "Not now" on the autonomy suggestion: it comes back only after this many more unchanged approvals.
+  suggestionDismissedAt: integer("suggestion_dismissed_at").notNull().default(0),
+})
+
+/** Every change to what agents may do on their own, who made it and why. */
+export const policyChanges = pgTable("policy_changes", {
+  id: text("id").primaryKey(),
+  at: timestamp("at", { withTimezone: true }).notNull(),
+  action: text("action").notNull(),
+  fromLevel: text("from_level").notNull(),
+  toLevel: text("to_level").notNull(),
+  limitEur: doublePrecision("limit_eur"),
+  actor: text("actor").notNull(),
+  reason: text("reason").notNull(),
 })
 
 export const evalCases = pgTable("eval_cases", {

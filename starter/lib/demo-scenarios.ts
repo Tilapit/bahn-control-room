@@ -14,7 +14,8 @@ import { resetOrderLiveState } from "./agents/reset"
 import { startInvestigation } from "./agents/investigator"
 import { hasApiKey } from "./agents/llm"
 import { readRecording, startReplay } from "./recording"
-import { autoReplyEnabled } from "./demo"
+import { autoReplyEnabled, writeDemoGps } from "./demo"
+import { writeDemoEvent, writeEntry } from "./agents/entries"
 import { ingest, processEntry } from "./ingest"
 import { liveSignals } from "./signals"
 
@@ -24,6 +25,8 @@ export const DEMO_EVENTS: DemoEvent[] = [
   { id: "scenario-1", order: "CD-420299", label: "Scenario 1: ferry sold out", detail: "Resets CD-420299, then the Investigator looks at the sold-out ferry and the timed-out booking attempt." },
   { id: "scenario-2", order: "CD-420322", label: "Scenario 2: red warning light", detail: "Resets CD-420322, then the driver writes that the red warning came back. Classifier, Router, Investigator on Opus." },
   { id: "scenario-7", order: "CD-420692", others: ["CD-420697"], label: "Scenario 7: protest near Lille", detail: "The regional traffic service publishes a notice: farmers' blockades around Lille from Thu 22 Oct. The Monitor matches it to the orders planned through Lille and starts one Investigator run for all of them, before any driver says anything." },
+  { id: "gig-cancelled", order: "CD-420442", label: "Driver cancels a gig", detail: "Kasper Darevik cancels tomorrow's Stockholm pickup in the driver app and writes nothing else. The Monitor notices at once and puts a card in For you to republish the gig, with a fee raise for the time left." },
+  { id: "car-not-moving", order: "CD-420145", label: "Car not moving", detail: "CD-420145 is on the road from Lahti to Helsinki. The driver app keeps reporting 96 km to go for over an hour and the driver writes nothing. The Monitor notices and the Investigator asks the driver." },
   { id: "slack-note", order: "CD-420603", label: "Slack note: ferry line can hold a space", detail: "Driver travel posts an internal note on CD-420603." },
   { id: "customer-email", order: "CD-420299", label: "Customer email: Wednesday is fine", detail: "Kavellora Car House writes about the delivery day on CD-420299." },
 ]
@@ -70,7 +73,31 @@ export async function playDemoEvent(id: string, mode: PlayMode = "live"): Promis
     for (const orderId of [file.order.id, ...others]) await resetOrderLiveState(orderId)
     // The notice enters the feed now; the blockades start Thu 22 Oct as announced.
     await db.update(disruptions).set({ publishedAt: await clockNow() }).where(eq(disruptions.id, "dis-fr-lille-protest"))
-    void runMonitor({ startAgents: true }).catch((error) => console.error("scenario 7", error))
+    void runMonitor({ startAgents: true, only: ["disruption"] }).catch((error) => console.error("scenario 7", error))
+    return { orderId: file.order.id, mode }
+  }
+  if (id === "gig-cancelled") {
+    await resetOrderLiveState(file.order.id)
+    const at = await clockNow()
+    const eventId = await writeDemoEvent(file.order.id, "gig cancelled", { driver: file.order.driver?.name ?? null, reason: "family matter" }, at)
+    const entryId = await writeEntry({
+      orderId: file.order.id, at, source: "system", channel: "gig_cancelled", authorType: "driver", authorLabel: file.order.driver?.name ?? "The driver",
+      kind: "event", summary: `${file.order.driver?.name ?? "The driver"} cancelled the gig in the driver app (reason given: family matter).`, visibility: "internal",
+      evidence: { table: "demo_events", id: eventId },
+    })
+    await runMonitor({ only: ["gig-cancelled"] })
+    return { orderId: file.order.id, entryId, mode }
+  }
+  if (id === "car-not-moving") {
+    await resetOrderLiveState(file.order.id)
+    const now = await clockNow()
+    const zone = file.order.route.to?.zone ?? null
+    const last = file.plan.lastPosition
+    const km = last?.kmToGo ?? 96
+    // Two more fixes at the same distance as the last recorded one: no progress for over an hour.
+    await writeDemoGps(file.order.id, new Date(now.getTime() - 35 * 60_000), { kmToGo: km, eta: new Date(now.getTime() + 3 * 3_600_000) }, zone)
+    await writeDemoGps(file.order.id, now, { kmToGo: km, eta: new Date(now.getTime() + 3.5 * 3_600_000) }, zone)
+    void runMonitor({ startAgents: true, only: ["silent-car"] }).catch((error) => console.error("car not moving", error))
     return { orderId: file.order.id, mode }
   }
   if (id === "slack-note") {

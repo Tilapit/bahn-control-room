@@ -13,7 +13,7 @@ import { db } from "../db"
 import { MODELS } from "../models"
 import { describe, levelFor, levelForAll, PROPOSABLE } from "../policies"
 import { orderView } from "../queue"
-import { cards } from "../schema"
+import { cards, decisions, policies } from "../schema"
 import type { CardFinding, CardOption, CardStep } from "../schema"
 import { at } from "../time"
 import { isSafety, urgency } from "../urgency"
@@ -180,6 +180,10 @@ export async function propose(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
       if (step.action === "approve_repair_cost") computedCostCents += Math.round(Number(step.params.amount_eur ?? 0) * 100)
     }
   })
+  // Nobody answered the run's question: the card says so first, with the time (the Monitor's no-reply rule).
+  if (ctx.noReplySince && !new RegExp(`not answering since ${ctx.noReplySince.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i").test(headline)) {
+    problems.push(`Nobody has answered since ${ctx.noReplySince}: start the headline with "Driver not answering since ${ctx.noReplySince}" (or "Site not answering since ${ctx.noReplySince}")`)
+  }
   // A card that rests on a disruption notice names its source and says nobody on the ground confirmed it (code, not the prompt).
   const fromNotice = ctx.trigger.startsWith("Monitor:") || cited.some((entry) => entry.channel === "disruption_feed")
   if (fromNotice) {
@@ -271,9 +275,18 @@ export async function propose(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
   ]
   const cardId = `card_${randomUUID().slice(0, 12)}`
   const group = ctx.draft.affected.length > 1 ? ctx.draft.affected.map((item) => ({ order_id: item.orderId, reference: item.reference, car: item.car, effect: item.effect })) : null
+  // Earned autonomy: a person made an action automatic (Settings, or the suggestion in For you). When every action of
+  // the first option is automatic now, within its cost limit, and at least one of them needed approval by default,
+  // the agent carries it out without a card. The order says so; the person can change the rule at any time.
+  const stepCosts = options[0].steps.map((step) => {
+    const cents = (step.params.lookup as { price_cents?: number | null } | undefined)?.price_cents
+    return step.action === "approve_repair_cost" ? Number(step.params.amount_eur ?? 0) || null : step.action === "raise_fee" ? Number(step.params.amount_eur ?? 0) || null : cents ? cents / 100 : null
+  })
+  const byRule = kind === "decision" && !group && options[0].steps.some((step) => describe(step.action)?.level === "approval")
+    && await levelForAll(options[0].steps.map((step) => step.action), stepCosts) === "auto"
   await db.update(cards).set({ status: "expired" }).where(and(eq(cards.orderId, ctx.orderId), eq(cards.status, "open"), ne(cards.id, cardId)))
   await db.insert(cards).values({
-    id: cardId, orderId: ctx.orderId, runId: ctx.runId, createdAt: now, kind, status: "open",
+    id: cardId, orderId: ctx.orderId, runId: ctx.runId, createdAt: now, kind, status: byRule ? "approved" : "open",
     headline: group ? `${group.length} orders: ${headline}` : `${file.order.car.label}: ${headline}`, whatHappened, findings,
     proposal: {
       action: cardOptions[0].action, params: cardOptions[0].params, effect_text: options[0].effect,
@@ -282,6 +295,7 @@ export async function propose(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
     options: cardOptions, consequenceAt: u.at ? new Date(u.at) : null, consequenceText: u.sentence, severity,
     verifierNotes: verification.notes, origin: "agent", group,
   })
+  if (byRule) return carryOutByRule(ctx, cardId, cardOptions[0], now)
   for (const orderId of group ? group.map((item) => item.order_id) : [ctx.orderId]) {
     await writeEntry({
       orderId, at: now, source: "agent", channel: "agent_card", authorType: "agent", authorLabel: AGENT_LABEL, kind: "proposal",
@@ -291,6 +305,33 @@ export async function propose(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
   }
   ctx.draft = emptyDraft()
   return { content: "The card is in front of a person now. Your run ends here.", summary: `Proposed to a person: ${options[0].label}`, finish: { kind: "card", cardId, summary: headline }, output: { cardId, verifier: verification.notes } }
+}
+
+/** The person's rule allows this option: the Executor carries it out now, recorded as a decision by the agent under that rule. */
+async function carryOutByRule(ctx: RunCtx, cardId: string, option: CardOption, now: Date): Promise<ToolOutcome> {
+  const rules = await Promise.all((option.steps ?? []).map((step) => db.select().from(policies).where(eq(policies.action, step.action)).limit(1)))
+  const rule = rules.flat().filter((row) => describe(row.action)?.level === "approval" && row.level === "auto")
+    .map((row) => `${describe(row.action)?.label.toLowerCase()}${row.autoLimitEur ? ` up to €${row.autoLimitEur}` : ""}`).join(", ")
+  const decisionId = `dec_${randomUUID()}`
+  const actor = "Agent, under your rule"
+  await db.insert(decisions).values({ id: decisionId, cardId, decidedAt: now, actor, choice: option.id, replyText: null, executedEffect: null, executeAfter: now, finalizedAt: now })
+  const { execute } = await import("../executor")
+  const effect = await execute({ decisionId, orderId: ctx.orderId, option, actor })
+  await db.update(decisions).set({ executedEffect: effect }).where(eq(decisions.id, decisionId))
+  const done = effect.steps.map((step) => step.summary).join("; ")
+  if (!effect.ok) {
+    // It did not work: a person sees the card after all, with what went wrong.
+    const failed = effect.steps.find((step) => !step.ok)?.summary ?? "it was not carried out"
+    await db.update(cards).set({ status: "open" }).where(eq(cards.id, cardId))
+    await writeEntry({ orderId: ctx.orderId, at: now, source: "agent", channel: "agent_card", authorType: "agent", authorLabel: AGENT_LABEL, kind: "proposal", summary: `Tried to do this under your rule (${rule}), but ${failed.charAt(0).toLowerCase()}${failed.slice(1)}. Waiting for a person`, evidence: { table: "cards", id: cardId } })
+    return { content: `Your proposal was allowed by the person's rule, but the Executor could not carry it out: ${failed}. The card is in front of a person now. Your run ends here.`, summary: `Rule allowed it, the Executor could not do it: ${failed}`, finish: { kind: "card", cardId, summary: failed } }
+  }
+  await writeEntry({
+    id: `decision:${decisionId}`, orderId: ctx.orderId, at: now, source: "agent", channel: "agent_rule", authorType: "agent", authorLabel: AGENT_LABEL, kind: "decision", status: "done",
+    summary: `Done without asking, under your rule (${rule}): ${done}`, evidence: { table: "decisions", id: decisionId },
+  })
+  ctx.draft = emptyDraft()
+  return { content: `The person's rule allows this (${rule}), so it was carried out without a card: ${done}. Your run ends here.`, summary: `Carried out under the person's rule (${rule}): ${done}`, finish: { kind: "resolved", summary: `Did it without asking, under your rule (${rule}): ${done}`, nextCheckAt: null } }
 }
 
 export async function resolve(ctx: RunCtx, input: Input): Promise<ToolOutcome> {

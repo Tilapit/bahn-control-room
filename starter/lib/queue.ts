@@ -5,7 +5,7 @@ import { and, count, eq, inArray, or, sql } from "drizzle-orm"
 import { type CaseFile, getCases } from "./case"
 import { now as clockNow } from "./clock"
 import { db } from "./db"
-import { agentRuns, agentSteps, cards } from "./schema"
+import { agentRuns, agentSteps, cards, decisions } from "./schema"
 import type { CardFinding, CardGroupItem, CardOption, CardProposal, VerifierNote } from "./schema"
 import { liveSignals } from "./signals"
 import { compareUrgency, type Urgency, urgency } from "./urgency"
@@ -51,6 +51,8 @@ export type QueueCounts = {
   /** Orders with nothing open. */
   quiet: number
   total: number
+  /** Actions agents carried out without asking, under a rule a person set. */
+  byRule: number
 }
 
 export function orderView(file: CaseFile): QueueOrder {
@@ -92,11 +94,12 @@ async function runInfo(runIds: (string | null)[]): Promise<Map<string, RunInfo>>
 
 export async function getQueue(): Promise<{ now: string; items: QueueItem[]; counts: QueueCounts }> {
   const at = await clockNow()
-  const [openCards, files, ordersWithRun] = await Promise.all([
+  const [openCards, files, ordersWithRun, ruleRows] = await Promise.all([
     db.select().from(cards).where(eq(cards.status, "open")),
     getCases(),
     // Only agents that work a case count as handling it: not the Classifier reading messages, not a quiet check.
     db.selectDistinct({ orderId: agentRuns.orderId }).from(agentRuns).where(inArray(agentRuns.agent, HANDLING_AGENTS)),
+    db.select({ n: count() }).from(decisions).where(eq(decisions.actor, "Agent, under your rule")),
   ])
   const byOrder = new Map(files.map((file) => [file.order.id, file]))
   const runs = await runInfo(openCards.map((row) => row.runId))
@@ -121,7 +124,7 @@ export async function getQueue(): Promise<{ now: string; items: QueueItem[]; cou
   return {
     now: at.toISOString(),
     items,
-    counts: { needYou, handling, unattended, quiet: files.length - needYou - handling - unattended, total: files.length },
+    counts: { needYou, handling, unattended, quiet: files.length - needYou - handling - unattended, total: files.length, byRule: ruleRows[0]?.n ?? 0 },
   }
 }
 

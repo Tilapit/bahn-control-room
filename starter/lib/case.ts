@@ -14,6 +14,7 @@ import { label } from "./present/labels"
 import {
   addresses, alerts, cards, conversations, customers, decisions, drivers, facts as factsTable, operationalEvents, orderItems,
   orders, relatedRecords, searchDocuments, sites, timelineEntries, vehicles,
+  demoEvents,
 } from "./schema"
 import type { ExecutedEffect } from "./schema"
 import { SEARCH_SEPARATOR } from "./timeline/build"
@@ -100,7 +101,7 @@ export type CaseFile = {
     car: { make: string; model: string; year: number | null; registration: string | null; vin: string | null; fuel: string | null; label: string; image: string | null }
     tradeIn: { label: string; registration: string | null } | null
     route: { from: CasePlace | null; to: CasePlace | null; via: CasePlace | null; kind: "domestic" | "import"; distanceKm: number | null; ferry: boolean }
-    driver: { id: string; name: string; home: string | null; state: "booked" | "driving" | "finished" } | null
+    driver: { id: string; name: string; home: string | null; state: "booked" | "driving" | "finished" | "cancelled" } | null
     otherDrivers: { name: string; state: string }[]
     createdAt: string
     pickedUpAt: string | null
@@ -133,6 +134,8 @@ export type CaseFile = {
     bookings: { id: string; kind: string; summary: string; state: "booked" | "lost"; departureAt: string | null; cutoffAt: string | null; zone: string | null; source: SourceRef }[]
     quotes: { id: string; kind: string; summary: string; state: "quote" | "sold out"; checkedAt: string; source: SourceRef }[]
     lastPosition: { at: string; receivedAt: string | null; kmToGo: number | null; eta: string | null; quality: string; source: SourceRef } | null
+    /** Every GPS fix, newest first: the dataset's and live ones (the demo's driver app). */
+    positions: { at: string; receivedAt: string | null; kmToGo: number | null; eta: string | null; quality: string; source: SourceRef }[]
     /** Planning range from the pickup city to the ferry terminal. Not live, not a position. */
     terminalDrive: { from: string; terminal: string; city: string; km: number | null; minutesLow: number | null; minutesHigh: number | null; source: SourceRef } | null
   }
@@ -292,9 +295,11 @@ type CompileInput = {
   roadEstimates: RelatedRow[]
   /** What the Executor did on this order after a person approved it. */
   effects: ExecutedEffect[]
+  /** Live GPS fixes (demo driver app): the timeline entry and the numbers its demo event carries. */
+  livePositions: { entryId: string; payload: Record<string, unknown> }[]
 }
 
-function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEntries, asOf, terminals, roadEstimates, effects }: CompileInput): CaseFile {
+function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEntries, asOf, terminals, roadEstimates, effects, livePositions }: CompileInput): CaseFile {
   const { dir } = bundle
   const entryById = new Map(entries.map((entry) => [entry.id, entry]))
   const ref = (entryId: string, fallbackLabel?: string): SourceRef => {
@@ -341,11 +346,14 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
   else if (liveOffer) stage = "finding_driver"
   else if (plan && bundle.order.details.readiness_status === "CONFIRMED") stage = "ready"
   else stage = "intake"
+  // The driver cancelled the gig in the driver app (live): the order needs a driver again.
+  const gigCancelled = entries.some((entry) => entry.origin === "live" && entry.channel === "gig_cancelled")
+  if (gigCancelled && stage === "driver_booked") stage = "finding_driver"
   const tradeInOpen = !!tradeIn && segments.some((segment) => segment.details.order_item_id === tradeIn.id && segment.details.status !== "COMPLETED")
-  const stageLabel = stage === "delivered" && tradeInOpen ? "Delivered; trade-in still moving" : STAGE_LABEL[stage]
+  const stageLabel = gigCancelled && stage === "finding_driver" ? "Driver cancelled; needs a new driver" : stage === "delivered" && tradeInOpen ? "Delivered; trade-in still moving" : STAGE_LABEL[stage]
 
   const driverId = str(primaryAssignment?.details.driver_id)
-  const driverState = primaryAssignment?.details.status === "IN_PROGRESS" ? "driving" : primaryAssignment?.details.status === "COMPLETED" ? "finished" : "booked"
+  const driverState = gigCancelled ? "cancelled" : primaryAssignment?.details.status === "IN_PROGRESS" ? "driving" : primaryAssignment?.details.status === "COMPLETED" ? "finished" : "booked"
   const otherDrivers = assignments
     .filter((row) => row !== primaryAssignment && row.details.driver_id)
     .map((row) => ({ name: dir.driverName(row.details.driver_id) ?? "Driver", state: label(str(row.details.status)).toLowerCase() }))
@@ -571,13 +579,20 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
     state: row.details.status === "SOLD_OUT" ? "sold out" as const : "quote" as const, checkedAt: String(row.details.checked_at ?? ""),
     source: ref(`travel_options:${row.id}`),
   }))
-  const lastObservation = rows(bundle, "tracking_observations")
-    .sort((a, b) => String(b.details.observed_at).localeCompare(String(a.details.observed_at)))[0]
-  const lastPosition = lastObservation ? {
-    at: String(lastObservation.details.observed_at), receivedAt: str(lastObservation.details.received_at),
-    kmToGo: num(lastObservation.details.distance_remaining_km), eta: str(lastObservation.details.estimated_delivery_at),
-    quality: String(lastObservation.details.location_quality ?? "COARSE").toLowerCase(), source: ref(`tracking_observations:${lastObservation.id}`, "GPS"),
-  } : null
+  const positions = [
+    ...rows(bundle, "tracking_observations").map((row) => ({
+      at: String(row.details.observed_at), receivedAt: str(row.details.received_at),
+      kmToGo: num(row.details.distance_remaining_km), eta: str(row.details.estimated_delivery_at),
+      quality: String(row.details.location_quality ?? "COARSE").toLowerCase(), source: ref(`tracking_observations:${row.id}`, "GPS"),
+    })),
+    // A position the demo's driver app sent: the same fields, carried by its demo event.
+    ...livePositions.map(({ entryId, payload }) => ({
+      at: String(payload.observed_at ?? entryById.get(entryId)?.occurredAt.toISOString() ?? ""), receivedAt: str(payload.received_at),
+      kmToGo: num(payload.distance_remaining_km), eta: str(payload.estimated_delivery_at), quality: String(payload.location_quality ?? "coarse").toLowerCase(),
+      source: ref(entryId, "GPS"),
+    })),
+  ].filter((position) => position.at).sort((a, b) => b.at.localeCompare(a.at))
+  const lastPosition = positions[0] ?? null
 
   // The drive to the terminal of the booked (or else quoted) ferry, from the planning matrix.
   const ferryRow = rows(bundle, "travel_reservations").find((row) => row.details.kind === "FERRY" && row.details.status === "BOOKED")
@@ -624,7 +639,7 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
         state: offer.details.status === "PUBLISHED" ? "offered to drivers, not taken yet" : offer.details.status === "ACCEPTED" ? "taken by a driver" : label(str(offer.details.status)).toLowerCase(),
         fee: money(num(offer.details.fee_cents), str(offer.details.currency)) || null, at: str(offer.details.accepted_at) ?? str(offer.details.published_at),
       } : null,
-      bookings, quotes, lastPosition, terminalDrive,
+      bookings, quotes, lastPosition, positions, terminalDrive,
     },
     timeline: [...entries].reverse().slice(0, 40).map(toItem),
   }
@@ -644,7 +659,7 @@ export async function getCases(orderIds?: string[]): Promise<CaseFile[]> {
   const { bundles, shared } = await loadBundles(orderIds ?? null)
   if (!bundles.length) return []
   const ids = bundles.map((bundle) => bundle.order.id)
-  const [entryRows, factRows, cardRows, threadMessages, effectRows] = await Promise.all([
+  const [entryRows, factRows, cardRows, threadMessages, effectRows, gpsEvents] = await Promise.all([
     db.select().from(timelineEntries).where(inArray(timelineEntries.orderId, ids)).orderBy(asc(timelineEntries.occurredAt), asc(timelineEntries.id)),
     db.select().from(factsTable).where(inArray(factsTable.orderId, ids)),
     // A card for several orders is open on each of them.
@@ -653,6 +668,7 @@ export async function getCases(orderIds?: string[]): Promise<CaseFile[]> {
     db.execute<{ id: string; conversation_id: string }>(sql`select id, conversation_id from messages`),
     db.select({ orderId: cards.orderId, effect: decisions.executedEffect }).from(decisions).innerJoin(cards, eq(cards.id, decisions.cardId))
       .where(and(or(inArray(cards.orderId, ids), isNotNull(cards.group)), isNull(decisions.undoneAt))),
+    db.select({ id: demoEvents.id, orderId: demoEvents.orderId, payload: demoEvents.payload }).from(demoEvents).where(and(inArray(demoEvents.orderId, ids), eq(demoEvents.kind, "gps"))),
   ])
   const messageThreads = new Map([...threadMessages].map((row) => [row.id, row.conversation_id]))
   const inboxEntryRows = await db.select().from(timelineEntries).where(and(isNull(timelineEntries.orderId), sql`${timelineEntries.evidence}->>'table' = 'support_inbox_messages'`))
@@ -673,6 +689,8 @@ export async function getCases(orderIds?: string[]): Promise<CaseFile[]> {
     return compile({
       bundle, asOf, terminals, roadEstimates, messageThreads,
       effects: effectRows.map((row) => scopeEffect(row.effect as ExecutedEffect | null, row.orderId, bundle.order.id)).filter((effect): effect is ExecutedEffect => !!effect),
+      livePositions: (entriesByOrder.get(bundle.order.id) ?? []).filter((entry) => entry.origin === "live" && entry.source === "gps" && entry.evidence.table === "demo_events")
+        .map((entry) => ({ entryId: entry.id, payload: gpsEvents.find((event) => event.id === entry.evidence.id)?.payload ?? {} })),
       entries: entriesByOrder.get(bundle.order.id) ?? [],
       factRows: factsByOrder.get(bundle.order.id) ?? [],
       openCards: cardsByOrder.get(bundle.order.id) ?? [],
