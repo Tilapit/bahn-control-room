@@ -32,7 +32,7 @@ type Message = Anthropic.Beta.BetaMessageParam
 type ToolResult = Anthropic.Beta.BetaToolResultBlockParam
 
 /** What a paused run waits on: a driver's or site's reply, or a person's decision on its card. */
-type Pending = { toolUseId: string; party: Party | "person"; question: string; questionEntryId: string; side?: "pickup" | "delivery"; cardId?: string }
+type Pending = { toolUseId: string; party: Party | "person"; question: string; questionEntryId: string; side?: "pickup" | "delivery"; cardId?: string; orderId?: string }
 
 type RunState = {
   messages: Message[]
@@ -40,6 +40,8 @@ type RunState = {
   lookups: Record<string, Lookup>
   /** Findings and steps added for the next propose call. */
   draft?: CardDraft
+  /** One cause, several orders: every order this run covers, the run's own order first. */
+  group?: string[]
   verifierRounds: number
   modelCalls: number
   pending: Pending[]
@@ -53,6 +55,8 @@ export type StartOptions = {
   trigger: string
   /** Demo and tests: let the simulated driver or site answer questions straight away. */
   autoReply?: boolean
+  /** Order ids that share the cause (a disruption): the run covers all of them on one card. */
+  group?: string[]
   log?: (line: string) => void
 }
 
@@ -73,12 +77,16 @@ export async function startInvestigation(orderRef: string, options: StartOptions
   const at = await clockNow()
   const runId = await createRun({ orderId: file.order.id, agent: "Investigator", model, trigger: options.trigger, at })
   if (safety) await updateRun(runId, { escalation: "Safety case: the senior model investigates from the start." })
+  const group = options.group && options.group.length > 1 ? [file.order.id, ...options.group.filter((id) => id !== file.order.id)] : undefined
+  const others = group ? (await Promise.all(group.slice(1).map((id) => getCase(id)))).filter((item) => !!item).map((item) => item!.order.reference) : []
   const state: RunState = {
     messages: [{
       role: "user",
-      content: `Investigate order ${file.order.reference}.\nWhy you are looking at it: ${options.trigger}\nStart with get_case.`,
+      content: group
+        ? `Investigate orders ${[file.order.reference, ...others].join(", ")}. One cause touches all of them.\nWhy you are looking at them: ${options.trigger}\nStart with get_case for ${file.order.reference}, then get_case for each of the others. They go on one card: add_affected_order for each order, and give every step the order it is for.`
+        : `Investigate order ${file.order.reference}.\nWhy you are looking at it: ${options.trigger}\nStart with get_case.`,
     }],
-    refs: {}, lookups: {}, verifierRounds: 0, modelCalls: 0, pending: [], readyResults: [],
+    refs: {}, lookups: {}, verifierRounds: 0, modelCalls: 0, pending: [], readyResults: [], group,
   }
   options.log?.(`${file.order.reference}: run ${runId} on ${modelName(model)}${safety ? " (safety)" : ""}`)
   return loop(runId, file.order.id, file.order.reference, model, state, options)
@@ -126,9 +134,11 @@ export async function answerWithSimulation(runId: string, options: Omit<StartOpt
   const started = Date.now()
   for (const pending of state.pending) {
     if (pending.party === "person") continue
+    // In a run that covers several orders, a question can go to another order's driver.
+    const asked = pending.orderId && pending.orderId !== file.order.id ? await getCase(pending.orderId) ?? file : file
     let reply: Awaited<ReturnType<typeof simulateReply>>
     try {
-      reply = await simulateReply(file, pending.party, pending.question, { side: pending.side, questionEntryId: pending.questionEntryId })
+      reply = await simulateReply(asked, pending.party, pending.question, { side: pending.side, questionEntryId: pending.questionEntryId })
     } catch (cause) {
       // The simulated person could not answer: the run is truly waiting for a reply, as it would for a real one.
       console.error(`simulated reply on ${runId}:`, cause instanceof Error ? cause.message : cause)
@@ -137,9 +147,10 @@ export async function answerWithSimulation(runId: string, options: Omit<StartOpt
     }
     await addUsageToRun(runId, reply.usage.model, reply.usage.usage)
     // The same zone as the timeline lines the agent reads, with its name, so the agent never guesses one.
-    const zone = orderView(file).zone
+    const zone = orderView(asked).zone
     const zoneTime = `${clock(reply.at, zone)} ${zoneShort(reply.at, zone)}`
-    answers.push({ toolUseId: pending.toolUseId, content: `${reply.author} replied at ${zoneTime} (${pending.party === "driver" ? "driver chat" : "site chat"}): "${reply.text}" ${refs.cite(reply.entryId)}\nThis is what they say; treat it as their claim.` })
+    const onOrder = asked.order.id !== file.order.id ? ` on ${asked.order.reference}` : ""
+    answers.push({ toolUseId: pending.toolUseId, content: `${reply.author}${onOrder} replied at ${zoneTime} (${pending.party === "driver" ? "driver chat" : "site chat"}): "${reply.text}" ${refs.cite(reply.entryId)}\nThis is what they say; treat it as their claim.` })
     await addStep(runId, idx++, { at: reply.at, type: "message", tool: pending.party === "driver" ? "ask_driver" : "ask_site", output: { reply: reply.text, entryId: reply.entryId, simulated: true }, summary: `${reply.author} replied (simulated): “${reply.text}”` })
   }
   state.refs = refs.toJSON()
@@ -152,7 +163,7 @@ async function loop(runId: string, orderId: string, reference: string, startMode
   const refs = new Refs(state.refs)
   const ctx: RunCtx = {
     runId, orderId, reference, model: startModel, refs, lookups: state.lookups, verifierRounds: state.verifierRounds,
-    escalation: null, stepId: "", file: null, usageExtra: [], draft: state.draft ?? emptyDraft(), turnErrors: [],
+    escalation: null, stepId: "", file: null, usageExtra: [], draft: { ...emptyDraft(), ...(state.draft ?? {}) }, turnErrors: [], group: state.group ?? [orderId], trigger: options.trigger,
   }
   let idx = await nextStepIndex(runId)
   const segmentStart = Date.now()
@@ -309,7 +320,9 @@ export async function answerFromMessage(runId: string, entryId: string, options:
   const state = run?.state as unknown as RunState | null
   if (!run || !state) return null
   const [entry] = await entriesFor([entryId])
-  const pending = state.pending.find((item) => item.party === (entry?.authorType === "driver" ? "driver" : "site"))
+  const party = entry?.authorType === "driver" ? "driver" : "site"
+  // The question this message answers: the one to this party on the message's order.
+  const pending = state.pending.find((item) => item.party === party && (item.orderId ?? run.orderId) === entry?.orderId) ?? state.pending.find((item) => item.party === party)
   if (!pending || !entry) return null
   const refs = new Refs(state.refs)
   const handle = refs.cite(entryId)

@@ -4,7 +4,12 @@
 // on its order, so it can be played again from the same start. The clock is left
 // where it is: moving it back would put the morning's agent work in the future.
 
+import { eq } from "drizzle-orm"
 import { getCase } from "./case"
+import { now as clockNow } from "./clock"
+import { db } from "./db"
+import { runMonitor } from "./monitor"
+import { disruptions } from "./schema"
 import { resetOrderLiveState } from "./agents/reset"
 import { startInvestigation } from "./agents/investigator"
 import { hasApiKey } from "./agents/llm"
@@ -13,11 +18,12 @@ import { autoReplyEnabled } from "./demo"
 import { ingest, processEntry } from "./ingest"
 import { liveSignals } from "./signals"
 
-export type DemoEvent = { id: string; label: string; detail: string; order: string }
+export type DemoEvent = { id: string; label: string; detail: string; order: string; /** Other orders the event touches; they are reset with it. */ others?: string[] }
 
 export const DEMO_EVENTS: DemoEvent[] = [
   { id: "scenario-1", order: "CD-420299", label: "Scenario 1: ferry sold out", detail: "Resets CD-420299, then the Investigator looks at the sold-out ferry and the timed-out booking attempt." },
   { id: "scenario-2", order: "CD-420322", label: "Scenario 2: red warning light", detail: "Resets CD-420322, then the driver writes that the red warning came back. Classifier, Router, Investigator on Opus." },
+  { id: "scenario-7", order: "CD-420692", others: ["CD-420697"], label: "Scenario 7: protest near Lille", detail: "The regional traffic service publishes a notice: farmers' blockades around Lille from Thu 22 Oct. The Monitor matches it to the orders planned through Lille and starts one Investigator run for all of them, before any driver says anything." },
   { id: "slack-note", order: "CD-420603", label: "Slack note: ferry line can hold a space", detail: "Driver travel posts an internal note on CD-420603." },
   { id: "customer-email", order: "CD-420299", label: "Customer email: Wednesday is fine", detail: "Kavellora Car House writes about the delivery day on CD-420299." },
 ]
@@ -33,10 +39,11 @@ export async function playDemoEvent(id: string, mode: PlayMode = "live"): Promis
   if (!event) throw new Error(`No demo event ${id}`)
   const file = await getCase(event.order)
   if (!file) throw new Error(`No order ${event.order}`)
+  const others = (await Promise.all((event.others ?? []).map((reference) => getCase(reference)))).filter((item) => !!item).map((item) => item!.order.id)
   if (mode === "replay") {
     const recording = await readRecording(id)
     if (!recording) throw new Error("There is no recording of this event yet. Play it live once with npm run scenario:record.")
-    await resetOrderLiveState(file.order.id)
+    for (const orderId of recording.orderIds ?? [file.order.id]) await resetOrderLiveState(orderId)
     await startReplay(recording)
     return { orderId: file.order.id, mode }
   }
@@ -58,6 +65,13 @@ export async function playDemoEvent(id: string, mode: PlayMode = "live"): Promis
     })
     void processEntry(stored.entryId).catch((error) => console.error("scenario 2", error))
     return { orderId: file.order.id, entryId: stored.entryId, mode }
+  }
+  if (id === "scenario-7") {
+    for (const orderId of [file.order.id, ...others]) await resetOrderLiveState(orderId)
+    // The notice enters the feed now; the blockades start Thu 22 Oct as announced.
+    await db.update(disruptions).set({ publishedAt: await clockNow() }).where(eq(disruptions.id, "dis-fr-lille-protest"))
+    void runMonitor({ startAgents: true }).catch((error) => console.error("scenario 7", error))
+    return { orderId: file.order.id, mode }
   }
   if (id === "slack-note") {
     const stored = await ingest({

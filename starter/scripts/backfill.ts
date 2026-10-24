@@ -23,6 +23,7 @@ import { closeDb, db } from "@/lib/db"
 import { exportFixtures } from "@/lib/fixtures"
 import { MODELS, modelName, ROLE_MODEL } from "@/lib/models"
 import { ensurePolicies } from "@/lib/policies"
+import { runMonitor } from "@/lib/monitor"
 import { quietCheck } from "@/lib/quiet-check"
 import { agentRuns, cards, timelineEntries } from "@/lib/schema"
 import { liveSignals } from "@/lib/signals"
@@ -132,9 +133,15 @@ async function main() {
   })
 
   if (!reportOnly) {
-    console.log(`\nQuiet checks: ${quiet.length} orders, by code`)
+    // The Monitor's rules run on the whole morning: a notice in the feed can touch an order nobody has reported on.
+    console.log("\nMonitor rules")
+    await runMonitor({ startAgents: true, wait: true, log: (line) => console.log(`  ${line}`) })
+    // An order the Monitor handed to the Investigator is not quiet any more.
+    const handed = new Set((await db.select({ orderId: agentRuns.orderId }).from(agentRuns).where(eq(agentRuns.agent, "Investigator"))).map((run) => run.orderId))
+    const stillQuiet = quiet.filter((file) => !handed.has(file.order.id))
+    console.log(`\nQuiet checks: ${stillQuiet.length} orders, by code`)
     const at = await now()
-    for (const file of quiet) await quietCheck(file, at)
+    for (const file of stillQuiet) await quietCheck(file, at)
   }
 
   // Report.

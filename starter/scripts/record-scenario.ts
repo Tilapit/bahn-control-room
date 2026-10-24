@@ -20,14 +20,15 @@ async function main() {
     const event = DEMO_EVENTS.find((candidate) => candidate.id === id)
     if (!event) throw new Error(`No demo event ${id}`)
     const file = (await getCase(event.order))!
+    const orderIds = [file.order.id, ...(await Promise.all((event.others ?? []).map((reference) => getCase(reference)))).map((item) => item!.order.id)]
     let started = 0
     const recording = await recordScenario({
-      scenario: id, order: event.order, orderId: file.order.id, log: console.log,
+      scenario: id, order: event.order, orderId: file.order.id, orderIds, log: console.log,
       start: async () => { started = Date.now(); await playDemoEvent(id, "live") },
       // Settled: nothing is working or waiting on the driver, and an Investigator ended (or 20 s passed without one).
       done: async () => {
         // The scenario reset the order first, so every run on it belongs to this play.
-        const runs = await db.select().from(agentRuns).where(eq(agentRuns.orderId, file.order.id))
+        const runs = await db.select().from(agentRuns).where(inArray(agentRuns.orderId, orderIds))
         if (runs.some((run) => ACTIVE.includes(run.status))) return false
         const investigated = runs.some((run) => run.agent === "Investigator" && ["waiting_person", "done", "failed"].includes(run.status))
         return investigated || Date.now() - started > 20_000

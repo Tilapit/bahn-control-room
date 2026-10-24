@@ -34,29 +34,44 @@ export async function execute(input: { decisionId: string; orderId: string; opti
   const file = await getCase(input.orderId)
   if (!file) return { ...effect, ok: false, steps: [{ action: "load", ok: false, summary: "The order could not be loaded.", entryId: null, error: "order missing" }] }
   const steps = input.option.steps?.length ? input.option.steps : [{ action: input.option.action, params: input.option.params }]
+  // A card for several orders: each step names the order it is for; the rest are for the card's own order.
+  const files = new Map([[file.order.id, file]])
+  const orderOf = (step: CardStep) => typeof step.params.order_id === "string" ? step.params.order_id : input.orderId
   for (const step of steps) {
-    const result = await runStep(file, step, input)
-    effect.steps.push(result.step)
-    if (result.booking) effect.bookings.push(result.booking)
-    if (result.window) effect.windows.push(result.window)
+    const orderId = orderOf(step)
+    if (!files.has(orderId)) {
+      const other = await getCase(orderId)
+      if (!other) { effect.ok = false; effect.steps.push({ action: step.action, ok: false, summary: "The order could not be loaded.", entryId: null, error: "order missing", orderId }); break }
+      files.set(orderId, other)
+    }
+    const result = await runStep(files.get(orderId)!, step, { ...input, orderId })
+    effect.steps.push({ ...result.step, orderId })
+    if (result.booking) effect.bookings.push({ ...result.booking, orderId })
+    if (result.window) effect.windows.push({ ...result.window, orderId })
     // Stop at the first failure: the rest of an option assumes the earlier steps happened.
     if (!result.step.ok) { effect.ok = false; break }
   }
+  if (files.size > 1) effect.orders = [...files.keys()]
   // An option that settles the situation (a booking, a moved crossing, a new driver, a tow, a changed time) closes the
-  // signals it answered. Calls, messages and notes do not: the situation is still open after them.
-  if (effect.ok && steps.some((step) => RESOLVES.has(step.action))) {
-    const { open } = file
-    effect.handled = [
-      ...open.alerts.map((alert) => ({ kind: "alert" as const, id: alert.id, label: `${alert.label.toLowerCase()} alert` })),
-      ...open.incidents.map((incident) => ({ kind: "incident" as const, id: incident.id, label: `${incident.label} incident` })),
-      ...open.proposals.map((proposal) => ({ kind: "proposal" as const, id: proposal.id, label: `earlier proposal: ${proposal.summary.replace(/\.$/, "").toLowerCase()}` })),
-    ]
-    if (effect.handled.length) {
-      await writeEntry({
-        orderId: input.orderId, at: await clockNow(), source: "person", channel: "executor_close", authorType: "operator", authorLabel: EXECUTOR,
-        kind: "event", status: "done", summary: `Closed by the approved decision: ${effect.handled.map((item) => item.label).join("; ")}`,
-        evidence: { table: "decisions", id: input.decisionId },
-      })
+  // signals it answered, on the order it settled. Calls, messages and notes do not: the situation is still open after them.
+  if (effect.ok) {
+    effect.handled = []
+    for (const [orderId, target] of files) {
+      if (!steps.some((step) => orderOf(step) === orderId && RESOLVES.has(step.action))) continue
+      const { open } = target
+      const handled = [
+        ...open.alerts.map((alert) => ({ kind: "alert" as const, id: alert.id, label: `${alert.label.toLowerCase()} alert`, orderId })),
+        ...open.incidents.map((incident) => ({ kind: "incident" as const, id: incident.id, label: `${incident.label} incident`, orderId })),
+        ...open.proposals.map((proposal) => ({ kind: "proposal" as const, id: proposal.id, label: `earlier proposal: ${proposal.summary.replace(/\.$/, "").toLowerCase()}`, orderId })),
+      ]
+      effect.handled.push(...handled)
+      if (handled.length) {
+        await writeEntry({
+          orderId, at: await clockNow(), source: "person", channel: "executor_close", authorType: "operator", authorLabel: EXECUTOR,
+          kind: "event", status: "done", summary: `Closed by the approved decision: ${handled.map((item) => item.label).join("; ")}`,
+          evidence: { table: "decisions", id: input.decisionId },
+        })
+      }
     }
   }
   return effect

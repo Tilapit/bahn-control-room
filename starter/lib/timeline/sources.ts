@@ -47,6 +47,8 @@ const CHANNEL_LABEL: Record<string, string> = {
   driver_app_chat: "Driver app chat",
   site_chat: "Site chat",
   site_call: "Phone call with the site",
+  disruption_feed: "Disruption feed",
+  monitor: "Monitor (code)",
   customer_email: "Email",
 }
 
@@ -111,7 +113,8 @@ export function chipLabel(entry: ChipInput): string {
     case "gps": return "GPS"
     case "quote": return entry.status === "quote" ? "Quote, not booked" : "Availability check"
     case "booking": return entry.status === "superseded" ? "Old booking" : "Booking"
-    case "alert": return "Alert"
+    // A disruption notice names who reported it: "Rail operator notice".
+    case "alert": return entry.channel === "disruption_feed" ? entry.authorLabel ?? "Disruption notice" : entry.channel?.startsWith("monitor") ? "Monitor" : "Alert"
     case "agent": return entry.authorLabel ?? "Agent"
     case "person": return entry.authorLabel ?? "Ops"
     case "slack": return "Internal"

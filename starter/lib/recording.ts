@@ -15,25 +15,26 @@ export const RECORDING_DIR = join(process.cwd(), "..", "fixtures", "recordings")
 
 type Row = Record<string, unknown>
 export type RecordedEvent = { t: number; table: string; row: Row }
-export type Recording = { scenario: string; order: string; orderId: string; recordedAt: string; clockStart: string; durationMs: number; events: RecordedEvent[] }
+export type Recording = { scenario: string; order: string; orderId: string; orderIds?: string[]; recordedAt: string; clockStart: string; durationMs: number; events: RecordedEvent[] }
 
-/** The rows one order's scenario touches, per table. */
-function watched(orderId: string): { table: string; key: string; where: string }[] {
-  const id = orderId.replace(/'/g, "''")
+/** The rows a scenario on these orders touches, per table. */
+function watched(orderIds: string[]): { table: string; key: string; where: string }[] {
+  const ids = orderIds.map((id) => `'${id.replace(/'/g, "''")}'`).join(", ")
   return [
-    { table: "demo_events", key: "id", where: `order_id = '${id}'` },
-    { table: "timeline_entries", key: "id", where: `order_id = '${id}' and origin = 'live'` },
-    { table: "agent_runs", key: "id", where: `order_id = '${id}'` },
-    { table: "agent_steps", key: "id", where: `run_id in (select id from agent_runs where order_id = '${id}')` },
-    { table: "facts", key: "id", where: `order_id = '${id}' and origin in ('classifier', 'agent')` },
-    { table: "cards", key: "id", where: `order_id = '${id}'` },
+    { table: "demo_events", key: "id", where: `order_id in (${ids})` },
+    { table: "timeline_entries", key: "id", where: `order_id in (${ids}) and origin = 'live'` },
+    { table: "agent_runs", key: "id", where: `order_id in (${ids})` },
+    { table: "agent_steps", key: "id", where: `run_id in (select id from agent_runs where order_id in (${ids}))` },
+    { table: "facts", key: "id", where: `order_id in (${ids}) and origin in ('classifier', 'agent')` },
+    { table: "cards", key: "id", where: `order_id in (${ids})` },
+    { table: "disruptions", key: "id", where: "true" },
     { table: "sim_clock", key: "id", where: "true" },
   ]
 }
 
-async function snapshot(orderId: string): Promise<Map<string, { table: string; row: Row; json: string }>> {
+async function snapshot(orderIds: string[]): Promise<Map<string, { table: string; row: Row; json: string }>> {
   const out = new Map<string, { table: string; row: Row; json: string }>()
-  for (const { table, key, where } of watched(orderId)) {
+  for (const { table, key, where } of watched(orderIds)) {
     const [result] = await db.execute<{ rows: Row[] }>(sql.raw(`select coalesce(json_agg(t), '[]'::json) as rows from (select * from ${table} where ${where}) t`))
     for (const row of result?.rows ?? []) out.set(`${table}:${String(row[key])}`, { table, row, json: JSON.stringify(row) })
   }
@@ -44,10 +45,11 @@ async function snapshot(orderId: string): Promise<Map<string, { table: string; r
  * Record what happens on an order while `start()` plays a scenario live, until `done()` says it has settled.
  * Rows that already exist when recording starts are the baseline and are not recorded.
  */
-export async function recordScenario(options: { scenario: string; order: string; orderId: string; start: () => Promise<void>; done: () => Promise<boolean>; timeoutMs?: number; log?: (line: string) => void }): Promise<Recording> {
+export async function recordScenario(options: { scenario: string; order: string; orderId: string; orderIds?: string[]; start: () => Promise<void>; done: () => Promise<boolean>; timeoutMs?: number; log?: (line: string) => void }): Promise<Recording> {
   const clockStart = await clockNow()
   const events: RecordedEvent[] = []
-  let last = await snapshot(options.orderId)
+  const orderIds = options.orderIds ?? [options.orderId]
+  let last = await snapshot(orderIds)
   // The scenario's own reset deletes rows first; anything it writes after that is recorded from t = 0.
   const begin = Date.now()
   await options.start()
@@ -55,7 +57,7 @@ export async function recordScenario(options: { scenario: string; order: string;
   let settledSince: number | null = null
   while (Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, 250))
-    const current = await snapshot(options.orderId)
+    const current = await snapshot(orderIds)
     const t = Date.now() - begin
     for (const [key, item] of current) {
       if (last.get(key)?.json !== item.json) events.push({ t, table: item.table, row: item.row })
@@ -67,7 +69,7 @@ export async function recordScenario(options: { scenario: string; order: string;
       if (Date.now() - settledSince > 4000) break
     } else settledSince = null
   }
-  const recording: Recording = { scenario: options.scenario, order: options.order, orderId: options.orderId, recordedAt: new Date().toISOString(), clockStart: clockStart.toISOString(), durationMs: events.length ? events[events.length - 1].t : 0, events }
+  const recording: Recording = { scenario: options.scenario, order: options.order, orderId: options.orderId, orderIds, recordedAt: new Date().toISOString(), clockStart: clockStart.toISOString(), durationMs: events.length ? events[events.length - 1].t : 0, events }
   mkdirSync(RECORDING_DIR, { recursive: true })
   await writeFile(join(RECORDING_DIR, `${options.scenario}.json`), `${JSON.stringify(recording)}\n`)
   options.log?.(`Recorded ${events.length} changes over ${Math.round(recording.durationMs / 1000)} s`)

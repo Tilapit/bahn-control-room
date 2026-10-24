@@ -65,6 +65,20 @@ export async function addFinding(ctx: RunCtx, input: Input): Promise<ToolOutcome
   return { content: `Finding ${index + 1} added.`, summary: `Noted a finding: ${text}`, output: { index: index + 1, entryId, alsoId } }
 }
 
+export async function addAffected(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
+  const reference = str(input.order).toUpperCase()
+  const effect = str(input.effect)
+  const file = reference ? await getCase(reference) : null
+  const problems: string[] = []
+  if (!file) problems.push(`There is no order ${reference || "(empty)"}`)
+  else if (!ctx.group.includes(file.order.id)) problems.push(`${reference} is not one of the orders this run covers`)
+  if (!effect) problems.push("Say in one sentence what the cause means for this order")
+  problems.push(...textProblems("The effect", effect))
+  if (problems.length) return addError(ctx, problems, "Order not added to the card")
+  ctx.draft.affected = [...ctx.draft.affected.filter((item) => item.orderId !== file!.order.id), { orderId: file!.order.id, reference: file!.order.reference, car: file!.order.car.label, effect }]
+  return { content: `${reference} is on the card (${ctx.draft.affected.length} of ${ctx.group.length} orders this run covers).`, summary: `Put ${reference} on the card: ${effect}` }
+}
+
 export async function addStep(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
   const option = Number(input.option)
   const action = str(input.action)
@@ -74,6 +88,13 @@ export async function addStep(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
     if (typeof value === "string" ? value.trim() : value !== undefined && value !== null) params[key] = typeof value === "string" ? value.trim() : value
   }
   const problems: string[] = []
+  // On a card for several orders each step names its order; code keeps the id for the Executor.
+  if (params.order) {
+    const target = await getCase(String(params.order))
+    if (!target || !ctx.group.includes(target.order.id)) problems.push(`${String(params.order)} is not one of the orders this run covers`)
+    else if (target.order.id === ctx.orderId) delete params.order
+    else { params.order = target.order.reference; params.order_id = target.order.id }
+  }
   if (![1, 2, 3].includes(option)) problems.push("option must be 1, 2 or 3")
   if (!PROPOSABLE.includes(action)) problems.push(`"${action}" is not an action you can propose`)
   else {
@@ -84,7 +105,7 @@ export async function addStep(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
       else params.lookup = { kind: lookup.kind, label: lookup.label, price_cents: lookup.priceCents, details: lookup.details }
     }
     if (action === "book_ferry") {
-      const file = ctx.file ?? await getCase(ctx.orderId)
+      const file = await getCase(String(params.order_id ?? ctx.orderId))
       // A car with a booked crossing gets that booking moved, never a second one beside it.
       if (file?.plan.bookings.some((booking) => booking.kind === "Ferry" && booking.state === "booked")) problems.push("This car already has a booked crossing; use change_ferry_booking to move it, or the car would hold two crossings")
     }
@@ -94,7 +115,7 @@ export async function addStep(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
   ctx.draft.steps.push({ option, action, params })
   const count = ctx.draft.steps.filter((step) => step.option === option).length
   const lookupLabel = (params.lookup as { label?: string } | undefined)?.label
-  const what = `${describe(action)?.label ?? action}${lookupLabel ? `: ${lookupLabel}` : ""}`
+  const what = `${describe(action)?.label ?? action}${lookupLabel ? `: ${lookupLabel}` : ""}${params.order ? ` (${String(params.order)})` : ""}`
   return { content: `Option ${option}, step ${count} added: ${what}.`, summary: `Option ${option}: ${what}`, output: { option, step: count } }
 }
 
@@ -124,6 +145,14 @@ export async function propose(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
   if (whatHappened.length > 420) problems.push(`what_happened has ${whatHappened.length} characters; keep it to one or two sentences (under 350); the findings carry the detail`)
   if (!options.length) problems.push("Give at least option 1")
   problems.push(...textProblems("The headline", headline), ...textProblems("what_happened", whatHappened), ...textProblems("The reject label", rejectLabel))
+  // One cause, several orders: the card covers every order of the run, each with its effect.
+  if (ctx.group.length > 1) {
+    const missing = ctx.group.filter((id) => !ctx.draft.affected.some((item) => item.orderId === id))
+    if (missing.length) {
+      const references = (await Promise.all(missing.map((id) => getCase(id)))).map((item) => item?.order.reference ?? "?")
+      problems.push(`This run covers ${ctx.group.length} orders; add_affected_order for ${references.join(", ")} too (say so if it turned out not to be affected)`)
+    }
+  }
   const slots = [1, 2, 3].filter((n) => str(input[`option_${n}_label`]) || str(input[`option_${n}_effect`]) || ctx.draft.steps.some((step) => step.option === n))
   if (slots.some((n, index) => n !== index + 1)) problems.push("Number the options from 1 without gaps")
 
@@ -151,6 +180,15 @@ export async function propose(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
       if (step.action === "approve_repair_cost") computedCostCents += Math.round(Number(step.params.amount_eur ?? 0) * 100)
     }
   })
+  // A card that rests on a disruption notice names its source and says nobody on the ground confirmed it (code, not the prompt).
+  const fromNotice = ctx.trigger.startsWith("Monitor:") || cited.some((entry) => entry.channel === "disruption_feed")
+  if (fromNotice) {
+    if (!cited.some((entry) => entry.channel === "disruption_feed")) problems.push("This card rests on a disruption notice: add a finding that cites the notice itself, so the person sees who reported it")
+    const words = [whatHappened, ...drafts.map((draft) => draft.text)].join(" ")
+    if (!/not (yet )?(been )?confirmed|ha(s|ve)n['’]t (yet )?(confirmed|reported)|ha(s|ve) not (yet )?(confirmed|reported)|no driver is booked|unconfirmed/i.test(words)) {
+      problems.push("Say on the card that the driver has not confirmed the notice yet (or that no driver is booked): it is the source's report, not a fact on the ground")
+    }
+  }
   const levels = await Promise.all(options.map((option) => levelForAll(option.steps.map((step) => step.action))))
   levels.forEach((level, index) => { if (level === "never") problems.push(`Option ${index + 1} contains an action that is never allowed`) })
   if (problems.length) return rejectBack(ctx, problems, `Card sent back by code checks (${problems.length} problem${problems.length === 1 ? "" : "s"})`)
@@ -206,14 +244,19 @@ export async function propose(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
     }
   }
 
+  // References of other orders a finding cites (a card for several orders), so its chip opens the right order.
+  const otherRefs = new Map<string, string>()
+  for (const entry of cited) if (entry.orderId && entry.orderId !== ctx.orderId && !otherRefs.has(entry.orderId)) otherRefs.set(entry.orderId, (await getCase(entry.orderId))?.order.reference ?? "")
   // Store the card. Code writes the source chips, the deadline sentence and the severity.
   const now = await clockNow()
   const fresh = await getCase(ctx.orderId)
   const u = urgency(fresh ?? file, now)
   const severity = u.safety ? "safety" : u.timeRisk || (fresh ?? file).open.alerts.some((alert) => alert.severity === "high" || alert.severity === "critical") ? "high" : "normal"
+  const otherRef = (entry: TimelineItem) => entry.orderId && entry.orderId !== ctx.orderId ? ctx.draft.affected.find((item) => item.orderId === entry.orderId)?.reference ?? (otherRefs.get(entry.orderId) ?? undefined) : undefined
   const findings: CardFinding[] = drafts.map((draft, index) => {
     const also = citedAlso[index]
     return {
+      reference: otherRef(cited[index]),
       text: draft.text, source_entry_id: cited[index].id, source_label: cited[index].chip, at: cited[index].at,
       also: also ? { source_entry_id: also.id, source_label: also.chip, at: also.at } : null,
     }
@@ -227,22 +270,25 @@ export async function propose(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
     { id: "reject", label: rejectLabel, action: "reject", params: {}, kind: "reject" as const },
   ]
   const cardId = `card_${randomUUID().slice(0, 12)}`
+  const group = ctx.draft.affected.length > 1 ? ctx.draft.affected.map((item) => ({ order_id: item.orderId, reference: item.reference, car: item.car, effect: item.effect })) : null
   await db.update(cards).set({ status: "expired" }).where(and(eq(cards.orderId, ctx.orderId), eq(cards.status, "open"), ne(cards.id, cardId)))
   await db.insert(cards).values({
     id: cardId, orderId: ctx.orderId, runId: ctx.runId, createdAt: now, kind, status: "open",
-    headline: `${file.order.car.label}: ${headline}`, whatHappened, findings,
+    headline: group ? `${group.length} orders: ${headline}` : `${file.order.car.label}: ${headline}`, whatHappened, findings,
     proposal: {
       action: cardOptions[0].action, params: cardOptions[0].params, effect_text: options[0].effect,
       requires_approval_reason: reasons.length ? `it ${reasons.map((reason) => reason.replace(/^it /, "")).join(" and ")}` : null, cost_eur: costEur,
     },
     options: cardOptions, consequenceAt: u.at ? new Date(u.at) : null, consequenceText: u.sentence, severity,
-    verifierNotes: verification.notes, origin: "agent",
+    verifierNotes: verification.notes, origin: "agent", group,
   })
-  await writeEntry({
-    orderId: ctx.orderId, at: now, source: "agent", channel: "agent_card", authorType: "agent", authorLabel: AGENT_LABEL, kind: "proposal",
-    summary: kind === "question" ? `Asked Ops: ${headline}` : `Proposed: ${options[0].label.replace(/^Approve:\s*/i, "")}. Waiting for a person`,
-    evidence: { table: "cards", id: cardId },
-  })
+  for (const orderId of group ? group.map((item) => item.order_id) : [ctx.orderId]) {
+    await writeEntry({
+      orderId, at: now, source: "agent", channel: "agent_card", authorType: "agent", authorLabel: AGENT_LABEL, kind: "proposal",
+      summary: `${kind === "question" ? `Asked Ops: ${headline}` : `Proposed: ${options[0].label.replace(/^Approve:\s*/i, "")}. Waiting for a person`}${group ? ` (one card for ${group.map((item) => item.reference).join(", ")})` : ""}`,
+      evidence: { table: "cards", id: cardId },
+    })
+  }
   ctx.draft = emptyDraft()
   return { content: "The card is in front of a person now. Your run ends here.", summary: `Proposed to a person: ${options[0].label}`, finish: { kind: "card", cardId, summary: headline }, output: { cardId, verifier: verification.notes } }
 }

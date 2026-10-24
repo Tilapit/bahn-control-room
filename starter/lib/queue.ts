@@ -1,12 +1,12 @@
 // The For you queue: open cards, each with its order and the consequence that
 // sorts it. Urgency is computed now, against the simulated clock, not stored.
 
-import { and, count, eq, inArray } from "drizzle-orm"
+import { and, count, eq, inArray, or, sql } from "drizzle-orm"
 import { type CaseFile, getCases } from "./case"
 import { now as clockNow } from "./clock"
 import { db } from "./db"
 import { agentRuns, agentSteps, cards } from "./schema"
-import type { CardFinding, CardOption, CardProposal, VerifierNote } from "./schema"
+import type { CardFinding, CardGroupItem, CardOption, CardProposal, VerifierNote } from "./schema"
 import { liveSignals } from "./signals"
 import { compareUrgency, type Urgency, urgency } from "./urgency"
 
@@ -24,6 +24,8 @@ export type QueueCard = {
   options: CardOption[]
   severity: "safety" | "high" | "normal"
   verifierNotes: VerifierNote[] | null
+  /** One cause, several orders: each order the card covers, with what the cause does to it. */
+  group: CardGroupItem[] | null
   /** The agent run that wrote the card: model, effort and cost, shown in one quiet line. */
   run: { model: string | null; steps: number; tokens: number; costUsd: number; escalation: string | null } | null
 }
@@ -69,7 +71,7 @@ export function toQueueCard(row: typeof cards.$inferSelect, runs: Map<string, Ru
   return {
     id: row.id, kind: row.kind, origin: row.origin, runId: row.runId, headline: row.headline, whatHappened: row.whatHappened,
     findings: row.findings, proposal: row.proposal ?? null, options: row.options, severity: row.severity as QueueCard["severity"],
-    verifierNotes: row.verifierNotes ?? null, run: row.runId ? runs.get(row.runId) ?? null : null,
+    verifierNotes: row.verifierNotes ?? null, run: row.runId ? runs.get(row.runId) ?? null : null, group: row.group ?? null,
   }
 }
 
@@ -106,7 +108,7 @@ export async function getQueue(): Promise<{ now: string; items: QueueItem[]; cou
   }
   items.sort((a, b) => compareUrgency(a.urgency, b.urgency))
 
-  const withCard = new Set(items.map((item) => item.order.id))
+  const withCard = new Set(items.flatMap((item) => [item.order.id, ...(item.card.group ?? []).map((member) => member.order_id)]))
   const withRun = new Set(ordersWithRun.map((run) => run.orderId))
   let handling = 0
   let unattended = 0
@@ -131,7 +133,8 @@ export async function openCardCount(): Promise<number> {
 
 /** Open cards on one order, as queue items, for the order page. */
 export async function cardsForOrder(file: CaseFile, at: Date): Promise<QueueItem[]> {
-  const rowsFound = (await db.select().from(cards).where(inArray(cards.orderId, [file.order.id]))).filter((row) => row.status === "open")
+  // A card for several orders shows on each of them.
+  const rowsFound = (await db.select().from(cards).where(and(eq(cards.status, "open"), or(eq(cards.orderId, file.order.id), sql`${cards.group} @> ${JSON.stringify([{ order_id: file.order.id }])}::jsonb`))))
   const runs = await runInfo(rowsFound.map((row) => row.runId))
   return rowsFound.map((row) => ({ card: toQueueCard(row, runs), order: orderView(file), urgency: urgency(file, at) }))
 }

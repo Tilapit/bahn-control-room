@@ -472,3 +472,11 @@ a.filter { text-decoration: none; }
 .demo-mode:hover { color: var(--text); }
 .demo-mode + .clock { margin-left: 0; }
 .replay-status { font-size: 14px; color: var(--text-2); display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.group-list { display: grid; gap: 8px; font-size: 14px; }
+.group-list li { display: grid; gap: 1px; }
+.group-order { font-weight: 500; }
+.group-order:hover { text-decoration: underline; text-underline-offset: 2px; }
+.run-link { color: inherit; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 2px; }
+.run-link:hover { color: var(--text-2); }
+/* Red is for safety only: a decision that did not save reads in amber. */
+.failed-note { color: var(--amber); }

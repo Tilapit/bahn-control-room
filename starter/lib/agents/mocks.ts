@@ -6,7 +6,9 @@
 
 import { and, eq, inArray } from "drizzle-orm"
 import { db } from "../db"
-import { addresses, drivers, orders, relatedRecords } from "../schema"
+import { activeDisruptions } from "../disruptions"
+import { cityAt } from "../geo"
+import { addresses, type DisruptionScope, drivers, orders, relatedRecords } from "../schema"
 import { at, clock } from "../time"
 import { money } from "../words"
 
@@ -187,7 +189,7 @@ function roadKm(from: string, to: string): number {
   return ROAD_KM[`${a}|${b}`] ?? ROAD_KM[`${b}|${a}`] ?? 300
 }
 
-export type TravelOption = { id: string; kind: "train" | "flight" | "bus" | "taxi"; provider: string; from: string; to: string; departureAt: string; arrivalAt: string; priceCents: number; datasetOptionId: string | null }
+export type TravelOption = { id: string; kind: "train" | "flight" | "bus" | "taxi"; provider: string; from: string; to: string; departureAt: string; arrivalAt: string; priceCents: number; datasetOptionId: string | null; note?: string }
 
 /** Trains and flights between two cities after a time. Dataset quotes first. */
 export async function travelOptions(from: string, to: string, after: Date): Promise<TravelOption[]> {
@@ -201,8 +203,12 @@ export async function travelOptions(from: string, to: string, after: Date): Prom
       arrivalAt: String(row.details.expected_arrival_at ?? row.details.arrival_at ?? row.details.departure_at), priceCents: Number(row.details.quote_cents ?? 0), datasetOptionId: row.id,
     }))
   // A fictional timetable fills the gaps, sized by road distance: a local train every 20 minutes and a taxi for
-  // short hops, an hourly train for longer ones. An unknown pair is treated as 300 km.
+  // short hops, an hourly train for longer ones. An unknown pair is treated as 300 km. During a rail strike in the
+  // feed, trains in that country are shown with the notice, and a long-distance coach is offered instead.
   const km = roadKm(from, to)
+  const strikes = (await activeDisruptions(after)).filter((notice) => notice.kind === "strike" && (notice.affects as DisruptionScope).modes.includes("train"))
+  const struck = (departure: Date) => strikes.find((notice) => departure >= notice.startsAt && departure <= notice.endsAt
+    && [cityAt(from), cityAt(to)].some((city) => city && (notice.affects as DisruptionScope).countries?.includes(city.country)))
   const local = km <= 60
   const rideMinutes = local ? Math.max(20, Math.round(km * 1.2)) : Math.round((km / 95) * 60) + 20
   const everyMinutes = local ? 20 : 60
@@ -220,13 +226,25 @@ export async function travelOptions(from: string, to: string, after: Date): Prom
     const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: "UTC" }).format(departure))
     if (hour < 4 || hour > 20) continue
     const seed = `${from}|${to}|${departure.toISOString()}`
+    const strike = struck(departure)
     options.push({
       id: `travel:train:${slug(from)}-${slug(to)}:${departure.toISOString()}`, kind: "train", provider: local ? "City rail" : pick(seed, ["Northrail", "Baltic Link Rail"]),
       from, to, departureAt: departure.toISOString(), arrivalAt: new Date(departure.getTime() + rideMinutes * 60_000).toISOString(),
       priceCents: local ? 450 : Math.round(km * 0.18 + between(seed, 5, 25)) * 100, datasetOptionId: null,
+      note: strike ? `may not run: ${strike.title.toLowerCase()} (${strike.sourceLabel})` : undefined,
     })
   }
-  return options.sort((a, b) => a.departureAt.localeCompare(b.departureAt)).slice(0, 5)
+  if (!local && strikes.length) {
+    for (const option of options.filter((item) => item.note && item.kind === "train").slice(0, 1)) {
+      const departure = new Date(new Date(option.departureAt).getTime() + 30 * 60_000)
+      options.push({
+        id: `travel:bus:${slug(from)}-${slug(to)}:${departure.toISOString()}`, kind: "bus", provider: "Fernlinie coach",
+        from, to, departureAt: departure.toISOString(), arrivalAt: new Date(departure.getTime() + Math.round((km / 70) * 60 + 15) * 60_000).toISOString(),
+        priceCents: Math.round(km * 0.12 + 9) * 100, datasetOptionId: null, note: "long-distance coach, not affected by the rail strike",
+      })
+    }
+  }
+  return options.sort((a, b) => a.departureAt.localeCompare(b.departureAt)).slice(0, 6)
 }
 
 // ---------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 // order) and by the order screen. Everything in it comes from records and
 // carries a source entry and a time; nothing here is written by an LLM.
 
-import { and, asc, eq, gte, inArray, isNull, or, sql } from "drizzle-orm"
+import { and, asc, eq, gte, inArray, isNotNull, isNull, or, sql } from "drizzle-orm"
 import { db } from "./db"
 import { now as clockNow } from "./clock"
 import { Directory } from "./present/actors"
@@ -152,6 +152,15 @@ async function resolveOrderId(idOrReference: string): Promise<string | null> {
   const [row] = await db.select({ id: orders.id }).from(orders)
     .where(or(eq(orders.id, idOrReference), eq(orders.reference, idOrReference.toUpperCase()))).limit(1)
   return row?.id ?? null
+}
+
+/** The part of a decision's effect that concerns one order: a card for several orders carries its order on each item. */
+function scopeEffect(effect: ExecutedEffect | null, cardOrderId: string, orderId: string): ExecutedEffect | null {
+  if (!effect) return null
+  const mine = <T extends { orderId?: string }>(items: T[] | undefined) => (items ?? []).filter((item) => (item.orderId ?? cardOrderId) === orderId)
+  if (!effect.orders && cardOrderId !== orderId) return null
+  if (effect.orders && !effect.orders.includes(orderId)) return null
+  return { ...effect, steps: mine(effect.steps), bookings: mine(effect.bookings), windows: mine(effect.windows), handled: mine(effect.handled) }
 }
 
 /** Everything the case files of these orders read, in one pass per table. */
@@ -638,11 +647,12 @@ export async function getCases(orderIds?: string[]): Promise<CaseFile[]> {
   const [entryRows, factRows, cardRows, threadMessages, effectRows] = await Promise.all([
     db.select().from(timelineEntries).where(inArray(timelineEntries.orderId, ids)).orderBy(asc(timelineEntries.occurredAt), asc(timelineEntries.id)),
     db.select().from(factsTable).where(inArray(factsTable.orderId, ids)),
-    db.select({ id: cards.id, orderId: cards.orderId, headline: cards.headline, severity: cards.severity, createdAt: cards.createdAt, origin: cards.origin })
-      .from(cards).where(and(inArray(cards.orderId, ids), eq(cards.status, "open"))),
+    // A card for several orders is open on each of them.
+    db.select({ id: cards.id, orderId: cards.orderId, headline: cards.headline, severity: cards.severity, createdAt: cards.createdAt, origin: cards.origin, group: cards.group })
+      .from(cards).where(and(or(inArray(cards.orderId, ids), isNotNull(cards.group)), eq(cards.status, "open"))),
     db.execute<{ id: string; conversation_id: string }>(sql`select id, conversation_id from messages`),
     db.select({ orderId: cards.orderId, effect: decisions.executedEffect }).from(decisions).innerJoin(cards, eq(cards.id, decisions.cardId))
-      .where(and(inArray(cards.orderId, ids), isNull(decisions.undoneAt))),
+      .where(and(or(inArray(cards.orderId, ids), isNotNull(cards.group)), isNull(decisions.undoneAt))),
   ])
   const messageThreads = new Map([...threadMessages].map((row) => [row.id, row.conversation_id]))
   const inboxEntryRows = await db.select().from(timelineEntries).where(and(isNull(timelineEntries.orderId), sql`${timelineEntries.evidence}->>'table' = 'support_inbox_messages'`))
@@ -657,12 +667,12 @@ export async function getCases(orderIds?: string[]): Promise<CaseFile[]> {
   }
   const entriesByOrder = by(entryRows)
   const factsByOrder = by(factRows)
-  const cardsByOrder = by(cardRows)
+  const cardsByOrder = by(cardRows.flatMap((card) => card.group?.length ? card.group.map((item) => ({ ...card, orderId: item.order_id })) : [card]))
   return bundles.map((bundle) => {
     const threadIds = new Set(bundle.inboxThreads.map((thread) => thread.id))
     return compile({
       bundle, asOf, terminals, roadEstimates, messageThreads,
-      effects: effectRows.filter((row) => row.orderId === bundle.order.id && row.effect).map((row) => row.effect as ExecutedEffect),
+      effects: effectRows.map((row) => scopeEffect(row.effect as ExecutedEffect | null, row.orderId, bundle.order.id)).filter((effect): effect is ExecutedEffect => !!effect),
       entries: entriesByOrder.get(bundle.order.id) ?? [],
       factRows: factsByOrder.get(bundle.order.id) ?? [],
       openCards: cardsByOrder.get(bundle.order.id) ?? [],

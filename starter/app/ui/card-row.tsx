@@ -97,7 +97,7 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
         <span className="row-top">
           <span className="row-title">{card.headline}</span>
           {urgency.safety && <span className="tag safety">Safety</span>}
-          {!onOrderPage && <span className="row-ref">{order.reference}</span>}
+          {!onOrderPage && <span className="row-ref">{card.group ? `${card.group.length} orders` : order.reference}</span>}
         </span>
         <span className="row-consequence">
           {urgency.sentence}
@@ -114,6 +114,15 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
         <h3>What happened</h3>
         <p>{card.whatHappened}</p>
       </section>
+      {card.group && <section>
+        <h3>{card.group.length} orders, one cause</h3>
+        <ul className="group-list">
+          {card.group.map((member) => <li key={member.order_id}>
+            <Link className="group-order" href={orderHref(member.reference)}>{member.reference} · {member.car}</Link>
+            <span>{member.effect}</span>
+          </li>)}
+        </ul>
+      </section>}
       {card.findings.length > 0 && <section>
         <h3>What we know</h3>
         <ul className="findings">
@@ -122,8 +131,8 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
             return <li className="finding" key={`${finding.source_entry_id}-${index}`}>
               <span className="finding-text">{finding.text}{note && <span className="finding-note">Not confirmed by the verifier: {note.note}</span>}</span>
               <span className="chips">
-                <SourceChip label={finding.source_label} at={finding.at} now={now} zone={order.zone} href={entryHref(order.reference, finding.source_entry_id)} />
-                {finding.also && <SourceChip label={finding.also.source_label} at={finding.also.at} now={now} zone={order.zone} href={entryHref(order.reference, finding.also.source_entry_id)} />}
+                <SourceChip label={`${finding.reference ? `${finding.reference} · ` : ""}${finding.source_label}`} at={finding.at} now={now} zone={order.zone} href={entryHref(finding.reference ?? order.reference, finding.source_entry_id)} />
+                {finding.also && <SourceChip label={finding.also.source_label} at={finding.also.at} now={now} zone={order.zone} href={entryHref(finding.reference ?? order.reference, finding.also.source_entry_id)} />}
               </span>
             </li>
           })}
@@ -174,7 +183,7 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
         {card.options.length - 1} more choice{card.options.length - 1 === 1 ? "" : "s"}
       </button>}
       {!onOrderPage && <Link className="btn small quiet" href={orderHref(order.reference)}>Open order<Icon name="arrow" size={14} /></Link>}
-      {error && <span className="note" role="alert" style={{ color: "var(--red)" }}>{error}</span>}
+      {error && <span className="note failed-note" role="alert">{error}</span>}
     </div>}
     {fromAgent && open && <div className="row-reply">
       <form className="reply" onSubmit={(event) => { event.preventDefault(); if (reply.trim()) decide("reply", "Reply sent to the agent", reply.trim()) }}>
@@ -182,7 +191,7 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
         <button type="submit" className="btn small" disabled={!reply.trim() || !!busy}>Send to agent</button>
       </form>
       {card.run && <p className="note run-line">
-        Investigated by the agent · {modelWord(card.run.model)} · {card.run.steps} steps · {tokens(card.run.tokens)} · ${card.run.costUsd.toFixed(2)}
+        <Link className="run-link" href={`/agents/${card.runId}`}>Investigated by the agent</Link> · {modelWord(card.run.model)} · {card.run.steps} steps · {tokens(card.run.tokens)} · ${card.run.costUsd.toFixed(2)}
         {card.run.escalation ? <span title={card.run.escalation}> · moved to the senior model</span> : null}
       </p>}
     </div>}

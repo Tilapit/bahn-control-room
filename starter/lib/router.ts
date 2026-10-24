@@ -2,7 +2,7 @@
 // it decides what happens next: hand the message to a run that is waiting for this
 // person, start the Investigator, let Driver support answer, or nothing.
 
-import { and, desc, eq, inArray } from "drizzle-orm"
+import { and, desc, eq, inArray, or, sql } from "drizzle-orm"
 import { getCase } from "./case"
 import { db } from "./db"
 import { autoReplyEnabled } from "./demo"
@@ -25,8 +25,12 @@ export async function route(entryId: string, classification: Classification | nu
 
   // 1. A run is waiting for exactly this person: the message is its answer.
   if (fromDriver || fromSite) {
+    // The run may be on this order, or cover it with others (one cause, several orders) and wait on this order's driver.
     const [waiting] = await db.select().from(agentRuns)
-      .where(and(eq(agentRuns.orderId, entry.orderId), eq(agentRuns.status, fromDriver ? "waiting_driver" : "waiting_site")))
+      .where(and(
+        or(eq(agentRuns.orderId, entry.orderId), sql`${agentRuns.state}->'pending' @> ${JSON.stringify([{ orderId: entry.orderId }])}::jsonb`),
+        eq(agentRuns.status, fromDriver ? "waiting_driver" : "waiting_site"),
+      ))
       .orderBy(desc(agentRuns.startedAt)).limit(1)
     if (waiting) {
       const outcome = await answerFromMessage(waiting.id, entryId, { autoReply })

@@ -4,7 +4,7 @@
 // can see what the agent did. There is no tool that contacts a customer.
 
 import type Anthropic from "@anthropic-ai/sdk"
-import { type CaseFile, getCase, search, timeline } from "../case"
+import { type CaseFile, entriesById, getCase, getCases, search, timeline } from "../case"
 import { now as clockNow } from "../clock"
 import { MODELS, type Usage } from "../models"
 import { levelFor, PROPOSABLE } from "../policies"
@@ -39,19 +39,24 @@ export type RunCtx = {
   draft: CardDraft
   /** add_finding or add_step calls that failed in the current turn: propose in the same turn waits for the fix. */
   turnErrors: string[]
+  /** Every order this run covers (one cause, several orders); just the run's own order otherwise. */
+  group: string[]
+  /** Why the run started: a Monitor rule's finding, a message, the backfill. */
+  trigger: string
 }
 
 export type DraftFinding = { text: string; source: string; also: string | null; entryId: string; alsoId: string | null }
 export type DraftStep = { option: number; action: string; params: Record<string, unknown> }
-export type CardDraft = { findings: DraftFinding[]; steps: DraftStep[] }
-export const emptyDraft = (): CardDraft => ({ findings: [], steps: [] })
+export type DraftAffected = { orderId: string; reference: string; car: string; effect: string }
+export type CardDraft = { findings: DraftFinding[]; steps: DraftStep[]; affected: DraftAffected[] }
+export const emptyDraft = (): CardDraft => ({ findings: [], steps: [], affected: [] })
 
 export type ToolOutcome = {
   content: string
   output?: unknown
   summary: string
   isError?: boolean
-  pause?: { party: Party; question: string; questionEntryId: string; side?: "pickup" | "delivery" }
+  pause?: { party: Party; question: string; questionEntryId: string; side?: "pickup" | "delivery"; orderId?: string }
   finish?: { kind: "card"; cardId: string; summary: string } | { kind: "resolved"; summary: string; nextCheckAt: Date | null }
   switchModel?: { model: string; reason: string }
 }
@@ -64,6 +69,13 @@ async function caseOf(ctx: RunCtx, reference?: string | null): Promise<CaseFile 
     return ctx.file
   }
   return getCase(reference)
+}
+
+/** The case of an order this run covers: its own order when none is named. Null for an order outside the run. */
+async function groupCase(ctx: RunCtx, reference: string): Promise<CaseFile | null> {
+  if (!reference || reference.toUpperCase() === ctx.reference) return ctx.file ?? await caseOf(ctx)
+  const file = await getCase(reference)
+  return file && ctx.group.includes(file.order.id) ? file : null
 }
 
 function parseTime(value: unknown, fallback: Date): Date {
@@ -96,6 +108,7 @@ const STEP_PARAMS = {
   end: { type: "string", description: "ISO time." },
   amount_eur: { type: "number" },
   minutes: { type: "integer" },
+  order: { type: "string", description: "Only when the card covers several orders: the order this action is for, such as CD-420692." },
 }
 export const STEP_PARAM_KEYS = Object.keys(STEP_PARAMS)
 
@@ -118,14 +131,14 @@ export const TOOL_DEFINITIONS: Anthropic.Beta.BetaTool[] = [
   {
     name: "ask_driver",
     description: "Send the order's driver a chat message and wait for the reply. The run pauses until the driver answers; the reply comes back as this tool's result with a source handle. Ask everything you need in one short message. Free, no approval needed.",
-    input_schema: { type: "object", properties: { question: { type: "string", description: "The message to the driver, as they will read it." } }, required: ["question"] },
+    input_schema: { type: "object", properties: { question: { type: "string", description: "The message to the driver, as they will read it." }, order: ORDER }, required: ["question"] },
   },
   {
     name: "ask_site",
     description: "Send the pickup or delivery site's desk a message and wait for the reply. The run pauses until the site answers. Sites are not customers. Free, no approval needed.",
     input_schema: {
       type: "object",
-      properties: { site: { type: "string", enum: ["pickup", "delivery"] }, question: { type: "string", description: "The message to the site desk." } },
+      properties: { site: { type: "string", enum: ["pickup", "delivery"] }, question: { type: "string", description: "The message to the site desk." }, order: ORDER },
       required: ["site", "question"],
     },
   },
@@ -168,6 +181,18 @@ export const TOOL_DEFINITIONS: Anthropic.Beta.BetaTool[] = [
     input_schema: { type: "object", properties: {} },
   },
   {
+    name: "check_disruptions",
+    description: "Read the disruption feed: strikes, protests and road closures, with who reported each one and when, and which orders code matched to them. A notice is the source's report, not something a driver confirmed. Free.",
+    input_schema: {
+      type: "object",
+      properties: {
+        region: { type: "string", description: "A city, country or road in words, such as 'Lille' or 'Germany'. Leave out for every notice." },
+        from: { type: "string", description: "ISO time; notices that run after it. Default: now." },
+        to: { type: "string", description: "ISO time; notices that start before it. Default: three days from now." },
+      },
+    },
+  },
+  {
     name: "escalate",
     description: "Hand the investigation to the senior model when two sources disagree about something that decides the case, a person's safety is in question, or the proposal would cost more than €500. Everything you did so far is kept.",
     input_schema: { type: "object", properties: { reason: { type: "string", description: "One sentence, such as: the driver says they are at the terminal but GPS shows 1,772 km to go." } }, required: ["reason"] },
@@ -183,6 +208,18 @@ export const TOOL_DEFINITIONS: Anthropic.Beta.BetaTool[] = [
         also: { type: "string", description: "Optional second handle, only when the finding combines two records with plain arithmetic, such as GPS km to go and a planning distance." },
       },
       required: ["text", "source"],
+    },
+  },
+  {
+    name: "add_affected_order",
+    description: "Only when one cause touches several orders: put one order on the card, with what the cause does to it in one sentence. Call it once for every order the run covers, the run's own order too. Then the card covers all of them and one approval carries out the steps for each.",
+    input_schema: {
+      type: "object",
+      properties: {
+        order: { type: "string", description: "The order reference, such as CD-420692." },
+        effect: { type: "string", description: "One sentence: what the cause means for this order, such as 'Delivery in Lille on Mon 26 Oct falls inside the blockade; no driver booked yet.'" },
+      },
+      required: ["order", "effect"],
     },
   },
   {
@@ -273,14 +310,16 @@ const EXECUTORS: Record<string, Executor> = {
   async ask_driver(ctx, input) {
     const question = text(input.question)
     if (await levelFor("ask_driver") !== "auto") return error("Asking the driver needs a person's approval right now. Propose it instead.", "Not allowed to ask the driver")
-    const file = ctx.file ?? await caseOf(ctx)
-    if (!file?.order.driver) return error("No driver is booked on this order, so there is nobody to ask.", "No driver to ask")
+    const file = await groupCase(ctx, text(input.order))
+    if (!file) return error(`${text(input.order)} is not one of the orders this run covers.`, "Asked about an order outside the run")
+    if (!file.order.driver) return error(`No driver is booked on ${file.order.reference}, so there is nobody to ask.`, "No driver to ask")
     if (!question) return error("Write the question.", "Empty question")
     const entryId = await writeEntry({
-      orderId: ctx.orderId, at: await clockNow(), source: "driver_chat", channel: "driver_chat", authorType: "agent", authorLabel: AGENT_LABEL,
+      orderId: file.order.id, at: await clockNow(), source: "driver_chat", channel: "driver_chat", authorType: "agent", authorLabel: AGENT_LABEL,
       kind: "message", summary: question, body: question, visibility: "public", evidence: { table: "agent_steps", id: ctx.stepId },
     })
-    return { content: "", summary: `Asked the driver: “${question}”`, pause: { party: "driver", question, questionEntryId: entryId } }
+    const other = file.order.id !== ctx.orderId ? ` on ${file.order.reference}` : ""
+    return { content: "", summary: `Asked the driver${other}: “${question}”`, pause: { party: "driver", question, questionEntryId: entryId, orderId: file.order.id } }
   },
 
   async ask_site(ctx, input) {
@@ -288,14 +327,15 @@ const EXECUTORS: Record<string, Executor> = {
     const side = input.site === "delivery" ? "delivery" : "pickup"
     if (await levelFor("ask_site") !== "auto") return error("Asking the site needs a person's approval right now. Propose it instead.", "Not allowed to ask the site")
     if (!question) return error("Write the question.", "Empty question")
-    const file = ctx.file ?? await caseOf(ctx)
-    const place = side === "pickup" ? file?.order.route.from : file?.order.route.to
+    const file = await groupCase(ctx, text(input.order))
+    if (!file) return error(`${text(input.order)} is not one of the orders this run covers.`, "Asked about an order outside the run")
+    const place = side === "pickup" ? file.order.route.from : file.order.route.to
     if (place?.kind === "private") return error(`The ${side} is a private address, not a site with a desk. Its contact may be the customer's: do not contact them; propose it instead.`, "No site desk to ask")
     const entryId = await writeEntry({
-      orderId: ctx.orderId, at: await clockNow(), source: "support", channel: "site_chat", authorType: "agent", authorLabel: AGENT_LABEL,
+      orderId: file.order.id, at: await clockNow(), source: "support", channel: "site_chat", authorType: "agent", authorLabel: AGENT_LABEL,
       kind: "message", summary: question, body: question, visibility: "public", evidence: { table: "agent_steps", id: ctx.stepId },
     })
-    return { content: "", summary: `Asked the ${side} site (${place?.name ?? "site"}): “${question}”`, pause: { party: "site", question, questionEntryId: entryId, side } }
+    return { content: "", summary: `Asked the ${side} site (${place?.name ?? "site"}): “${question}”`, pause: { party: "site", question, questionEntryId: entryId, side, orderId: file.order.id } }
   },
 
   async ferry_booking_status(ctx) {
@@ -345,7 +385,7 @@ const EXECUTORS: Record<string, Executor> = {
     const after = parseTime(input.after, await clockNow())
     const options = await travelOptions(from, to, after)
     const zone = orderView(ctx.file ?? (await caseOf(ctx))!).zone
-    const lines = options.map((option) => `- ${option.id}: ${option.kind} by ${option.provider}, ${option.from} to ${option.to}, departs ${at(option.departureAt, zone)}, arrives ${at(option.arrivalAt, zone)}, ${money(option.priceCents, "EUR")} (quote, not booked)`)
+    const lines = options.map((option) => `- ${option.id}: ${option.kind} by ${option.provider}, ${option.from} to ${option.to}, departs ${at(option.departureAt, zone)}, arrives ${at(option.arrivalAt, zone)}, ${money(option.priceCents, "EUR")} (quote, not booked)${option.note ? `; ${option.note}` : ""}`)
     const entryId = await lookupEntry(ctx, {
       source: "quote", author: "Travel search (by the agent)", status: "quote",
       summary: `Driver travel quotes ${from} to ${to}: ${options.map((option) => `${option.kind} ${clock(option.departureAt, zone)} ${money(option.priceCents, "EUR")}`).join(", ")}`, body: lines.map((line) => line.replace(/^- [^:]+: /, "")).join("\n"),
@@ -377,6 +417,28 @@ const EXECUTORS: Record<string, Executor> = {
     return { content: `Drivers who could take the gig. None has been asked; availability needs their yes.\n${lines.join("\n")}\nSource: ${ctx.refs.cite(entryId)}`, output: result, summary: `Looked for backup drivers in ${result.city}` }
   },
 
+  async check_disruptions(ctx, input) {
+    const { activeDisruptions, matchDisruption, noticeLine } = await import("../disruptions")
+    const now = await clockNow()
+    const from = parseTime(input.from, now)
+    const to = parseTime(input.to, new Date(now.getTime() + 3 * 86_400_000))
+    const region = text(input.region).toLowerCase()
+    const notices = (await activeDisruptions(now)).filter((notice) => notice.startsAt <= to && notice.endsAt >= from)
+      .filter((notice) => !region || `${notice.region} ${notice.title} ${notice.detail}`.toLowerCase().includes(region))
+    if (!notices.length) return { content: `No disruption notices${region ? ` for "${text(input.region)}"` : ""} between ${at(from, "UTC")} and ${at(to, "UTC")}.`, summary: `Checked the disruption feed${region ? ` for ${text(input.region)}` : ""}: nothing` }
+    const all = await getCases()
+    const lines: string[] = []
+    for (const notice of notices) {
+      // Cite the notice as it landed on this run's orders; if it is not on one of them, the look-up itself is the record.
+      const onOrder = ctx.group.map((id) => `disruptions:${notice.id}:${id}`)
+      const known = [...(await entriesById(onOrder)).keys()][0]
+      const entryId = known ?? await lookupEntry(ctx, { source: "alert", author: notice.sourceLabel, summary: `Disruption notice from ${notice.sourceLabel}: ${notice.title}`, body: noticeLine(notice), status: "signal" })
+      const matches = matchDisruption(notice, all, now)
+      lines.push(`- ${noticeLine(notice)} ${ctx.refs.cite(entryId)}\n  Orders code matched to it: ${matches.length ? matches.map((match) => `${match.file.order.reference} (${match.effect})`).join("; ") : "none"}`)
+    }
+    return { content: `Disruption feed, checked ${at(now, "UTC")}. Each notice is what its source reports; no driver has confirmed it unless a message says so.\n${lines.join("\n")}`, summary: `Checked the disruption feed${region ? ` for ${text(input.region)}` : ""}: ${notices.map((notice) => notice.title).join("; ")}` }
+  },
+
   async escalate(ctx, input) {
     const reason = text(input.reason) || "The case needs the senior model."
     if (ctx.model === MODELS.opus) return { content: "You are already the senior model. Continue.", summary: "Asked to escalate, already on the senior model" }
@@ -387,6 +449,7 @@ const EXECUTORS: Record<string, Executor> = {
 export async function executeTool(ctx: RunCtx, name: string, input: Input): Promise<ToolOutcome> {
   if (name === "add_finding") return (await import("./propose")).addFinding(ctx, input)
   if (name === "add_step") return (await import("./propose")).addStep(ctx, input)
+  if (name === "add_affected_order") return (await import("./propose")).addAffected(ctx, input)
   if (name === "propose") return (await import("./propose")).propose(ctx, input)
   if (name === "resolve") return (await import("./propose")).resolve(ctx, input)
   const executor = EXECUTORS[name]

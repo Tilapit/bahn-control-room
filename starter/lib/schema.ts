@@ -229,6 +229,8 @@ export const agentSteps = pgTable("agent_steps", {
 
 export type CardFinding = {
   text: string; source_entry_id: string; source_label: string; at: string
+  /** On a card for several orders: the order the cited entry belongs to, when it is not the card's own. */
+  reference?: string
   /** A second record, when the finding combines two (GPS km to go against a planning distance). */
   also?: { source_entry_id: string; source_label: string; at: string } | null
 }
@@ -245,6 +247,8 @@ export type CardOption = {
   kind?: "approve" | "reject" | "answer"
 }
 export type VerifierNote = { finding: number | null; ok: boolean; note: string }
+/** One order a grouped card covers, and what the shared cause does to it. */
+export type CardGroupItem = { order_id: string; reference: string; car: string; effect: string }
 
 export const cards = pgTable("cards", {
   id: text("id").primaryKey(),
@@ -262,6 +266,8 @@ export const cards = pgTable("cards", {
   consequenceText: text("consequence_text"),
   severity: text("severity").notNull(), // safety | high | normal
   verifierNotes: jsonb("verifier_notes").$type<VerifierNote[]>(),
+  // One cause, several orders (a disruption, one event): the other orders this card covers, each with its effect.
+  group: jsonb("group").$type<CardGroupItem[] | null>(),
   // alert: a temporary card built by code from a dataset alert (phase 2); agent: written by an agent run.
   origin: text("origin").notNull().default("agent"),
 }, (table) => [index("cards_status_idx").on(table.status, table.orderId)])
@@ -285,13 +291,15 @@ export const decisions = pgTable("decisions", {
 /** What the Executor did for one approved option, step by step. */
 export type ExecutedEffect = {
   ok: boolean
-  steps: { action: string; ok: boolean; summary: string; entryId: string | null; error?: string }[]
+  steps: { action: string; ok: boolean; summary: string; entryId: string | null; error?: string; orderId?: string }[]
   /** Simulated bookings made, shown on the order with the dataset's reservations. */
-  bookings: { kind: string; summary: string; departureAt: string | null; cutoffAt: string | null; zone: string | null; entryId: string; reference: string; priceCents: number | null }[]
+  bookings: { kind: string; summary: string; departureAt: string | null; cutoffAt: string | null; zone: string | null; entryId: string; reference: string; priceCents: number | null; orderId?: string }[]
   /** Pickup or delivery windows that were changed. */
-  windows: { key: "pickup_slot" | "delivery_promise"; start: string; end: string | null; zone: string | null; place: string | null; entryId: string }[]
+  windows: { key: "pickup_slot" | "delivery_promise"; start: string; end: string | null; zone: string | null; place: string | null; entryId: string; orderId?: string }[]
   /** Alerts, incidents and earlier agent proposals this decision dealt with; the order no longer lists them as open. */
-  handled?: { kind: "alert" | "incident" | "proposal"; id: string; label: string }[]
+  handled?: { kind: "alert" | "incident" | "proposal"; id: string; label: string; orderId?: string }[]
+  /** A card for several orders: the orders the steps ran on. Items above carry their order. */
+  orders?: string[]
 }
 
 export const policies = pgTable("policies", {
@@ -320,6 +328,27 @@ export const demoEvents = pgTable("demo_events", {
   kind: text("kind").notNull(),
   payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
 })
+
+/**
+ * A mocked disruption feed (strikes, protests, road closures), fictional. The Monitor matches active ones against
+ * orders' routes and drivers' booked travel. A notice is a signal from its source, not something a driver confirmed.
+ */
+export const disruptions = pgTable("disruptions", {
+  id: text("id").primaryKey(),
+  region: text("region").notNull(),
+  kind: text("kind").notNull(), // strike | protest | road_closure
+  title: text("title").notNull(),
+  detail: text("detail").notNull(),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+  endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  sourceLabel: text("source_label").notNull(),
+  // What it touches: { modes: ["road"] | ["train"], countries?: ["DE"], near?: { city, lat, lon, radius_km } }.
+  affects: jsonb("affects").$type<DisruptionScope>().notNull(),
+  timezone: text("timezone").notNull(),
+  // Null until the notice is in the feed (the demo publishes the Lille protest when its button is pressed).
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+})
+export type DisruptionScope = { modes: ("road" | "train")[]; countries?: string[]; near?: { city: string; lat: number; lon: number; radiusKm: number } }
 
 /** The simulated clock. One row; see lib/clock.ts. */
 export const simClock = pgTable("sim_clock", {
