@@ -280,6 +280,8 @@ export type ExecutedEffect = {
   bookings: { kind: string; summary: string; departureAt: string | null; cutoffAt: string | null; zone: string | null; entryId: string; reference: string; priceCents: number | null }[]
   /** Pickup or delivery windows that were changed. */
   windows: { key: "pickup_slot" | "delivery_promise"; start: string; end: string | null; zone: string | null; place: string | null; entryId: string }[]
+  /** Alerts, incidents and earlier agent proposals this decision dealt with; the order no longer lists them as open. */
+  handled?: { kind: "alert" | "incident" | "proposal"; id: string; label: string }[]
 }
 
 export const policies = pgTable("policies", {

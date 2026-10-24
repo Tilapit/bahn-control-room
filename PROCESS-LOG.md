@@ -439,3 +439,72 @@ passes (all 100 order pages). Screenshot of For you with agent cards, looked at;
   person calls a seller or site), `note` (keep the plan, check again).
 - Commit note: this commit also contains groundwork for phases 5 and 6 (decision columns, executor, router, demo
   page) that the card UI already depends on. Those are checked and logged in their own phases.
+
+---
+
+## Phase 5 — Decisions, Executor, policies, eval cases
+
+**Built**
+
+- `lib/decisions.ts`: a decision is recorded at once. The card leaves the list and the timeline shows "Approved: …",
+  but nothing is carried out for 8 seconds. Then `finalizeDecision` runs, once: a single conditional UPDATE claims it,
+  so the server's timer, the page's call at zero and the page-load sweep cannot run it twice.
+  - Approve: the Executor carries out the option.
+  - Reply, or reject with a reason: the agent continues the same conversation with the person's words.
+  - Plain reject: the run ends.
+  - Reject and reply also file an eval case (case snapshot, the agent's card, the person's correction).
+  - Policy counters move: "approved unchanged" only when the agent's first option went through as written.
+- `lib/executor.ts` (code only): one function per action. It re-checks the current state before writing (the
+  dataset's own rule for proposals, RECHECK_CURRENT_STATE_BEFORE_WRITE). A ferry is not booked if the car already
+  has a crossing, or if the sailing has no space when re-checked. It writes each effect as a timeline entry that
+  points at the decision. Bookings get a simulated reference ("VCL-2BA5C9 (simulated)"). An option that settles the
+  situation (a booking, a moved crossing, a new driver, a tow, a changed time) closes the order's open alerts,
+  incidents and earlier agent proposals, with one entry saying which. A call or a message does not.
+- `lib/case.ts` merges what the Executor did into the case file: simulated bookings appear under Booked, a changed
+  window replaces the recorded one, closed signals leave "Open", and a live reply in the same channel answers a
+  driver's message.
+- The run keeps its `propose` call open while the card waits, so a person's reply (or a failed execution) resumes
+  the same conversation; a card is a pause like a question to the driver.
+- Undo toast (`app/ui/decision-toast.tsx`): "Booking in 8 s · Undo", counting down; then "Booked", or "Not carried
+  out: …" in amber. Undo after the window is refused by the server.
+- `npm run scenario -- 1`: plays scenario 1 in Playwright, screenshotting each step. It resets only the order's
+  decisions, so it can be replayed without running the agent again.
+
+**How I checked it**
+
+- Scenario 1 in the browser (screens/scenario-1/): For you → open the CD-420299 card → "Approve: book Sat 24 Oct
+  14:00 ferry (€387) and Norderkai Lodge (€124)" → toast "Booking in 7 s · Undo", count 17 → 16 → Undo → card back,
+  count 17 → approve again → after the window "Booked" → the order shows the simulated ferry and hotel bookings, the
+  message to the driver, "Ferry check-in closes Sat 24 Oct 12:00 CEST · Booked through the control room", and the
+  status line moves on to "Camille Emberwick is booked to collect it in Leipzig". The database agrees: the undone
+  decision was never finalized; the second executed 3 steps; book_ferry and book_hotel count "approved unchanged".
+- Reply (API) on the CD-420603 card: "Ask the ferry line to hold the Thursday 16:00 space as a backup…". After 8 s
+  the same Opus conversation resumed. It said the system cannot place a ferry hold, and proposed a new card: "Call
+  the ferry line: hold Thu 22 Oct 16:00 space until 14:00 CEST, no booking". Old card answered; eval case filed.
+- Reject (API) on the CD-420593 card: run "Proposal rejected by Ops", eval case filed, counters moved; an Undo
+  after the window returns "This was already carried out and cannot be undone here."
+- Typecheck clean.
+
+**What was wrong in the first attempt, and what changed**
+
+1. After the booking, the order page still said "Taken alert: ferry sold out" and listed the alert, the incident and
+   both earlier proposals as open. The driver's message still read "Not answered", although Ops had just messaged
+   them. The Executor now closes the signals a settling option dealt with, and the case file counts a live reply as
+   an answer.
+2. The scenario's toast screenshot showed the bottom of the list; the script scrolls to the top first. The first
+   query for checking decisions was ambiguous SQL; fixed.
+3. A failed execution showed a red toast. Red is reserved for safety; it is amber text now.
+
+**Decisions and things left out**
+
+- The undo window is measured in real seconds (a person's reaction time), the only wall-clock time in the business
+  path. Everything the decision records uses the simulated clock. The Executor waits for the server's timer, the
+  page's call and a sweep on page load, so a closed tab or restarted server still finishes the work.
+- The Executor closes alerts and incidents only for options that settle the situation. A judgement call: an
+  approved booking for a sold-out ferry answers the "ferry sold out" alert. A call to the customer does not answer a
+  safety stop.
+- Undo after the window is not possible from the toast. A real rollback (cancel a booking) would be a new card.
+- Replaying scenario 1 does not roll back the policy counters, so they include test runs. The Settings page
+  (phase 8) will show them.
+- Not built: a ferry "hold" action (the agent had to propose a phone call for it). Contacting a supplier such as a
+  ferry line could be automatic like asking a site; left for later.

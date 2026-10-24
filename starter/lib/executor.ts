@@ -42,8 +42,27 @@ export async function execute(input: { decisionId: string; orderId: string; opti
     // Stop at the first failure: the rest of an option assumes the earlier steps happened.
     if (!result.step.ok) { effect.ok = false; break }
   }
+  // An option that settles the situation (a booking, a moved crossing, a new driver, a tow, a changed time) closes the
+  // signals it answered. Calls, messages and notes do not: the situation is still open after them.
+  if (effect.ok && steps.some((step) => RESOLVES.has(step.action))) {
+    const { open } = file
+    effect.handled = [
+      ...open.alerts.map((alert) => ({ kind: "alert" as const, id: alert.id, label: `${alert.label.toLowerCase()} alert` })),
+      ...open.incidents.map((incident) => ({ kind: "incident" as const, id: incident.id, label: `${incident.label} incident` })),
+      ...open.proposals.map((proposal) => ({ kind: "proposal" as const, id: proposal.id, label: `earlier proposal: ${proposal.summary.replace(/\.$/, "").toLowerCase()}` })),
+    ]
+    if (effect.handled.length) {
+      await writeEntry({
+        orderId: input.orderId, at: await clockNow(), source: "person", channel: "executor_close", authorType: "operator", authorLabel: EXECUTOR,
+        kind: "event", status: "done", summary: `Closed by the approved decision: ${effect.handled.map((item) => item.label).join("; ")}`,
+        evidence: { table: "decisions", id: input.decisionId },
+      })
+    }
+  }
   return effect
 }
+
+const RESOLVES = new Set(["book_ferry", "change_ferry_booking", "switch_driver", "book_tow", "change_pickup_time", "change_delivery_time", "book_driver_travel"])
 
 type StepResult = { step: ExecutedEffect["steps"][number]; booking?: ExecutedEffect["bookings"][number]; window?: ExecutedEffect["windows"][number] }
 

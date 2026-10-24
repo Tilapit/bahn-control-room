@@ -3,6 +3,7 @@
 // screenshot of every step into ../screens/scenario-<n>/. The agent work behind a
 // scenario must already exist (scenario 1: run `npm run agents:investigate -- CD-420299 --fresh`).
 
+import "dotenv/config"
 import { mkdir } from "node:fs/promises"
 import { join, resolve } from "node:path"
 import { chromium, type Page } from "playwright"
@@ -15,6 +16,11 @@ function option(args: string[], name: string, fallback: string): string {
 type Shot = (name: string, page?: Page) => Promise<void>
 
 async function scenario1(page: Page, base: string, shot: Shot) {
+  // Replayable: forget earlier decisions on CD-420299 (the agent's card and work stay).
+  const { getCase } = await import("@/lib/case")
+  const { resetOrderDecisions } = await import("@/lib/agents/reset")
+  const file = await getCase("CD-420299")
+  if (file) await resetOrderDecisions(file.order.id)
   await page.goto(`${base}/`, { waitUntil: "networkidle" })
   await shot("01-for-you")
   const row = page.locator("article.row", { hasText: "BMW M4" }).filter({ hasText: "ferry" }).first()
@@ -27,15 +33,18 @@ async function scenario1(page: Page, base: string, shot: Shot) {
   console.log(`  approving: ${label}`)
   await approve.click()
   await page.locator(".toast").waitFor()
+  await page.evaluate(() => window.scrollTo(0, 0))
   await page.waitForTimeout(1200)
   await shot("03-approved-undo-window")
   await page.locator(".toast button", { hasText: "Undo" }).click()
   await page.waitForTimeout(800)
-  await shot("04-undone-card-back")
   const again = page.locator("article.row", { hasText: "BMW M4" }).filter({ hasText: "ferry" }).first()
+  await again.scrollIntoViewIfNeeded()
+  await shot("04-undone-card-back")
   if (await again.getAttribute("data-open") !== "true") await again.locator(".row-head").click()
   await again.locator(".row-actions .btn.primary").first().click()
   await page.locator(".toast").waitFor()
+  await page.evaluate(() => window.scrollTo(0, 0))
   await page.waitForTimeout(9500)
   await shot("05-carried-out")
   await page.goto(`${base}/orders/CD-420299`, { waitUntil: "networkidle" })
@@ -67,4 +76,4 @@ async function main() {
   }
 }
 
-main().catch((error) => { console.error(error); process.exitCode = 1 })
+main().catch((error) => { console.error(error); process.exitCode = 1 }).finally(async () => (await import("@/lib/db")).closeDb())

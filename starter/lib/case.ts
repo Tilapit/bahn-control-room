@@ -456,7 +456,9 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
     .sort((a, b) => Number(a.historical) - Number(b.historical) || (a.kind === b.kind ? String(b.source.at).localeCompare(String(a.source.at)) : a.kind === "agreement" ? -1 : 1))
 
   // ---- open items ---------------------------------------------------------------
-  const openAlerts = bundle.alerts.filter((alert) => alert.status === "OPEN" || alert.status === "ACKNOWLEDGED").map((alert) => ({
+  // Signals a person dealt with through an approved card are no longer open, even though the dataset row is.
+  const handled = new Set(effects.flatMap((effect) => effect.handled ?? []).map((item) => `${item.kind}:${item.id}`))
+  const openAlerts = bundle.alerts.filter((alert) => (alert.status === "OPEN" || alert.status === "ACKNOWLEDGED") && !handled.has(`alert:${alert.id}`)).map((alert) => ({
     id: alert.id, signal: alert.signal, label: signalLabel(alert.signal), severity: alert.severity, taken: alert.status === "ACKNOWLEDGED",
     owner: dir.title(alert.details.owner), summary: alert.summary, at: alert.triggeredAt,
     conversationId: str(alert.details.conversation_id), source: ref(`alerts:${alert.id}`),
@@ -465,11 +467,11 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
     id: row.id, label: taskLabel(str(row.details.kind)), owner: dir.title(row.details.owner), dueAt: str(row.details.due_at),
     summary: str(row.details.summary), nextAction: str(row.details.next_action), source: ref(`work_items:${row.id}`),
   }))
-  const incidents = rows(bundle, "incidents").filter((row) => !str(row.details.resolved_at)).map((row) => ({
+  const incidents = rows(bundle, "incidents").filter((row) => !str(row.details.resolved_at) && !handled.has(`incident:${row.id}`)).map((row) => ({
     id: row.id, label: incidentLabel(str(row.details.kind)), status: label(str(row.details.status)).toLowerCase(), owner: dir.title(row.details.owner),
     notes: entryById.get(`incidents:${row.id}`)?.body ?? null, source: ref(`incidents:${row.id}`),
   }))
-  const proposals = rows(bundle, "agent_proposals").filter((row) => ["PENDING_REVIEW", "APPROVED_AWAITING_EXECUTION", "FAILED"].includes(String(row.details.status))).map((row) => {
+  const proposals = rows(bundle, "agent_proposals").filter((row) => ["PENDING_REVIEW", "APPROVED_AWAITING_EXECUTION", "FAILED"].includes(String(row.details.status)) && !handled.has(`proposal:${row.id}`)).map((row) => {
     const status = String(row.details.status)
     const state = status === "PENDING_REVIEW" ? "waiting for review" as const : status === "FAILED" ? "failed" as const : "approved, not carried out yet" as const
     return {
@@ -488,12 +490,15 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
     const last = threadEntries[threadEntries.length - 1]
     const lastInboundEntry = [...threadEntries].reverse().find((entry) => INBOUND.has(String(entry.authorType)))
     const firstInboundEntry = threadEntries.find((entry) => INBOUND.has(String(entry.authorType)))
+    // A reply sent live (by Ops through a card, or by an agent) in the same channel answers it.
+    const answeredLive = !!lastInboundEntry && entries.some((entry) => entry.origin === "live" && entry.kind === "message" && entry.source === lastInboundEntry.source
+      && ["agent", "operator"].includes(String(entry.authorType)) && entry.occurredAt > lastInboundEntry.occurredAt)
     return {
       id: thread.id, channel: label(thread.channel), topic: label(thread.category),
       waitingOn: str(thread.details.waiting_on) ? label(str(thread.details.waiting_on)).toLowerCase() : null,
       firstInbound: firstInboundEntry ? { text: firstInboundEntry.summary, author: firstInboundEntry.authorLabel ?? "Unknown", source: ref(firstInboundEntry.id) } : null,
       lastInbound: lastInboundEntry ? { text: lastInboundEntry.summary, author: lastInboundEntry.authorLabel ?? "Unknown", source: ref(lastInboundEntry.id) } : null,
-      unanswered: !!last && INBOUND.has(String(last.authorType)),
+      unanswered: !!last && INBOUND.has(String(last.authorType)) && !answeredLive,
     }
   })
   const supportInbox = bundle.inboxThreads
