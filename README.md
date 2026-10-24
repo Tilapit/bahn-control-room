@@ -46,6 +46,8 @@ docker compose up -d --wait
 npm run db:push
 npm run db:seed
 npm run attachments:seed
+npm run timeline:build   # one timeline, facts and search index for every order
+npm run cards:alerts     # temporary cards for the For you list (until agents run)
 npm run dev
 ```
 

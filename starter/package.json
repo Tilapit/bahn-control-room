@@ -11,7 +11,12 @@
     "db:seed": "tsx scripts/seed.ts",
     "attachments:seed": "tsx scripts/seed-attachments.ts",
     "attachments:smoke": "tsx scripts/smoke-attachments.ts",
-    "smoke": "tsx scripts/smoke.ts"
+    "smoke": "tsx scripts/smoke.ts",
+    "timeline:build": "tsx scripts/build-timeline.ts",
+    "case": "tsx scripts/case.ts",
+    "urgency": "tsx scripts/urgency.ts",
+    "cards:alerts": "tsx scripts/cards-from-alerts.ts",
+    "screens": "tsx scripts/screens.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1155.0",
@@ -28,6 +33,7 @@
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "drizzle-kit": "^0.31.11",
+    "playwright": "^1.64.1",
     "tsx": "^4.23.15",
     "typescript": "7.0.2"
   }

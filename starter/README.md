@@ -16,6 +16,8 @@ docker compose up -d --wait
 npm run db:push
 npm run db:seed
 npm run attachments:seed
+npm run timeline:build   # one timeline, facts and search index for every order
+npm run cards:alerts     # temporary cards for the For you list (until agents run)
 npm run dev
 ```
 
@@ -53,8 +55,10 @@ This starter does not include write actions, an agent, permissions or grading. T
 
 ```sh
 npm run typecheck
-npm run build
-APP_URL=http://localhost:3000 npm run smoke
+npm run case CD-420322      # the compiled case file the agents and the order page read
+npm run urgency             # every order with a live signal, in queue order, with its consequence
+APP_URL=http://localhost:3000 npm run smoke      # For you, all 100 order pages, search
+APP_URL=http://localhost:3000 npm run screens    # Playwright screenshots into ../screens
 APP_URL=http://localhost:3000 npm run attachments:smoke
 ```
 

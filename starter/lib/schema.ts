@@ -1,4 +1,5 @@
-import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core"
+import { sql } from "drizzle-orm"
+import { boolean, customType, index, integer, jsonb, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core"
 
 export const datasetMetadata = pgTable("dataset_metadata", {
   id: text("id").primaryKey(),
@@ -128,3 +129,159 @@ export const relatedRecords = pgTable("related_records", {
   primaryKey({ columns: [table.collection, table.id] }),
   index("related_records_order_idx").on(table.orderId, table.collection),
 ])
+
+// ---------------------------------------------------------------------------
+// Control Room V3 tables. None of them has a foreign key to the starter tables,
+// so `npm run db:seed` can still replace the snapshot in one transaction.
+// ---------------------------------------------------------------------------
+
+const tsvector = customType<{ data: string }>({ dataType: () => "tsvector" })
+
+export type Evidence = { table: string; id: string }
+
+/** One row per meaningful record, in one shape, so every channel lands on one timeline per order. */
+export const timelineEntries = pgTable("timeline_entries", {
+  id: text("id").primaryKey(),
+  orderId: text("order_id"),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+  receivedAt: timestamp("received_at", { withTimezone: true }),
+  // order | gps | driver_chat | support | slack | email | call | booking | quote | alert | agent | person | system
+  source: text("source").notNull(),
+  channel: text("channel"),
+  authorType: text("author_type"),
+  authorId: text("author_id"),
+  authorLabel: text("author_label"),
+  // message | position | booking | quote | alert | event | proposal | decision | fact
+  kind: text("kind").notNull(),
+  summary: text("summary").notNull(),
+  body: text("body"),
+  // claimed | verified | quote | booked | superseded | signal | done
+  status: text("status"),
+  visibility: text("visibility").notNull().default("internal"),
+  evidence: jsonb("evidence").$type<Evidence>().notNull(),
+  language: text("language"),
+  // dataset rows are rebuilt by `npm run timeline:build`; live rows come from ingest, agents and decisions.
+  origin: text("origin").notNull().default("dataset"),
+}, (table) => [
+  index("timeline_order_time_idx").on(table.orderId, table.occurredAt),
+  index("timeline_source_idx").on(table.source),
+])
+
+export const facts = pgTable("facts", {
+  id: text("id").primaryKey(),
+  orderId: text("order_id").notNull(),
+  subject: text("subject").notNull(),
+  value: text("value").notNull(),
+  status: text("status").notNull(), // claimed | verified | superseded
+  sourceEntryId: text("source_entry_id").notNull(),
+  statedByLabel: text("stated_by_label").notNull(),
+  statedAt: timestamp("stated_at", { withTimezone: true }).notNull(),
+  supersededBy: text("superseded_by"),
+  kind: text("kind").notNull(), // fact | agreement
+  // dataset: written by code from structured records; classifier: extracted from a message.
+  origin: text("origin").notNull().default("dataset"),
+}, (table) => [index("facts_order_idx").on(table.orderId)])
+
+export const agentRuns = pgTable("agent_runs", {
+  id: text("id").primaryKey(),
+  orderId: text("order_id"),
+  agent: text("agent").notNull(),
+  model: text("model"),
+  trigger: text("trigger").notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
+  status: text("status").notNull(), // running | waiting_driver | waiting_person | done | failed
+  outcomeSummary: text("outcome_summary"),
+  nextCheckAt: timestamp("next_check_at", { withTimezone: true }),
+  inputTokens: integer("input_tokens").notNull().default(0),
+  outputTokens: integer("output_tokens").notNull().default(0),
+}, (table) => [index("agent_runs_order_idx").on(table.orderId, table.startedAt)])
+
+export const agentSteps = pgTable("agent_steps", {
+  id: text("id").primaryKey(),
+  runId: text("run_id").notNull(),
+  idx: integer("idx").notNull(),
+  at: timestamp("at", { withTimezone: true }).notNull(),
+  type: text("type").notNull(), // thought | tool_call | tool_result | message
+  tool: text("tool"),
+  input: jsonb("input"),
+  output: jsonb("output"),
+  summary: text("summary"),
+}, (table) => [index("agent_steps_run_idx").on(table.runId, table.idx)])
+
+export type CardFinding = { text: string; source_entry_id: string; source_label: string; at: string }
+export type CardProposal = { action: string; params: Record<string, unknown>; effect_text: string; requires_approval_reason: string | null }
+export type CardOption = { id: string; label: string; action: string; params: Record<string, unknown> }
+
+export const cards = pgTable("cards", {
+  id: text("id").primaryKey(),
+  orderId: text("order_id").notNull(),
+  runId: text("run_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  kind: text("kind").notNull(), // decision | question
+  status: text("status").notNull(), // open | approved | rejected | answered | expired
+  headline: text("headline").notNull(),
+  whatHappened: text("what_happened").notNull(),
+  findings: jsonb("findings").$type<CardFinding[]>().notNull(),
+  proposal: jsonb("proposal").$type<CardProposal | null>(),
+  options: jsonb("options").$type<CardOption[]>().notNull(),
+  consequenceAt: timestamp("consequence_at", { withTimezone: true }),
+  consequenceText: text("consequence_text"),
+  severity: text("severity").notNull(), // safety | high | normal
+  verifierNotes: jsonb("verifier_notes").$type<unknown[]>(),
+  // alert: a temporary card built by code from a dataset alert (phase 2); agent: written by an agent run.
+  origin: text("origin").notNull().default("agent"),
+}, (table) => [index("cards_status_idx").on(table.status, table.orderId)])
+
+export const decisions = pgTable("decisions", {
+  id: text("id").primaryKey(),
+  cardId: text("card_id").notNull(),
+  decidedAt: timestamp("decided_at", { withTimezone: true }).notNull(),
+  actor: text("actor").notNull(),
+  choice: text("choice").notNull(),
+  replyText: text("reply_text"),
+  executedEffect: jsonb("executed_effect"),
+  undoneAt: timestamp("undone_at", { withTimezone: true }),
+}, (table) => [index("decisions_card_idx").on(table.cardId)])
+
+export const policies = pgTable("policies", {
+  action: text("action").primaryKey(),
+  level: text("level").notNull(), // auto | approval | never
+  approvedUnchangedCount: integer("approved_unchanged_count").notNull().default(0),
+  decidedCount: integer("decided_count").notNull().default(0),
+  note: text("note"),
+})
+
+export const evalCases = pgTable("eval_cases", {
+  id: text("id").primaryKey(),
+  cardId: text("card_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  caseSnapshot: jsonb("case_snapshot").notNull(),
+  agentProposal: jsonb("agent_proposal"),
+  humanCorrection: jsonb("human_correction"),
+  lastResult: text("last_result"),
+})
+
+/** Scripted or typed demo events that the ingest endpoint turns into timeline entries. */
+export const demoEvents = pgTable("demo_events", {
+  id: text("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  orderId: text("order_id"),
+  kind: text("kind").notNull(),
+  payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+})
+
+/** The simulated clock. One row; see lib/clock.ts. */
+export const simClock = pgTable("sim_clock", {
+  id: text("id").primaryKey(),
+  nowAt: timestamp("now_at", { withTimezone: true }).notNull(),
+})
+
+/** One searchable document per order, rebuilt with the timeline. */
+export const searchDocuments = pgTable("search_documents", {
+  orderId: text("order_id").primaryKey(),
+  reference: text("reference").notNull(),
+  content: text("content").notNull(),
+  tsv: tsvector("tsv").generatedAlwaysAs(sql`to_tsvector('simple', content)`),
+}, (table) => [index("search_documents_tsv_idx").using("gin", table.tsv)])
+
