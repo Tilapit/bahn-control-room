@@ -35,7 +35,16 @@ export type RunCtx = {
   file: CaseFile | null
   /** Model calls made inside tools (Verifier), added to the run's tokens and cost. */
   usageExtra: { model: string; usage: Usage; what: string }[]
+  /** The card being put together with add_finding and add_step; propose builds it and clears it. */
+  draft: CardDraft
+  /** add_finding or add_step calls that failed in the current turn: propose in the same turn waits for the fix. */
+  turnErrors: string[]
 }
+
+export type DraftFinding = { text: string; source: string; also: string | null; entryId: string; alsoId: string | null }
+export type DraftStep = { option: number; action: string; params: Record<string, unknown> }
+export type CardDraft = { findings: DraftFinding[]; steps: DraftStep[] }
+export const emptyDraft = (): CardDraft => ({ findings: [], steps: [] })
 
 export type ToolOutcome = {
   content: string
@@ -77,16 +86,18 @@ async function lookupEntry(ctx: RunCtx, input: { source: string; author: string;
 
 const ORDER = { type: "string", description: "Order reference, such as CD-420322. Leave out for the order you are investigating." }
 
+/** The params an action can take, as flat fields of add_step. Each action uses only some of them. */
 const STEP_PARAMS = {
-  type: "object",
-  description: "Parameters for the action, as listed in your instructions. Use ids exactly as the look-up printed them; leave out the ones the action does not take.",
-  additionalProperties: false,
-  properties: {
-    id: { type: "string", description: "The option id, driver id or shop id from a look-up" },
-    name: { type: "string" }, to: { type: "string" }, text: { type: "string" },
-    start: { type: "string" }, end: { type: "string" }, amount_eur: { type: "number" }, minutes: { type: "integer" },
-  },
+  id: { type: "string", description: "The option id, driver id or shop id exactly as a look-up printed it." },
+  name: { type: "string", description: "switch_driver: the new driver's name." },
+  to: { type: "string", description: "Who gets the message or call; for book_tow, workshop or delivery." },
+  text: { type: "string", description: "The full message, what to ask on the call, or what changes, in plain words." },
+  start: { type: "string", description: "ISO time." },
+  end: { type: "string", description: "ISO time." },
+  amount_eur: { type: "number" },
+  minutes: { type: "integer" },
 }
+export const STEP_PARAM_KEYS = Object.keys(STEP_PARAMS)
 
 export const TOOL_DEFINITIONS: Anthropic.Beta.BetaTool[] = [
   {
@@ -162,44 +173,50 @@ export const TOOL_DEFINITIONS: Anthropic.Beta.BetaTool[] = [
     input_schema: { type: "object", properties: { reason: { type: "string", description: "One sentence, such as: the driver says they are at the terminal but GPS shows 1,772 km to go." } }, required: ["reason"] },
   },
   {
+    name: "add_finding",
+    description: "Add one finding to the card you are about to propose: one fact in one sentence, with the handle of the entry that says it. Call it once per finding, three to seven times, most important first, in the same turn as add_step and propose. Code checks the source at once and tells you if the finding was not added.",
+    input_schema: {
+      type: "object",
+      properties: {
+        text: { type: "string", description: "One fact, one plain sentence." },
+        source: { type: "string", description: "The handle of the entry that says it, from a tool result, such as E12." },
+        also: { type: "string", description: "Optional second handle, only when the finding combines two records with plain arithmetic, such as GPS km to go and a planning distance." },
+      },
+      required: ["text", "source"],
+    },
+  },
+  {
+    name: "add_step",
+    description: "Add one action to an option of the card you are about to propose. Call it once per action, in the order they should happen. Option 1 is your proposal. A question card has no steps. Code checks the action and its look-up id at once and tells you if the step was not added.",
+    input_schema: {
+      type: "object",
+      properties: {
+        option: { type: "integer", enum: [1, 2, 3], description: "The option this action belongs to." },
+        action: { type: "string", enum: PROPOSABLE },
+        ...STEP_PARAMS,
+      },
+      required: ["option", "action"],
+    },
+  },
+  {
     name: "propose",
-    description: "Put one card in front of an operations person and end your run. Use it when a person has to approve an action or answer a question. Code checks every finding's source and every action against the permission table, and a verifier checks each claim against its source; if they find problems, you get them back to fix.",
+    description: "Put the card in front of an operations person and end your run. The card is built from the findings and steps you added since your last propose call; send them in the same turn, before this call. Code checks every source and action, and a verifier checks each claim against its source; if they find problems, nothing is shown, the findings and steps are cleared, and you get the problems back to fix.",
     input_schema: {
       type: "object",
       properties: {
         kind: { type: "string", enum: ["decision", "question"] },
         headline: { type: "string", description: "What happened, at most 70 characters, without the car name." },
         what_happened: { type: "string", description: "One or two sentences." },
-        findings: {
-          type: "array",
-          description: "Three to seven facts the decision rests on, each with one source handle.",
-          items: {
-            type: "object",
-            properties: {
-              text: { type: "string" },
-              source: { type: "string", description: "A handle from a tool result, such as E12." },
-              also: { type: "string", description: "Optional second handle, only when the finding combines two records, such as GPS km to go and a planning distance." },
-            },
-            required: ["text", "source"],
-          },
-        },
-        options: {
-          type: "array",
-          description: "The first option is your proposal. One to three options.",
-          items: {
-            type: "object",
-            properties: {
-              label: { type: "string", description: "Button text saying exactly what happens." },
-              effect: { type: "string", description: "One sentence: what the system does after the click, and what it does not do." },
-              steps: { type: "array", items: { type: "object", properties: { action: { type: "string", enum: PROPOSABLE }, params: STEP_PARAMS }, required: ["action", "params"] } },
-            },
-            required: ["label", "effect", "steps"],
-          },
-        },
+        option_1_label: { type: "string", description: "Button text of your proposal, saying exactly what happens." },
+        option_1_effect: { type: "string", description: "One sentence: what the system does after the click, and what it does not do." },
+        option_2_label: { type: "string", description: "Optional real alternative: its button text." },
+        option_2_effect: { type: "string" },
+        option_3_label: { type: "string", description: "Optional second alternative: its button text." },
+        option_3_effect: { type: "string" },
         reject_label: { type: "string", description: "Button text for no, saying what happens." },
-        cost_eur: { type: ["number", "null"], description: "Total new cost of the first option in euros, or null." },
+        cost_eur: { type: ["number", "null"], description: "Total new cost of option 1 in euros, or null." },
       },
-      required: ["kind", "headline", "what_happened", "findings", "options", "reject_label"],
+      required: ["kind", "headline", "what_happened", "option_1_label", "option_1_effect", "reject_label"],
     },
   },
   {
@@ -217,9 +234,9 @@ export const TOOL_DEFINITIONS: Anthropic.Beta.BetaTool[] = [
   },
 ]
 
-// Not strict: strict mode on propose garbled card text in testing (literal "\u2013" escapes, a finding that
-// swallowed its own "source" key), and strict on every tool is over the API's schema size limit. propose
-// checks its input in code instead and sends a malformed call back with what was wrong.
+// A card is built from flat calls: add_finding and add_step once per item, then propose with plain fields.
+// The earlier single propose call nested findings and options inside it, and its first call arrived
+// malformed in most runs (lists sent as text). Not strict: strict mode garbled card text in testing.
 // Cache the tool definitions with the system prompt (SPEC 7). The marker on the last tool covers all of them.
 TOOL_DEFINITIONS[TOOL_DEFINITIONS.length - 1] = { ...TOOL_DEFINITIONS[TOOL_DEFINITIONS.length - 1], cache_control: { type: "ephemeral" } }
 
@@ -368,6 +385,8 @@ const EXECUTORS: Record<string, Executor> = {
 }
 
 export async function executeTool(ctx: RunCtx, name: string, input: Input): Promise<ToolOutcome> {
+  if (name === "add_finding") return (await import("./propose")).addFinding(ctx, input)
+  if (name === "add_step") return (await import("./propose")).addStep(ctx, input)
   if (name === "propose") return (await import("./propose")).propose(ctx, input)
   if (name === "resolve") return (await import("./propose")).resolve(ctx, input)
   const executor = EXECUTORS[name]

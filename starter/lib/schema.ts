@@ -182,6 +182,8 @@ export const facts = pgTable("facts", {
   origin: text("origin").notNull().default("dataset"),
 }, (table) => [index("facts_order_idx").on(table.orderId)])
 
+export type ModelUsage = { calls: number; input: number; output: number; cacheRead: number; cacheWrite: number; costUsd: number }
+
 export const agentRuns = pgTable("agent_runs", {
   id: text("id").primaryKey(),
   orderId: text("order_id"),
@@ -201,6 +203,14 @@ export const agentRuns = pgTable("agent_runs", {
   costUsd: doublePrecision("cost_usd").notNull().default(0),
   // Why the run moved to a stronger model, when it did ("Driver's words and GPS disagree").
   escalation: text("escalation"),
+  // Calls, tokens and cost per model ({"claude-sonnet-5-5": {calls, input, ...}}): a run can use several.
+  modelUsage: jsonb("model_usage").$type<Record<string, ModelUsage>>(),
+  // The Narrator's one plain sentence for the Agents view, rewritten when the run pauses or ends.
+  narration: text("narration"),
+  // Real time the agent spent working (model calls, tools, simulated replies), not time waiting for a person.
+  wallMs: integer("wall_ms").notNull().default(0),
+  // Demo: this run is a recorded run played back at its real speed, not a live one.
+  replay: boolean("replay").notNull().default(false),
   // A paused run's conversation and the questions it waits on, so a reply can resume it.
   state: jsonb("state").$type<Record<string, unknown>>(),
 }, (table) => [index("agent_runs_order_idx").on(table.orderId, table.startedAt)])

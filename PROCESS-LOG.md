@@ -601,3 +601,51 @@ passes (all 100 order pages). Screenshot of For you with agent cards, looked at;
   sentence is not forced.
 - Not built yet (phase 7): the Agents view with SSE and the Narrator, the backfill over all 30 live-signal orders,
   the fixtures and demo mode without an API key.
+
+---
+
+## Before phase 7 — the card call, split into flat tools
+
+**The problem.** Phase 4 left a workaround in place: the Investigator's first `propose` call arrived malformed in most
+runs (`"findings": "\n<parameter name=\"findings\">[]"`, no options, a reject label "x"). Code caught it and sent it
+back, and the agent recovered on the next step. Counting the phase 4–6 traces: 9 of 24 runs had a malformed first
+call. Each cost a step and about a cent, and the cause was still there. The one tool held two levels of nesting
+(findings as objects; options as objects holding steps as objects holding params as objects).
+
+**What changed.**
+- `add_finding {text, source, also?}`: one finding per call. Code checks it as it arrives: the handle must be an entry
+  the agent was shown, no ids or internal words, a quote is not called booked, a driver's place is not stated as fact.
+  A failed finding is not added and the agent hears why at once.
+- `add_step {option, action, id?, name?, to?, text?, start?, end?, amount_eur?, minutes?}`: one action of one option
+  per call, every param a flat field. Code checks the action against the policy table and the look-up id it names,
+  and refuses a second ferry booking beside a booked crossing.
+- `propose {kind, headline, what_happened, option_1_label, option_1_effect, option_2_…, option_3_…, reject_label,
+  cost_eur}`: flat strings and one number. It builds the card from what was added since the last propose.
+- The draft is kept in the run's saved state, so a pause cannot lose it. If a finding or step failed in the same
+  turn, propose does not build a card that silently lacks it. Any send-back (code checks, the Verifier, the €500 or
+  conflicting-evidence hand-over to Opus) clears the draft. The agent then sends the whole corrected card again in
+  one turn. The prompt says so, and every send-back message says so.
+- The prompt's "Writing the card" section now describes the three calls; several calls in one turn count as one
+  step, so the 12-step cap is unchanged.
+
+**Deviation from the instruction.** I was asked for two tools: `add_finding` and a flat `propose`. The options'
+steps were the other nested level. Flattening them into propose would need numbered fields per step
+(`option_1_step_2_action`…) or steps encoded as text, which is the same failure in a new place. So there is a
+third tool, `add_step`, built the same way as `add_finding`.
+
+**How I checked it.** I re-ran CD-420322 and CD-420299 with `--fresh`.
+- CD-420322 (Opus, safety): one turn with 7 `add_finding`, 6 `add_step` and `propose`. Accepted first time, all 7
+  findings passed the Verifier. 93 s, $0.16.
+- CD-420299 (Sonnet), first run: every call was valid, but the Verifier sent the card back twice. Once it was right
+  (the customer's "approve any later date" email was not among the findings). Once it was a false positive: "no
+  record gives the drive from the South Finland arrival port to the Helsinki address". The agent then hedged on the
+  card ("confirm the promise holds"). The cause was my mock: it said the ferry arrives at "South Finland", not
+  where that is. `ferry_terminals` puts the terminal in Helsinki, so look-ups now say "arrives Sun 25 Oct 18:00 EET
+  in Helsinki".
+- CD-420299, second run: 14 `add_finding`, 6 `add_step`, 2 `propose`, **0 failed calls**. The Verifier's one
+  send-back was real (findings cited the wrong entries). The card says: "The Sat 24 Oct 14:00 sailing arrives in
+  Helsinki Sun 25 Oct 18:00 EET, before the Tue 27 Oct 13:00–15:00 EET delivery promise, so the promise still holds
+  and the customer needs no message." It reconciles the timed-out booking first. 76 s, $0.075.
+- Across both runs, all 3 first `propose` calls were well-formed. The code path that recognised malformed calls is
+  gone.
+- Typecheck clean.

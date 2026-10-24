@@ -12,7 +12,8 @@ import { caseText } from "./case-text"
 import { writeEntry } from "./entries"
 import { anthropic, prompt } from "./llm"
 import { Refs } from "./refs"
-import { addStep, addUsageToRun, createRun, exportTrace, updateRun } from "./runs"
+import { narrateRun } from "./narrator"
+import { addStep, addUsageToRun, addWallTime, createRun, exportTrace, updateRun } from "./runs"
 
 const STEP_CAP = 5
 export const DRIVER_SUPPORT_LABEL = "Driver support agent"
@@ -52,6 +53,12 @@ export async function runDriverSupport(orderRef: string, messageEntryId: string,
   const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: "user", content: `The driver on order ${file.order.reference} wrote in the driver app:\n"${messageText}"\nAnswer them or hand over.` }]
   let idx = 0
   let replied: string | null = null
+  const wallStart = Date.now()
+  const close = async () => {
+    await addWallTime(runId, Date.now() - wallStart)
+    await narrateRun(runId)
+    await exportTrace(runId)
+  }
   for (let step = 0; step < STEP_CAP; step += 1) {
     let response: Anthropic.Beta.BetaMessage
     try {
@@ -64,6 +71,7 @@ export async function runDriverSupport(orderRef: string, messageEntryId: string,
       })
     } catch (cause) {
       await updateRun(runId, { status: "failed", finishedAt: await clockNow(), outcomeSummary: `Stopped: the model could not be reached (${cause instanceof Error ? cause.message : cause}).` })
+      await close()
       return { runId, status: "failed", summary: "Model unreachable" }
     }
     const at = await clockNow()
@@ -100,18 +108,18 @@ export async function runDriverSupport(orderRef: string, messageEntryId: string,
         const summary = String(input.summary ?? "").trim()
         await addStep(runId, idx++, { at, type: "tool_result", tool: use.name, output: input, summary: `Handed to the Investigator: ${summary}` })
         await updateRun(runId, { status: "done", finishedAt: at, outcomeSummary: `Handed to the Investigator: ${input.why ?? summary}` })
-        await exportTrace(runId)
+        await close()
         return { runId, status: "handed_off", summary, handOff: `Driver support handed this over. ${summary} Why: ${input.why ?? ""}` }
       }
     }
     if (replied && !uses.some((use) => use.name === "get_case")) {
       await updateRun(runId, { status: "done", finishedAt: await clockNow(), outcomeSummary: `Answered the driver: “${replied}”` })
-      await exportTrace(runId)
+      await close()
       return { runId, status: "replied", summary: replied }
     }
     messages.push({ role: "user", content: results })
   }
   await updateRun(runId, { status: replied ? "done" : "failed", finishedAt: await clockNow(), outcomeSummary: replied ? `Answered the driver: “${replied}”` : "Stopped without an answer" })
-  await exportTrace(runId)
+  await close()
   return { runId, status: replied ? "replied" : "failed", summary: replied ?? "No answer" }
 }

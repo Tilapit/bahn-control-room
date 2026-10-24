@@ -12,7 +12,7 @@ import { ROLE_MODEL } from "../models"
 import { facts, timelineEntries } from "../schema"
 import { at } from "../time"
 import { callJson, prompt } from "./llm"
-import { addStep, addUsageToRun, createRun, updateRun } from "./runs"
+import { addStep, addUsageToRun, createRun, nextStepIndex, updateRun } from "./runs"
 
 export type Classification = {
   intent: "question" | "update" | "request" | "agreement" | "complaint" | "other"
@@ -56,8 +56,11 @@ function orderSummary(file: CaseFile): string {
   ].filter(Boolean).join("\n")
 }
 
-/** Classify one message entry and file the facts it states. Returns the classification and the classifier run id. */
-export async function classifyEntry(entryId: string, options: { trigger?: string } = {}): Promise<{ runId: string; classification: Classification; factIds: string[] } | null> {
+/**
+ * Classify one message entry and file the facts it states. Returns the classification and the classifier run id.
+ * A live message gets a run of its own; the backfill passes `runId` so one order's messages share one run.
+ */
+export async function classifyEntry(entryId: string, options: { trigger?: string; runId?: string } = {}): Promise<{ runId: string; classification: Classification; factIds: string[] } | null> {
   const [row] = await db.select().from(timelineEntries).where(eq(timelineEntries.id, entryId)).limit(1)
   if (!row || row.kind !== "message" || !row.orderId) return null
   const file = await getCase(row.orderId)
@@ -72,7 +75,7 @@ export async function classifyEntry(entryId: string, options: { trigger?: string
   ].filter(Boolean).join("\n\n")
 
   const started = await clockNow()
-  const runId = await createRun({ orderId: row.orderId, agent: "Classifier", model: ROLE_MODEL.classifier, trigger: options.trigger ?? `Message from ${row.authorLabel ?? "someone"}`, at: started })
+  const runId = options.runId ?? await createRun({ orderId: row.orderId, agent: "Classifier", model: ROLE_MODEL.classifier, trigger: options.trigger ?? `Message from ${row.authorLabel ?? "someone"}`, at: started })
   const result = await callJson<Classification>({ model: ROLE_MODEL.classifier, system: prompt("classifier"), user, schema: SCHEMA, effort: "low" })
   await addUsageToRun(runId, result.model, result.usage)
   const classification = result.value
@@ -91,8 +94,8 @@ export async function classifyEntry(entryId: string, options: { trigger?: string
     for (const old of older) await db.update(facts).set({ status: "superseded", supersededBy: id }).where(eq(facts.id, old.id))
     factIds.push(id)
   }
-  await addStep(runId, 0, { at: started, type: "tool_result", tool: "classify", input: { entryId, message: row.body ?? row.summary }, output: { ...classification, factIds }, summary: describe(classification, row as unknown as TimelineItem) })
-  await updateRun(runId, { status: "done", finishedAt: await clockNow(), outcomeSummary: describe(classification, row as unknown as TimelineItem) })
+  await addStep(runId, options.runId ? await nextStepIndex(runId) : 0, { at: started, type: "tool_result", tool: "classify", input: { entryId, message: row.body ?? row.summary }, output: { ...classification, factIds }, summary: describe(classification, row as unknown as TimelineItem) })
+  if (!options.runId) await updateRun(runId, { status: "done", finishedAt: await clockNow(), outcomeSummary: describe(classification, row as unknown as TimelineItem) })
   return { runId, classification, factIds }
 }
 

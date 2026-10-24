@@ -1,7 +1,9 @@
-// propose and resolve: how an Investigator run ends. propose builds a card only
-// after code has checked every source and every action against the policy table,
-// and the Verifier has checked each claim against the record it cites. Severity,
-// the deadline sentence and the source chips are written by code, not the model.
+// add_finding, add_step, propose and resolve: how an Investigator run ends. The agent
+// adds the card's findings and option steps one flat call at a time, each checked by
+// code as it arrives (its source, its action, the policy table, the look-up it names),
+// then propose builds the card. The Verifier checks each claim against the record it
+// cites before anyone sees it. Severity, the deadline sentence and the source chips
+// are written by code, not the model.
 
 import { randomUUID } from "node:crypto"
 import { and, eq, ne } from "drizzle-orm"
@@ -9,7 +11,7 @@ import { entriesById, getCase, type TimelineItem } from "../case"
 import { now as clockNow } from "../clock"
 import { db } from "../db"
 import { MODELS } from "../models"
-import { describe, levelForAll, PROPOSABLE } from "../policies"
+import { describe, levelFor, levelForAll, PROPOSABLE } from "../policies"
 import { orderView } from "../queue"
 import { cards } from "../schema"
 import type { CardFinding, CardOption, CardStep } from "../schema"
@@ -17,113 +19,148 @@ import { at } from "../time"
 import { isSafety, urgency } from "../urgency"
 import { writeEntry } from "./entries"
 import { findingProblems, textProblems } from "./lint"
-import { AGENT_LABEL, type RunCtx, type ToolOutcome } from "./tools"
+import { AGENT_LABEL, emptyDraft, type RunCtx, STEP_PARAM_KEYS, type ToolOutcome } from "./tools"
 import { verifyCard } from "./verifier"
 
 type Input = Record<string, unknown>
 type DraftOption = { label: string; effect: string; steps: CardStep[] }
 
 const COST_LIMIT_EUR = 500
+const MAX_FINDINGS = 7
 /** How many times the Verifier may send a card back before its notes go on the card as they are. */
 const VERIFIER_ROUNDS = 2
 /** Params that must name something a look-up in this run returned. */
 const NEEDS_LOOKUP = new Set(["book_ferry", "change_ferry_booking", "book_hotel", "book_driver_travel", "switch_driver", "book_tow", "approve_repair_cost"])
 
 const str = (value: unknown) => typeof value === "string" ? value.trim() : ""
-/** An array of objects. Models sometimes send a nested array as a JSON string; accept that too. */
-const list = (value: unknown): Input[] => {
-  let parsed = value
-  if (typeof value === "string") { try { parsed = JSON.parse(value) } catch { return [] } }
-  return Array.isArray(parsed) ? parsed.filter((item): item is Input => typeof item === "object" && item !== null) : []
-}
 
-function readOptions(input: Input): DraftOption[] {
-  return list(input.options).map((option) => ({
-    label: str(option.label), effect: str(option.effect),
-    steps: list(option.steps).map((step) => ({ action: str(step.action), params: typeof step.params === "object" && step.params ? step.params as Record<string, unknown> : {} })),
-  }))
-}
-
-function rejectBack(problems: string[], summary: string): ToolOutcome {
+/** A card that is not shown goes back with its problems, and the draft is cleared so the agent sends the whole card again. */
+function rejectBack(ctx: RunCtx, problems: string[], summary: string): ToolOutcome {
+  ctx.draft = emptyDraft()
   return {
-    content: `The card was not shown to anyone. Fix these and call propose again:\n${problems.map((problem) => `- ${problem}`).join("\n")}`,
+    content: `The card was not shown to anyone. Its findings and steps are cleared. Fix these, then add all findings and steps again and call propose, in one turn:\n${problems.map((problem) => `- ${problem}`).join("\n")}`,
     summary, isError: true, output: { problems },
   }
+}
+
+function addError(ctx: RunCtx, problems: string[], summary: string): ToolOutcome {
+  ctx.turnErrors.push(...problems)
+  return { content: `Not added:\n${problems.map((problem) => `- ${problem}`).join("\n")}`, summary, isError: true, output: { problems } }
+}
+
+export async function addFinding(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
+  const text = str(input.text)
+  const source = str(input.source)
+  const also = str(input.also) || null
+  const index = ctx.draft.findings.length
+  if (index >= MAX_FINDINGS) return { content: `Not added: the card already has ${MAX_FINDINGS} findings, the most it holds. Keep the most important ones.`, summary: "Finding not added: the card is full", isError: true }
+  if (!text) return addError(ctx, ["The finding has no text"], "Finding not added: no text")
+  const entryId = ctx.refs.resolve(source)
+  const alsoId = also ? ctx.refs.resolve(also) : null
+  const entries = await entriesById([entryId, alsoId].filter((id): id is string => !!id))
+  const problems = findingProblems(index, { text, source }, entryId ? entries.get(entryId) ?? null : null)
+  if (also && !(alsoId && entries.get(alsoId))) problems.push(`Its second source "${also}" is not an entry you were shown`)
+  if (problems.length) return addError(ctx, problems.map((problem) => problem.replace(/^Finding \d+ /, "The finding ")), `Finding not added (${problems.length} problem${problems.length === 1 ? "" : "s"})`)
+  ctx.draft.findings.push({ text, source, also, entryId: entryId!, alsoId })
+  return { content: `Finding ${index + 1} added.`, summary: `Noted a finding: ${text}`, output: { index: index + 1, entryId, alsoId } }
+}
+
+export async function addStep(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
+  const option = Number(input.option)
+  const action = str(input.action)
+  const params: Record<string, unknown> = {}
+  for (const key of STEP_PARAM_KEYS) {
+    const value = input[key]
+    if (typeof value === "string" ? value.trim() : value !== undefined && value !== null) params[key] = typeof value === "string" ? value.trim() : value
+  }
+  const problems: string[] = []
+  if (![1, 2, 3].includes(option)) problems.push("option must be 1, 2 or 3")
+  if (!PROPOSABLE.includes(action)) problems.push(`"${action}" is not an action you can propose`)
+  else {
+    if (await levelFor(action) === "never") problems.push(`${action} is never allowed right now`)
+    if (NEEDS_LOOKUP.has(action)) {
+      const lookup = ctx.lookups[str(params.id)]
+      if (!lookup) problems.push(`${action} needs an id returned by a look-up in this run ("${str(params.id)}" was not)`)
+      else params.lookup = { kind: lookup.kind, label: lookup.label, price_cents: lookup.priceCents, details: lookup.details }
+    }
+    if (action === "book_ferry") {
+      const file = ctx.file ?? await getCase(ctx.orderId)
+      // A car with a booked crossing gets that booking moved, never a second one beside it.
+      if (file?.plan.bookings.some((booking) => booking.kind === "Ferry" && booking.state === "booked")) problems.push("This car already has a booked crossing; use change_ferry_booking to move it, or the car would hold two crossings")
+    }
+    for (const key of ["text", "to", "name"]) if (typeof params[key] === "string") problems.push(...textProblems(`Its ${key}`, params[key] as string))
+  }
+  if (problems.length) return addError(ctx, problems, `Step not added (${problems.length} problem${problems.length === 1 ? "" : "s"})`)
+  ctx.draft.steps.push({ option, action, params })
+  const count = ctx.draft.steps.filter((step) => step.option === option).length
+  const lookupLabel = (params.lookup as { label?: string } | undefined)?.label
+  const what = `${describe(action)?.label ?? action}${lookupLabel ? `: ${lookupLabel}` : ""}`
+  return { content: `Option ${option}, step ${count} added: ${what}.`, summary: `Option ${option}: ${what}`, output: { option, step: count } }
 }
 
 export async function propose(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
   const kind = input.kind === "question" ? "question" : "decision"
   const file = ctx.file ?? await getCase(ctx.orderId)
-  if (!file) return rejectBack(["The order could not be loaded."], "Could not load the order")
+  if (!file) return rejectBack(ctx, ["The order could not be loaded."], "Could not load the order")
+  if (ctx.turnErrors.length) {
+    return rejectBack(ctx, [`${ctx.turnErrors.length === 1 ? "One add_finding or add_step call" : `${ctx.turnErrors.length} add_finding or add_step calls`} in this turn failed, so the card would be missing what you meant to put on it: ${ctx.turnErrors.join("; ")}`], "Card held back: a finding or step in the same turn failed")
+  }
   const carPrefix = new RegExp(`^${file.order.car.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[:,\\s-]*`, "i")
   const headline = str(input.headline).replace(carPrefix, "")
   const whatHappened = str(input.what_happened)
   const rejectLabel = str(input.reject_label) || "Reject"
-  const options = readOptions(input)
-  const drafts = list(input.findings).map((finding) => ({ text: str(finding.text), source: str(finding.source), also: str(finding.also) || null }))
+  const drafts = ctx.draft.findings
+  const options: DraftOption[] = [1, 2, 3]
+    .map((n) => ({ n, label: str(input[`option_${n}_label`]), effect: str(input[`option_${n}_effect`]) }))
+    .filter((option) => option.label || option.effect || ctx.draft.steps.some((step) => step.option === option.n))
+    .map((option) => ({ label: option.label, effect: option.effect, steps: ctx.draft.steps.filter((step) => step.option === option.n).map(({ action, params }) => ({ action, params })) }))
   const problems: string[] = []
-
-  // A malformed call (lists sent as text, or empty) gets one clear instruction rather than a list of symptoms.
-  if ((typeof input.findings === "string" && !drafts.length) || (typeof input.options === "string" && !options.length) || (!drafts.length && !options.length)) {
-    return rejectBack(["Your propose call arrived malformed: findings and options must be JSON lists of objects, and neither may be empty. Send the whole card again in one call."], "Card call arrived malformed; sent back")
-  }
 
   // Shape.
   if (!headline) problems.push("The headline is empty")
   if (headline.length > 80) problems.push(`The headline has ${headline.length} characters; keep it under 70`)
   if (!whatHappened) problems.push("what_happened is empty")
-  if (drafts.length < 2 || drafts.length > 7) problems.push(`Give three to seven findings (you gave ${drafts.length})`)
+  if (drafts.length < 2) problems.push(`The card has ${drafts.length} finding${drafts.length === 1 ? "" : "s"}; add three to seven with add_finding, in the same turn as propose`)
   if (whatHappened.length > 420) problems.push(`what_happened has ${whatHappened.length} characters; keep it to one or two sentences (under 350); the findings carry the detail`)
-  if (!options.length) problems.push("Give at least one option")
-  if (options.length > 3) problems.push("Give at most three options")
+  if (!options.length) problems.push("Give at least option 1")
   problems.push(...textProblems("The headline", headline), ...textProblems("what_happened", whatHappened), ...textProblems("The reject label", rejectLabel))
+  const slots = [1, 2, 3].filter((n) => str(input[`option_${n}_label`]) || str(input[`option_${n}_effect`]) || ctx.draft.steps.some((step) => step.option === n))
+  if (slots.some((n, index) => n !== index + 1)) problems.push("Number the options from 1 without gaps")
 
-  // Every finding cites an entry this run was shown.
-  const entryIds = drafts.map((draft) => ctx.refs.resolve(draft.source))
-  const alsoIds = drafts.map((draft) => draft.also ? ctx.refs.resolve(draft.also) : null)
-  const entries = await entriesById([...entryIds, ...alsoIds].filter((id): id is string => !!id))
-  const cited: (TimelineItem | null)[] = entryIds.map((id) => id ? entries.get(id) ?? null : null)
-  const citedAlso: (TimelineItem | null)[] = alsoIds.map((id) => id ? entries.get(id) ?? null : null)
-  drafts.forEach((draft, index) => {
-    problems.push(...findingProblems(index, draft, cited[index]))
-    if (draft.also && !citedAlso[index]) problems.push(`Finding ${index + 1} cites "${draft.also}" as its second source, which is not an entry you were shown`)
-  })
+  const cited: TimelineItem[] = []
+  const citedAlso: (TimelineItem | null)[] = []
+  const entries = await entriesById(drafts.flatMap((draft) => [draft.entryId, draft.alsoId]).filter((id): id is string => !!id))
+  for (const draft of drafts) {
+    cited.push(entries.get(draft.entryId)!)
+    citedAlso.push(draft.alsoId ? entries.get(draft.alsoId) ?? null : null)
+  }
 
-  // Every action is known, allowed, and names something a look-up returned.
+  // Every option says what it does; a decision option does something. Steps were checked when they were added.
   let computedCostCents = 0
   options.forEach((option, index) => {
     const label = `Option ${index + 1}`
     if (!option.label) problems.push(`${label} has no label`)
+    if (!option.effect) problems.push(`${label} has no effect`)
     if (option.label.length > 80) problems.push(`${label}'s label is too long; keep it under 70 characters`)
     problems.push(...textProblems(`${label}'s label`, option.label), ...textProblems(`${label}'s effect`, option.effect))
-    if (kind === "decision" && !option.steps.length) problems.push(`${label} has no steps; a decision option must do something (use note to keep the plan)`)
-    for (const step of option.steps) {
-      if (!PROPOSABLE.includes(step.action)) { problems.push(`${label} uses "${step.action}", which is not an action you can propose`); continue }
-      if (NEEDS_LOOKUP.has(step.action)) {
-        const lookup = ctx.lookups[str(step.params.id)]
-        if (!lookup) problems.push(`${label}: ${step.action} needs an id returned by a look-up in this run ("${str(step.params.id)}" was not)`)
-        else {
-          step.params = { ...step.params, lookup: { kind: lookup.kind, label: lookup.label, price_cents: lookup.priceCents, details: lookup.details } }
-          if (index === 0 && lookup.priceCents && step.action !== "switch_driver") computedCostCents += lookup.priceCents
-        }
-      }
-      if (step.action === "approve_repair_cost" && index === 0) computedCostCents += Math.round(Number(step.params.amount_eur ?? 0) * 100)
+    if (kind === "decision" && !option.steps.length) problems.push(`${label} has no steps; a decision option must do something: add its actions with add_step (use note to keep the plan)`)
+    if (kind === "question" && option.steps.length) problems.push(`${label} has steps, but on a question card each option is an answer with no steps`)
+    if (index === 0) for (const step of option.steps) {
+      const lookup = step.params.lookup as { price_cents?: number | null } | undefined
+      if (lookup?.price_cents && step.action !== "switch_driver") computedCostCents += lookup.price_cents
+      if (step.action === "approve_repair_cost") computedCostCents += Math.round(Number(step.params.amount_eur ?? 0) * 100)
     }
-  })
-  // A car with a booked crossing gets that booking moved, never a second one beside it.
-  const hasBookedFerry = file.plan.bookings.some((booking) => booking.kind === "Ferry" && booking.state === "booked")
-  options.forEach((option, index) => {
-    if (hasBookedFerry && option.steps.some((step) => step.action === "book_ferry")) problems.push(`Option ${index + 1} books a ferry, but this car already has a booked crossing; use change_ferry_booking to move it, or the car would hold two crossings`)
   })
   const levels = await Promise.all(options.map((option) => levelForAll(option.steps.map((step) => step.action))))
   levels.forEach((level, index) => { if (level === "never") problems.push(`Option ${index + 1} contains an action that is never allowed`) })
-  if (problems.length) return rejectBack(problems, `Card sent back by code checks (${problems.length} problem${problems.length === 1 ? "" : "s"})`)
+  if (problems.length) return rejectBack(ctx, problems, `Card sent back by code checks (${problems.length} problem${problems.length === 1 ? "" : "s"})`)
 
   // Over €500: the senior model decides (SPEC 7), whatever the agent wrote as the cost.
   const costEur = Math.max(typeof input.cost_eur === "number" ? input.cost_eur : 0, computedCostCents / 100) || null
   if (costEur && costEur > COST_LIMIT_EUR && ctx.model !== MODELS.opus) {
+    ctx.draft = emptyDraft()
     return {
-      content: `This proposal costs about €${Math.round(costEur)}, over the €${COST_LIMIT_EUR} limit for your model. The case is now with the senior model, with everything done so far. Review it and call propose again.`,
+      content: `This proposal costs about €${Math.round(costEur)}, over the €${COST_LIMIT_EUR} limit for your model. The case is now with the senior model, with everything done so far. The card was not shown and its findings and steps are cleared. Review the case, then add the findings and steps you stand behind and call propose, in one turn.`,
       summary: `Proposal over €${COST_LIMIT_EUR}; handed to the senior model`, switchModel: { model: MODELS.opus, reason: `The proposal costs about €${Math.round(costEur)}, over €${COST_LIMIT_EUR}.` },
     }
   }
@@ -142,7 +179,7 @@ export async function propose(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
   try {
     verification = await verifyCard({
       headline, whatHappened, rejectLabel, context: [...contextEntries.values()],
-      findings: drafts.map((draft, index) => ({ text: draft.text, entry: cited[index]!, also: citedAlso[index] })),
+      findings: drafts.map((draft, index) => ({ text: draft.text, entry: cited[index], also: citedAlso[index] })),
       options: options.map((option) => ({ label: option.label, effect: option.effect, steps: option.steps.map((step) => `${describe(step.action)?.label ?? step.action}${step.params.lookup ? `: ${(step.params.lookup as { label: string }).label}` : ""}`) })),
     }, zone)
   } catch (cause) {
@@ -154,15 +191,17 @@ export async function propose(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
 
   // Conflicting evidence goes to the senior model (SPEC 7). The agent may have missed it; the verifier's check is enforced here.
   if (verification.conflict && ctx.model !== MODELS.opus) {
+    ctx.draft = emptyDraft()
     return {
-      content: `The verifier found that two records disagree: ${verification.conflict} Conflicting evidence is handled by the senior model, so the case is now with it, with everything done so far. Review the evidence. If a question to the driver or the site would settle the disagreement, ask it before you propose. On the card, put both statements with their times and the gap between them.`,
+      content: `The verifier found that two records disagree: ${verification.conflict} Conflicting evidence is handled by the senior model, so the case is now with it, with everything done so far. The card was not shown and its findings and steps are cleared. Review the evidence. If a question to the driver or the site would settle the disagreement, ask it before you propose. On the card, put both statements with their times and the gap between them.`,
       summary: "Verifier found conflicting sources; handed to the senior model", switchModel: { model: MODELS.opus, reason: `Conflicting evidence: ${verification.conflict}` },
     }
   }
   const failing = verification.notes.filter((note) => !note.ok)
   if (verification.verdict === "fix" && failing.length && ctx.verifierRounds <= VERIFIER_ROUNDS) {
+    ctx.draft = emptyDraft()
     return {
-      content: `The verifier checked each claim against its source and found problems. The card was not shown yet. Fix these and call propose again:\n${failing.map((note) => `- ${note.finding != null ? `Finding ${note.finding + 1}: ` : ""}${note.note}`).join("\n")}`,
+      content: `The verifier checked each claim against its source and found problems. The card was not shown yet, and its findings and steps are cleared. Fix these, then add all findings and steps again and call propose, in one turn:\n${failing.map((note) => `- ${note.finding != null ? `Finding ${note.finding + 1}: ` : ""}${note.note}`).join("\n")}`,
       summary: `Card sent back by the verifier (${failing.length} problem${failing.length === 1 ? "" : "s"})`, isError: true, output: verification.notes,
     }
   }
@@ -175,7 +214,7 @@ export async function propose(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
   const findings: CardFinding[] = drafts.map((draft, index) => {
     const also = citedAlso[index]
     return {
-      text: draft.text, source_entry_id: cited[index]!.id, source_label: cited[index]!.chip, at: cited[index]!.at,
+      text: draft.text, source_entry_id: cited[index].id, source_label: cited[index].chip, at: cited[index].at,
       also: also ? { source_entry_id: also.id, source_label: also.chip, at: also.at } : null,
     }
   })
@@ -204,6 +243,7 @@ export async function propose(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
     summary: kind === "question" ? `Asked Ops: ${headline}` : `Proposed: ${options[0].label.replace(/^Approve:\s*/i, "")}. Waiting for a person`,
     evidence: { table: "cards", id: cardId },
   })
+  ctx.draft = emptyDraft()
   return { content: "The card is in front of a person now. Your run ends here.", summary: `Proposed to a person: ${options[0].label}`, finish: { kind: "card", cardId, summary: headline }, output: { cardId, verifier: verification.notes } }
 }
 
@@ -218,7 +258,7 @@ export async function resolve(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
   const ids = handles.map((handle) => ctx.refs.resolve(handle))
   ids.forEach((id, index) => { if (!id) problems.push(`"${handles[index]}" is not an entry you were shown`) })
   if (!handles.length) problems.push("Cite at least one entry that explains why nothing needs a person")
-  if (problems.length) return rejectBack(problems, "Close sent back by code checks")
+  if (problems.length) return { content: `Not closed. Fix these and call resolve again:\n${problems.map((problem) => `- ${problem}`).join("\n")}`, summary: "Close sent back by code checks", isError: true, output: { problems } }
   const now = await clockNow()
   const minutes = typeof input.check_again_minutes === "number" ? input.check_again_minutes : null
   const nextCheckAt = minutes ? new Date(now.getTime() + minutes * 60_000) : null

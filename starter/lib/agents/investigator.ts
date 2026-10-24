@@ -17,10 +17,11 @@ import { clock, zoneShort } from "../time"
 import { isSafety } from "../urgency"
 import { anthropic, prompt } from "./llm"
 import { Refs } from "./refs"
-import { addStep, addUsageToRun, createRun, exportTrace, getRun, nextStepIndex, updateRun } from "./runs"
+import { narrateRun } from "./narrator"
+import { addStep, addUsageToRun, addWallTime, createRun, exportTrace, getRun, nextStepIndex, updateRun } from "./runs"
 import type { Party } from "./scenarios"
 import { simulateReply } from "./sim"
-import { executeTool, type Lookup, type RunCtx, TOOL_DEFINITIONS } from "./tools"
+import { type CardDraft, emptyDraft, executeTool, type Lookup, type RunCtx, TOOL_DEFINITIONS } from "./tools"
 
 export const STEP_CAP = 12
 export const TOOL_RESULT_CHARS = 8000
@@ -37,6 +38,8 @@ type RunState = {
   messages: Message[]
   refs: Record<string, string>
   lookups: Record<string, Lookup>
+  /** Findings and steps added for the next propose call. */
+  draft?: CardDraft
   verifierRounds: number
   modelCalls: number
   pending: Pending[]
@@ -120,6 +123,7 @@ export async function answerWithSimulation(runId: string, options: Omit<StartOpt
   const refs = new Refs(state.refs)
   const answers: { toolUseId: string; content: string }[] = []
   let idx = await nextStepIndex(runId)
+  const started = Date.now()
   for (const pending of state.pending) {
     if (pending.party === "person") continue
     const reply = await simulateReply(file, pending.party, pending.question, { side: pending.side, questionEntryId: pending.questionEntryId })
@@ -132,6 +136,7 @@ export async function answerWithSimulation(runId: string, options: Omit<StartOpt
   }
   state.refs = refs.toJSON()
   await updateRun(runId, { state: state as unknown as Record<string, unknown> })
+  await addWallTime(runId, Date.now() - started)
   return resumeRun(runId, answers, options)
 }
 
@@ -139,19 +144,27 @@ async function loop(runId: string, orderId: string, reference: string, startMode
   const refs = new Refs(state.refs)
   const ctx: RunCtx = {
     runId, orderId, reference, model: startModel, refs, lookups: state.lookups, verifierRounds: state.verifierRounds,
-    escalation: null, stepId: "", file: null, usageExtra: [],
+    escalation: null, stepId: "", file: null, usageExtra: [], draft: state.draft ?? emptyDraft(), turnErrors: [],
   }
   let idx = await nextStepIndex(runId)
+  const segmentStart = Date.now()
   const log = options.log ?? (() => {})
   const save = async (patch: Parameters<typeof updateRun>[1] = {}) => {
     state.refs = refs.toJSON()
     state.lookups = ctx.lookups
+    state.draft = ctx.draft
     state.verifierRounds = ctx.verifierRounds
     await updateRun(runId, { model: ctx.model, state: state as unknown as Record<string, unknown>, ...patch })
   }
+  // A run pauses or ends: count the time worked, let the Narrator write its line, write the trace.
+  const closeSegment = async () => {
+    await addWallTime(runId, Date.now() - segmentStart)
+    await narrateRun(runId)
+    await exportTrace(runId)
+  }
   const finish = async (status: string, summary: string, extra: Parameters<typeof updateRun>[1] = {}) => {
     await save({ status, outcomeSummary: summary, finishedAt: await clockNow(), ...extra })
-    await exportTrace(runId)
+    await closeSegment()
     log(`  → ${status}: ${summary}`)
   }
 
@@ -164,7 +177,7 @@ async function loop(runId: string, orderId: string, reference: string, startMode
     if (state.modelCalls === STEP_CAP - 1) {
       const last = state.messages[state.messages.length - 1]
       if (last.role === "user" && Array.isArray(last.content)) {
-        last.content.push({ type: "text", text: `This is step ${STEP_CAP} of ${STEP_CAP}, your last. Call propose or resolve now with what you have.` })
+        last.content.push({ type: "text", text: `This is step ${STEP_CAP} of ${STEP_CAP}, your last. Finish in this turn with what you have: add_finding and add_step calls followed by propose, or resolve.` })
       }
     }
 
@@ -218,6 +231,7 @@ async function loop(runId: string, orderId: string, reference: string, startMode
     const results: ToolResult[] = []
     const pending: Pending[] = []
     let ended: RunOutcome | null = null
+    ctx.turnErrors = []
     for (const use of toolUses) {
       const input = (use.input ?? {}) as Record<string, unknown>
       const callStep = await addStep(runId, idx++, { at, type: "tool_call", tool: use.name, input, summary: `Called ${use.name}` })
@@ -260,7 +274,7 @@ async function loop(runId: string, orderId: string, reference: string, startMode
       const waiting = pending.some((item) => item.party === "driver") ? "waiting_driver" : "waiting_site"
       const nowAt = await clockNow()
       await save({ status: waiting, nextCheckAt: new Date(nowAt.getTime() + REPLY_WAIT_MINUTES * 60_000) })
-      await exportTrace(runId)
+      await closeSegment()
       log(`  → ${waiting}`)
       if (options.autoReply) return answerWithSimulation(runId, options)
       return { runId, status: waiting, summary: `Waiting for the ${waiting === "waiting_driver" ? "driver" : "site"}`, pending }

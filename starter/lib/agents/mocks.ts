@@ -34,6 +34,9 @@ const TERMINAL_ZONE: Record<string, string> = {
   "East Nordic": "Europe/Stockholm", "South Baltic": "Europe/Copenhagen",
 }
 const zoneOfTerminal = (name: string) => TERMINAL_ZONE[Object.keys(TERMINAL_ZONE).find((key) => name.startsWith(key)) ?? ""] ?? "UTC"
+/** The city each terminal is in (dataset ferry_terminals), so a sailing says where it lands. */
+const TERMINAL_CITY: Record<string, string> = { "West Baltic": "Hamburg", "South Finland": "Helsinki", "East Nordic": "Stockholm", "East Sweden": "Stockholm", "South Baltic": "Copenhagen" }
+const cityOfTerminal = (name: string) => TERMINAL_CITY[Object.keys(TERMINAL_CITY).find((key) => name.startsWith(key)) ?? ""] ?? null
 const terminalName = (name: string) => name.replace(/ (Vehicle )?[Tt]erminal$/, "")
 
 // ---------------------------------------------------------------------------
@@ -59,7 +62,9 @@ export function describeFerry(option: FerryOption): string {
   const fromZone = zoneOfTerminal(option.from)
   const price = option.priceCents != null ? `, ${money(option.priceCents, "EUR")}` : ""
   const state = option.state === "quote" ? "quote, not booked" : option.state
-  return `${option.provider}, ${terminalName(option.from)} to ${terminalName(option.to)}, departs ${at(option.departureAt, fromZone)}, check-in closes ${clock(option.checkInCutoffAt, fromZone)}, arrives ${at(option.arrivalAt, zoneOfTerminal(option.to))}${price} (${state})`
+  const fromCity = cityOfTerminal(option.from)
+  const toCity = cityOfTerminal(option.to)
+  return `${option.provider}, ${terminalName(option.from)}${fromCity ? ` (${fromCity})` : ""} to ${terminalName(option.to)}${toCity ? ` (${toCity})` : ""}, departs ${at(option.departureAt, fromZone)}, check-in closes ${clock(option.checkInCutoffAt, fromZone)}, arrives ${at(option.arrivalAt, zoneOfTerminal(option.to))}${toCity ? ` in ${toCity}` : ""}${price} (${state})`
 }
 
 /** Ferry crossings on the order's route after a time. Dataset quotes and sold-out checks repeat as they were; other sailings follow the line's timetable. */

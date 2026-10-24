@@ -5,7 +5,7 @@
 import { randomUUID } from "node:crypto"
 import { mkdir, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import { asc, eq } from "drizzle-orm"
+import { asc, eq, sql } from "drizzle-orm"
 import { db } from "../db"
 import { addUsage, costUsd, type Usage } from "../models"
 import { agentRuns, agentSteps, cards, decisions, orders } from "../schema"
@@ -32,15 +32,24 @@ export async function addStep(runId: string, idx: number, step: { at: Date; type
   return id
 }
 
-/** Add one model call's tokens and cost to the run. */
+/** Add one model call's tokens and cost to the run, in total and for the model that answered. */
 export async function addUsageToRun(runId: string, model: string, usage: Usage): Promise<void> {
   const [run] = await db.select().from(agentRuns).where(eq(agentRuns.id, runId)).limit(1)
   if (!run) return
   const total = addUsage({ input: run.inputTokens, output: run.outputTokens, cacheRead: run.cacheReadTokens, cacheWrite: run.cacheWriteTokens }, usage)
+  const cost = costUsd(model, usage)
+  const byModel = { ...(run.modelUsage ?? {}) }
+  const before = byModel[model] ?? { calls: 0, input: 0, output: 0, cacheRead: 0, cacheWrite: 0, costUsd: 0 }
+  byModel[model] = { ...addUsage(before, usage), calls: before.calls + 1, costUsd: before.costUsd + cost }
   await db.update(agentRuns).set({
     inputTokens: total.input, outputTokens: total.output, cacheReadTokens: total.cacheRead, cacheWriteTokens: total.cacheWrite,
-    costUsd: run.costUsd + costUsd(model, usage),
+    costUsd: run.costUsd + cost, modelUsage: byModel,
   }).where(eq(agentRuns.id, runId))
+}
+
+/** Add real working time (milliseconds) to the run. */
+export async function addWallTime(runId: string, ms: number): Promise<void> {
+  await db.update(agentRuns).set({ wallMs: sql`${agentRuns.wallMs} + ${Math.max(0, Math.round(ms))}` }).where(eq(agentRuns.id, runId))
 }
 
 export async function updateRun(runId: string, patch: Partial<typeof agentRuns.$inferInsert>): Promise<void> {
