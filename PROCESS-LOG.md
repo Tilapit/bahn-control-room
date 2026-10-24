@@ -913,8 +913,8 @@ tow "to the delivery address"); the mocks now name the place, rather than the ag
 
 **3. The card call was fixed at its cause, not caught.** For three phases a code check caught the malformed first
 `propose` call (9 of 24 runs). Strict mode fixed the shape but garbled the text. Splitting it into flat calls
-(`add_finding`, `add_step`, `propose`, later `add_affected_order`) removed the failure: no malformed call since, in
-about 40 runs. *Not the first answer:* the instruction asked for two tools; option steps needed a third (`add_step`),
+(`add_finding`, `add_step`, `propose`, later `add_affected_order`) removed the failure. The recorded morning has 800
+card-building calls in 24 runs that built a card, and none is malformed. *Not the first answer:* the instruction asked for two tools; option steps needed a third (`add_step`),
 or the nesting would have moved into `propose`.
 
 **4. The simulated world stays consistent.** One simulated clock runs all business logic. The demo never moves it
