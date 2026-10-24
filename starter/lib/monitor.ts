@@ -119,7 +119,8 @@ async function silentCarRule(files: CaseFile[], now: Date, options: Options): Pr
   for (const file of files) {
     if (busy.has(file.order.id) || !file.order.driver || file.order.driver.state === "cancelled") continue
     const zone = orderView(file).zone
-    const driverSpoke = file.timeline.filter((item) => item.authorType === "driver").map((item) => new Date(item.at).getTime()).sort((a, b) => b - a)[0] ?? 0
+    // The driver's last message (an expense claim or a photo upload is not a word about the car's progress).
+    const driverSpoke = file.timeline.filter((item) => item.authorType === "driver" && item.kind === "message").map((item) => new Date(item.at).getTime()).sort((a, b) => b - a)[0] ?? 0
     let id: string | null = null
     let seen = ""
     if (file.order.stage.key === "moving") {
@@ -132,7 +133,13 @@ async function silentCarRule(files: CaseFile[], now: Date, options: Options): Pr
         previous = fix
       }
       const stuck = last && previous && previous !== last && new Date(last.at).getTime() - new Date(previous.at).getTime() >= 60 * 60_000
-      if (stuck && driverSpoke < new Date(previous.at).getTime()) {
+      // Heading away: km to go rose by 8 km or more against a fix from the last 90 minutes.
+      const lower = file.plan.positions.slice(1).find((fix) => last?.kmToGo != null && fix.kmToGo != null && last.kmToGo - fix.kmToGo >= 8
+        && new Date(last.at).getTime() - new Date(fix.at).getTime() <= 90 * 60_000)
+      if (last && lower) {
+        id = `monitor:deviation:${file.order.id}:${last.at}`
+        seen = `GPS shows km to go rising from ${lower.kmToGo} km at ${at(lower.at, zone)} to ${last.kmToGo} km at ${at(last.at, zone)}: the car is moving away from ${file.order.route.to?.city ?? "the delivery address"}.`
+      } else if (stuck && driverSpoke < new Date(previous.at).getTime()) {
         id = `monitor:not-moving:${file.order.id}:${last.at}`
         seen = `The car has not moved: GPS showed ${previous.kmToGo} km to go at ${at(previous.at, zone)} and ${last.kmToGo} km at ${at(last.at, zone)}, and the driver has not written since.`
       } else if (silentSince != null && horizon - silentSince >= SILENT_GPS_HOURS * HOUR && driverSpoke < silentSince) {
@@ -155,10 +162,13 @@ async function silentCarRule(files: CaseFile[], now: Date, options: Options): Pr
       kind: "alert", status: "signal", visibility: "internal", summary: seen, body: "Noticed by a rule in code. Nobody has reported a problem; this is a reason to ask, not a diagnosis.",
       evidence: { table: "timeline_entries", id },
     })
-    const trigger = `Monitor: ${seen} Nobody has reported a problem. Ask the driver first what is going on, then decide whether a person needs to act.`
+    const trigger = id.startsWith("monitor:deviation")
+      ? `Monitor: ${seen} This is a route deviation. Check the order's records first: an agreement may explain it.`
+      : `Monitor: ${seen} Nobody has reported a problem. Ask the driver first what is going on, then decide whether a person needs to act.`
     const runId = await investigate([file], trigger, options)
-    const what = id.startsWith("monitor:pickup-late") ? "Noticed a pickup slot passing with no collection" : id.startsWith("monitor:not-moving") ? "Noticed the car has not moved" : "Noticed no GPS and no word from the driver"
-    const summary = `${what}${runId ? "; the Investigator is asking the driver" : "; no agent started"}.`
+    const what = id.startsWith("monitor:pickup-late") ? "Noticed a pickup slot passing with no collection" : id.startsWith("monitor:not-moving") ? "Noticed the car has not moved"
+      : id.startsWith("monitor:deviation") ? "Noticed km to go rising (a route deviation)" : "Noticed no GPS and no word from the driver"
+    const summary = `${what}${runId ? id.startsWith("monitor:deviation") ? "; the Investigator is checking it" : "; the Investigator is asking the driver" : "; no agent started"}.`
     await recordHit(file, now, id.split(":")[1], seen, summary)
     hits.push({ rule: "silent-car", summary, orders: [file.order.reference], investigatorRunId: runId })
     options.log?.(`${file.order.reference}: ${summary}`)

@@ -1,30 +1,20 @@
 {
-  "finishedAt": "2026-10-24T20:19:12.620Z",
-  "wallClockMinutes": null,
-  "simulatedClockAfter": "2026-10-21T09:22:00.000Z",
+  "finishedAt": "2026-10-24T20:45:34.250Z",
+  "wallClockMinutes": 9.71,
+  "simulatedClockAfter": "2026-10-21T09:42:00.000Z",
   "orders": {
     "total": 100,
-    "investigated": 21,
-    "liveSignalNoRunYet": [
-      "CD-420449",
-      "CD-420516",
-      "CD-420593",
-      "CD-420603",
-      "CD-420689",
-      "CD-420702",
-      "CD-420719",
-      "CD-420941",
-      "CD-420992"
-    ],
-    "quietChecks": 70
+    "investigated": 30,
+    "liveSignalNoRunYet": [],
+    "quietChecks": 69
   },
   "investigator": {
-    "runs": 21,
-    "cards": 15,
-    "closedWithoutCard": 6,
+    "runs": 30,
+    "cards": 22,
+    "closedWithoutCard": 8,
     "failed": [],
-    "endedOnSonnet": 13,
-    "endedOnOpus": 8,
+    "endedOnSonnet": 17,
+    "endedOnOpus": 13,
     "startedOnOpusForSafety": 1,
     "escalations": [
       {
@@ -34,6 +24,14 @@
       {
         "runId": "run_c00ca4a2",
         "reason": "The proposal costs about €672, over €500."
+      },
+      {
+        "runId": "run_e31b66e2",
+        "reason": "Conflicting evidence: The driver's message says she is still on CD-420326, while the ops note names the accepted assignment as CD-420399, so the records disagree on which assignment she holds."
+      },
+      {
+        "runId": "run_fcb33edc",
+        "reason": "Conflicting evidence: The driver's 12:34 EEST message gives about 2 h 30 min of navigation time, which is about 14:04 CEST from 11:34 CEST, but the same message says around 13:30 Hamburg time, a gap that straddles the 14:00 check-in close."
       },
       {
         "runId": "run_c2dc522c",
@@ -48,25 +46,37 @@
         "reason": "Conflicting evidence: The driver's 12:10 EEST message suggests he cannot see what ops sees and will check the app, while the driver app records 3 delivery photos sent on 12 Oct 13:03 EEST, and the card does not show this gap."
       },
       {
-        "runId": "run_e31b66e2",
-        "reason": "Conflicting evidence: The driver's message says she is still on CD-420326, while the ops note names the accepted assignment as CD-420399, so the records disagree on which assignment she holds."
+        "runId": "run_c7a9baae",
+        "reason": "Conflicting evidence: Cole Mervalen's 11:38 CEST message says they are not on CD-420735, while the order record shows Cole Mervalen picking CD-420735 up at Merovik Düsseldorf at 10:15 CEST today."
+      },
+      {
+        "runId": "run_064240c2",
+        "reason": "Conflicting evidence: Beatrice Alderfield (site desk, Wed 21 Oct 12:28 EEST) says the car can probably stay at the branch Monday pending manager confirmation, while the support desk (Wed 21 Oct 11:51 EEST) says no overnight custody is agreed and the second car may not be taken early or left unattended; the card reports only that the branch cannot confirm."
       },
       {
         "runId": "run_d7e86e06",
         "reason": "Conflicting evidence: The Hamburg collection screen says showroom handover while the handover sheet says the nearby yard, so the collection point is disputed."
       },
       {
+        "runId": "run_0d31315e",
+        "reason": "Conflicting evidence: The order record shows Tobias Malverin took the Oulu gig on Sat 17 Oct at 19:38 EEST, while the driver's message on Wed 21 Oct at 12:08 EEST says no Oulu job is in their app, and the card does not show this gap."
+      },
+      {
         "runId": "run_77792a82",
         "reason": "Conflicting evidence: The card gives delivery on Fri 16 Oct 14:00 with photos approved that day at 16:00, but the driver app on Wed 21 Oct 11:33 EEST shows 89 km to go to the delivery address with ETA Thu 22 Oct 12:00."
+      },
+      {
+        "runId": "run_b7f3aec1",
+        "reason": "Conflicting evidence: The Velantora Helsinki desk's 10:21 EEST message says the car is not in its release queue, while Pellavaro Auto's 10:39 EEST message says its system still lists this branch for the car, and the card shows only the site's side."
       }
     ],
     "costUsd": {
-      "total": 2.3138665899999995,
-      "average": 0.11018412333333331
+      "total": 4.469770185,
+      "average": 0.1489923395
     },
     "wallSeconds": {
-      "median": 69,
-      "max": 133.2,
+      "median": 75.4,
+      "max": 244.2,
       "perRun": [
         {
           "runId": "run_e2d471bc",
@@ -81,6 +91,10 @@
           "seconds": 117
         },
         {
+          "runId": "run_e31b66e2",
+          "seconds": 113.7
+        },
+        {
           "runId": "run_c075cca8",
           "seconds": 69
         },
@@ -93,12 +107,24 @@
           "seconds": 6.6
         },
         {
-          "runId": "run_3cfd72ac",
-          "seconds": 68.9
+          "runId": "run_2237737c",
+          "seconds": 58.8
+        },
+        {
+          "runId": "run_a898304f",
+          "seconds": 90.1
         },
         {
           "runId": "run_dfcdca56",
           "seconds": 7.4
+        },
+        {
+          "runId": "run_fcb33edc",
+          "seconds": 244.2
+        },
+        {
+          "runId": "run_95aab93e",
+          "seconds": 7.2
         },
         {
           "runId": "run_4e610129",
@@ -125,10 +151,6 @@
           "seconds": 9.3
         },
         {
-          "runId": "run_70ed9aec",
-          "seconds": 90
-        },
-        {
           "runId": "run_c2dc522c",
           "seconds": 86.7
         },
@@ -141,49 +163,73 @@
           "seconds": 96.9
         },
         {
-          "runId": "run_e31b66e2",
-          "seconds": 113.7
+          "runId": "run_c7a9baae",
+          "seconds": 120.1
+        },
+        {
+          "runId": "run_064240c2",
+          "seconds": 131.1
         },
         {
           "runId": "run_d7e86e06",
           "seconds": 109.1
         },
         {
+          "runId": "run_0d31315e",
+          "seconds": 117.2
+        },
+        {
           "runId": "run_77792a82",
           "seconds": 48.1
+        },
+        {
+          "runId": "run_850a86e3",
+          "seconds": 92.7
+        },
+        {
+          "runId": "run_5edea4ab",
+          "seconds": 115.7
+        },
+        {
+          "runId": "run_6b6d125e",
+          "seconds": 5.8
+        },
+        {
+          "runId": "run_b7f3aec1",
+          "seconds": 191.2
         }
       ]
     }
   },
   "classifier": {
     "runs": 54,
-    "costUsd": 0.07755221999999999
+    "costUsd": 0.0783919
   },
-  "quietChecks": 70,
+  "quietChecks": 69,
   "models": [
     {
       "model": "Opus",
-      "runs": 8,
-      "calls": 24,
-      "costUsd": 1.2163372,
+      "runs": 14,
+      "calls": 46,
+      "costUsd": 2.6292915999999997,
       "agents": [
         "Investigator"
       ]
     },
     {
       "model": "Sonnet",
-      "runs": 20,
-      "calls": 78,
-      "costUsd": 1.0151702,
+      "runs": 30,
+      "calls": 120,
+      "costUsd": 1.6698406999999997,
       "agents": [
         "Investigator"
       ]
     },
     {
       "model": "Haiku",
-      "runs": 75,
-      "calls": 326,
-      "costUsd": 0.15991141,
+      "runs": 85,
+      "calls": 377,
+      "costUsd": 0.2490297850000001,
       "agents": [
         "Classifier",
         "Investigator"
@@ -191,7 +237,7 @@
     }
   ],
   "costUsd": {
-    "total": 2.39141881,
-    "averagePerAgentRun": 0.03188558413333333
+    "total": 4.548162085000001,
+    "averagePerAgentRun": 0.05350778923529413
   }
 }

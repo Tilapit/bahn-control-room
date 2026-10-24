@@ -10,6 +10,8 @@ import { getCase } from "./case"
 import { now as clockNow } from "./clock"
 import { db } from "./db"
 import { execute } from "./executor"
+import { writeEntry } from "./agents/entries"
+import { hasApiKey } from "./agents/llm"
 import { countDecision } from "./policies"
 import { agentRuns, cards, decisions, evalCases, timelineEntries } from "./schema"
 import type { CardOption } from "./schema"
@@ -37,7 +39,7 @@ const STATUS: Record<Kind, "approved" | "rejected" | "answered"> = {
 /** "Booking in 8 s": what the toast counts down to. */
 function pendingWord(kind: Kind, option: CardOption): string {
   if (kind === "reject") return "Rejecting"
-  if (kind === "reply" || kind === "answer") return "Sending to the agent"
+  if (kind === "reply" || kind === "answer") return hasApiKey() ? "Sending to the agent" : "Recording your reply"
   if (kind === "handled") return "Marking as handled"
   const actions = (option.steps ?? [{ action: option.action }]).map((step) => step.action)
   if (actions.some((action) => action.startsWith("book_") || action === "change_ferry_booking")) return "Booking"
@@ -166,6 +168,14 @@ export async function sweepDecisions(): Promise<void> {
 }
 
 async function resumeAgent(runId: string, content: string): Promise<void> {
+  // Without an API key (recorded runs only) no agent can continue: say so on the order instead of failing the run.
+  if (!hasApiKey()) {
+    const [run] = await db.select().from(agentRuns).where(eq(agentRuns.id, runId)).limit(1)
+    if (!run) return
+    await db.update(agentRuns).set({ status: "done", outcomeSummary: "Your answer is recorded. Agents are not running live here (no API key), so no agent continued with it.", finishedAt: await clockNow() }).where(eq(agentRuns.id, runId))
+    if (run.orderId) await writeEntry({ orderId: run.orderId, at: await clockNow(), source: "system", channel: "control_room", authorType: "system", authorLabel: "Control room", kind: "event", summary: "Your answer is recorded. Agents are not running live here (no API key), so no agent continued with it.", evidence: { table: "agent_runs", id: runId } })
+    return
+  }
   try {
     const { continueAfterPerson } = await import("./agents/investigator")
     await continueAfterPerson(runId, content)

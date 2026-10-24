@@ -22,6 +22,7 @@ const TABLES: { table: string; where: string }[] = [
   { table: "facts", where: "origin in ('classifier', 'agent')" },
   { table: "demo_events", where: "true" },
   { table: "policies", where: "true" },
+  { table: "policy_changes", where: "true" },
 ]
 
 export type Fixture = { exportedAt: string; clock: string; tables: Record<string, Record<string, unknown>[]> }
@@ -58,5 +59,7 @@ export async function loadFixtures(file = FIXTURE_FILE): Promise<Record<string, 
   })
   await setNow(new Date(fixture.clock))
   await setDemoStart(new Date(fixture.clock))
+  // Demo switches go back to their defaults: drivers answer, autonomy after 5 approvals, no replay playing.
+  await db.execute(sql`delete from demo_settings where key in ('answers', 'autonomy_threshold', 'replay')`)
   return counts
 }

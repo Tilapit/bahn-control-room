@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
+import type { AskResult } from "@/lib/agents/ask"
 import type { SearchHit } from "@/lib/case"
 import { Icon } from "./icons"
 
@@ -13,6 +14,29 @@ export function TopSearch() {
   const [hits, setHits] = useState<SearchHit[] | null>(null)
   const [active, setActive] = useState(0)
   const [open, setOpen] = useState(false)
+  const [asking, setAsking] = useState(false)
+  const [answer, setAnswer] = useState<(AskResult & { question: string }) | null>(null)
+  const [askError, setAskError] = useState<string | null>(null)
+  // A question (ends with "?", starts with why/what/…, or is long) can go to the agents; a search still runs too.
+  const question = /\?\s*$|^(why|what|when|where|who|how|is|are|was|were|does|do|did|can|could|should|will|which|has|have)\b/i.test(query.trim()) || query.trim().split(/\s+/).length >= 6
+
+  async function askAgents() {
+    const text = query.trim()
+    if (!text) return
+    setAsking(true)
+    setAskError(null)
+    setAnswer(null)
+    try {
+      const response = await fetch("/api/ask", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ question: text }) })
+      const result = await response.json() as AskResult & { error?: string }
+      if (!response.ok) setAskError(result.error ?? "No answer.")
+      else setAnswer({ ...result, question: text })
+    } catch {
+      setAskError("No answer: the request failed.")
+    }
+    setAsking(false)
+    setOpen(true)
+  }
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -43,6 +67,7 @@ export function TopSearch() {
 
   function onKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Escape") { setOpen(false); input.current?.blur() }
+    if (event.key === "Enter" && question && !(hits?.length && active > 0)) { event.preventDefault(); void askAgents(); return }
     if (!hits?.length) {
       if (event.key === "Enter" && query.trim()) { setOpen(false); router.push(`/orders?q=${encodeURIComponent(query.trim())}`) }
       return
@@ -57,16 +82,34 @@ export function TopSearch() {
       <Icon name="search" />
       <span className="sr-only">Search orders</span>
       <input
-        ref={input} value={query} placeholder="Search orders: reference, plate, name, city, anything said"
-        onChange={(event) => { setQuery(event.target.value); setOpen(true) }}
+        ref={input} value={query} placeholder="Search orders, or ask: why is CD-420603 at risk?"
+        onChange={(event) => { setQuery(event.target.value); setOpen(true); setAnswer(null); setAskError(null) }}
         onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 150)} onKeyDown={onKeyDown}
         aria-expanded={open && !!hits} aria-controls="search-results" role="combobox" aria-autocomplete="list"
       />
       <kbd>⌘K</kbd>
     </label>
-    {open && hits && <div className="search-results" id="search-results" role="listbox">
-      {hits.length === 0 && <p className="search-empty">No order matches “{query}”.</p>}
-      {hits.map((hit, index) => <a
+    {open && (hits || answer || asking || askError) && <div className="search-results" id="search-results" role="listbox">
+      {question && !answer && <button type="button" className="search-hit ask-row" data-active={active === 0} onMouseDown={(event) => { event.preventDefault(); void askAgents() }} disabled={asking}>
+        <span className="line1"><b>{asking ? "Asking the agents…" : "Ask the agents"}</b><span className="faint">Enter</span></span>
+        <span className="line2" style={{ display: "block" }}>{asking ? "The Investigator is reading the records. It can only read here, not change anything." : `“${query.trim()}”, answered from the records, with sources`}</span>
+      </button>}
+      {askError && <p className="search-empty">{askError}</p>}
+      {answer && <div className="ask-answer">
+        <p className="ask-question">“{answer.question}”</p>
+        <p>{answer.answer}</p>
+        {answer.sources.length > 0 && <ul className="ask-sources">
+          {answer.sources.map((source) => <li key={source.entryId}>
+            <a className="chip" href={source.reference ? `/orders/${source.reference}#${source.entryId}` : "#"} onMouseDown={(event) => { event.preventDefault(); if (source.reference) { setOpen(false); router.push(`/orders/${source.reference}#${source.entryId}`) } }}>
+              {source.reference ? `${source.reference} · ` : ""}{source.label}
+            </a>
+            <span className="ask-source-text">{source.summary.length > 140 ? `${source.summary.slice(0, 137)}…` : source.summary}</span>
+          </li>)}
+        </ul>}
+        {answer.runId && <p className="note">Answered by the Investigator, read-only · {answer.model} · ${answer.costUsd.toFixed(3)}</p>}
+      </div>}
+      {hits && hits.length === 0 && !question && <p className="search-empty">No order matches “{query}”.</p>}
+      {(hits ?? []).map((hit, index) => <a
         key={hit.orderId} href={`/orders/${hit.reference}`} className="search-hit" role="option" aria-selected={index === active} data-active={index === active}
         onMouseDown={(event) => { event.preventDefault(); go(hit.reference) }}
       >

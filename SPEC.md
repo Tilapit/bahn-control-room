@@ -324,3 +324,24 @@ Calm, dense, readable. Think Apple Mail / Linear, not an admin template.
 6. Classifier + ingest + Router + Driver support + simulated driver + Demo page. Check: scenario 2 live.
 7. Agents view (aquarium) with SSE and Narrator; backfill script; fixtures + demo mode. Check: fresh DB, no API key → app still shows recorded runs.
 8. Polish: empty/loading states, ⌘K, Settings pages, scenario 5, README. Check: Playwright screenshots of every screen in light and dark; fix anything ugly.
+
+## 12. Added after phase 7 (requested during the build)
+
+- **Card call**: findings and option steps are added one flat call at a time (`add_finding`, `add_step`), then a flat `propose`.
+- **Disruption feed** (`disruptions`, fictional): a rail strike in Germany (hits CD-420123's booked train), a protest near Lille
+  (published by the Demo button "Scenario 7: protest near Lille"), an E18 closure that touches no order. Investigator tool
+  `check_disruptions(region, from, to)`. A Monitor rule in code matches active notices to routes, pickups, deliveries and
+  drivers' booked trains and starts an Investigator run before any driver reports anything. The card names the source and
+  says the driver has not confirmed it (checked in code).
+- **Autonomy suggestion**: after N unchanged approvals of one kind of action (N = 5; the Demo page can lower it), For you
+  offers once: "You approved 5 ferry bookings under €400 unchanged. Let the agent do these without asking?" Yes / Not now.
+  Yes sets the policy to automatic up to that cost and logs the change; customer contact and promised delivery dates never
+  become automatic.
+- **Silent problems** (Monitor rules): a car on the road that does not move (GPS without progress, or no GPS in the recorded
+  data) or a pickup slot passing with no collection → the Investigator asks the driver; a driver cancelling a gig → a card
+  built by code to republish now, with a fee raise for the time left (≤12 h +30%, ≤24 h +20%, ≤48 h +10%).
+- **No reply**: an unanswered `ask_driver`/`ask_site` gets one follow-up after 15 simulated minutes; 30 minutes later the
+  run hands it to a person with "Driver not answering since 10:42". The Demo page sets per scenario whether the simulated
+  driver answers.
+- **One cause, several orders**: one card covers all of them, with each order's effect and one approve action.
+- **Prompt injection test**: `npm run eval:injection` (live path and policy layer), filed as an eval case.

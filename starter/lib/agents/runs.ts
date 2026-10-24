@@ -24,12 +24,16 @@ export async function nextStepIndex(runId: string): Promise<number> {
 }
 
 export async function addStep(runId: string, idx: number, step: { at: Date; type: StepType; tool?: string | null; input?: unknown; output?: unknown; summary: string }): Promise<string> {
-  const id = `${runId}:${idx}`
-  await db.insert(agentSteps).values({
-    id, runId, idx, at: step.at, type: step.type, tool: step.tool ?? null,
-    input: step.input === undefined ? null : step.input, output: step.output === undefined ? null : step.output, summary: step.summary,
-  })
-  return id
+  // Two writers can meet on one run (a pause still finishing while the Monitor resumes it): the later one takes the next free index.
+  for (let attempt = 0; ; attempt += 1) {
+    const index = attempt === 0 ? idx : await nextStepIndex(runId)
+    const id = `${runId}:${index}`
+    const inserted = await db.insert(agentSteps).values({
+      id, runId, idx: index, at: step.at, type: step.type, tool: step.tool ?? null,
+      input: step.input === undefined ? null : step.input, output: step.output === undefined ? null : step.output, summary: step.summary,
+    }).onConflictDoNothing().returning({ id: agentSteps.id })
+    if (inserted.length || attempt >= 3) return id
+  }
 }
 
 /** Add one model call's tokens and cost to the run, in total and for the model that answered. */

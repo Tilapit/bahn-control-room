@@ -26,36 +26,55 @@ messages.
   field.
 - `attachments/`: made-up documents, receipts and photos that belong to those
   orders.
-- `starter/`: a small web app that loads the data and shows it: a board of
-  orders, an order page, a support inbox, and pages for customers, drivers and
-  places. Use it, change it, or throw it away.
+- `starter/`: the Control Room V3 app (Next.js, Postgres, the Anthropic API):
+  For you, Agents, Orders, Settings and the Demo controls. `SPEC.md` describes it.
+- `fixtures/`: recorded agent runs and scenario recordings, so the app shows real
+  agent output without an API key. `traces/`: one JSON trace per agent run.
 - `mockups/`: screenshots of the starter, so you can see it without running
   it.
 - `check_packet.py`: a script that checks the data is complete. You do not
   need it, but you can run it with `python3 check_packet.py`.
 
-## Run the starter
+## Run the control room
 
-You need Node.js 24 or newer and Docker.
+You need Node.js 24 or newer and Docker. An Anthropic API key is optional.
 
 ```sh
 cd starter
-cp .env.example .env
+cp .env.example .env        # optional: add ANTHROPIC_API_KEY=... to run agents live
 npm ci
 docker compose up -d --wait
 npm run db:push
-npm run db:seed
-npm run attachments:seed
-npm run timeline:build   # one timeline, facts and search index for every order
-npm run cards:alerts     # temporary cards for the For you list (until agents run)
+npm run setup               # dataset, attachments, timeline, alert cards, disruption feed, recorded agent runs
 npm run dev
 ```
 
-Then open http://localhost:3000.
+Then open http://localhost:3000. Start on **For you**: the cards that need a person, in the order
+something is lost. **Agents** shows what every agent did and is doing, **Orders** has all 100 orders,
+**Settings** holds what agents may do on their own and the cases they learn from. **Demo controls**
+(bottom of the left rail) moves the simulated clock and plays the scenarios.
 
-If port 5438 or 9009 is already in use on your computer, change it in
-`starter/compose.yaml` and in the matching line of `starter/.env`.
-`starter/README.md` has the details.
+**Without an API key** the app shows the agent runs recorded in `fixtures/agent-runs.json` (the top bar
+says "Showing recorded agent runs"). Approving a card still works: the Executor is code. On the Demo
+page, "Replay recorded run" plays back a live run of each scenario at its real speed, marked "Replay".
+
+**With an API key** (check it with `npm run api:check`) agents run live: the Demo page's "Play live",
+the search box's "Ask the agents", replies to agent cards, and the Monitor's rules.
+
+| Command | What it does |
+|---|---|
+| `npm run agents:backfill` | The morning's work: the Classifier reads every message, the Investigator looks into every order with a live signal, the Monitor's rules run, quiet orders get a check by code. Writes `fixtures/`, `traces/` and `fixtures/backfill-report.json`. About 10 minutes and $5. `--resume` finishes a run that stopped |
+| `npm run agents:investigate -- CD-420322` | One Investigator run, printed with its card |
+| `npm run scenario:record -- scenario-2` | Plays a demo scenario live and records it for replay |
+| `npm run monitor` | The Monitor's rules once (`--dry` only lists what the disruption feed matches) |
+| `npm run eval:injection` | The prompt-injection test (Settings → Learning shows the result) |
+| `npm run fixtures:load` | Back to the recorded morning |
+| `npm run case -- CD-420322` | The case file as text (`--agent` shows what the agent reads) |
+| `npm run screens -- --both` | Playwright screenshots of the running app (`APP_URL`, default port 3001) |
+| `npm run typecheck`, `npm run smoke` | Checks |
+
+If port 5438 or 9009 is already in use on your computer, change it in `starter/compose.yaml` and in
+the matching line of `starter/.env`. `SPEC.md` says what is built, `PROCESS-LOG.md` how it was built.
 
 ## Tips
 

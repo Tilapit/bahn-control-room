@@ -111,6 +111,6 @@ function sourceWord(entry: { source: string; channel: string | null }): string {
 function describe(classification: Classification, entry: { authorLabel: string | null }): string {
   const what = { question: "a question", update: "an update", request: "a request", agreement: "an agreement", complaint: "a complaint", other: "a message" }[classification.intent]
   const facts = classification.facts.length ? `; filed ${classification.facts.length} fact${classification.facts.length === 1 ? "" : "s"}` : ""
-  const next = classification.needs === "investigator" ? "; the Investigator looks into it" : classification.needs === "driver_support" ? "; Driver support answers" : ""
+  const next = classification.needs === "investigator" ? "; worth a look by the Investigator" : classification.needs === "driver_support" ? "; a routine question for Driver support" : ""
   return `Read ${what} from ${entry.authorLabel ?? "someone"}${classification.urgency === "safety" ? " about safety" : ""}${facts}${next}`
 }

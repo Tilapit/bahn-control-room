@@ -504,3 +504,9 @@ a.filter { text-decoration: none; }
 .case-top { display: flex; gap: 10px; align-items: baseline; font-size: 13px; }
 .case-line { font-weight: 500; }
 .demo-select.small { height: 28px; font-size: 13px; }
+.ask-row { width: 100%; text-align: left; border: 0; background: none; cursor: pointer; font: inherit; color: inherit; }
+.ask-answer { padding: 10px; display: grid; gap: 8px; font-size: 14px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.ask-question { color: var(--text-2); font-size: 13px; }
+.ask-sources { display: grid; gap: 4px; }
+.ask-sources li { display: grid; gap: 0; }
+.ask-source-text { font-size: 13px; color: var(--text-2); }

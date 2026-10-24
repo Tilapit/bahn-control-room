@@ -6,6 +6,7 @@
 import "dotenv/config"
 import { and, eq, inArray } from "drizzle-orm"
 import { getCase } from "@/lib/case"
+import { resetToDemoStart } from "@/lib/clock"
 import { closeDb, db } from "@/lib/db"
 import { DEMO_EVENTS, playDemoEvent } from "@/lib/demo-scenarios"
 import { recordScenario } from "@/lib/recording"
@@ -19,6 +20,8 @@ async function main() {
   for (const id of ids) {
     const event = DEMO_EVENTS.find((candidate) => candidate.id === id)
     if (!event) throw new Error(`No demo event ${id}`)
+    // Every recording starts where the demo starts, so a replay lines up with the recorded morning.
+    await resetToDemoStart()
     const file = (await getCase(event.order))!
     const orderIds = [file.order.id, ...(await Promise.all((event.others ?? []).map((reference) => getCase(reference)))).map((item) => item!.order.id)]
     let started = 0

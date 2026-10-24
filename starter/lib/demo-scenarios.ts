@@ -24,6 +24,7 @@ export type DemoEvent = { id: string; label: string; detail: string; order: stri
 export const DEMO_EVENTS: DemoEvent[] = [
   { id: "scenario-1", order: "CD-420299", label: "Scenario 1: ferry sold out", detail: "Resets CD-420299, then the Investigator looks at the sold-out ferry and the timed-out booking attempt." },
   { id: "scenario-2", order: "CD-420322", label: "Scenario 2: red warning light", detail: "Resets CD-420322, then the driver writes that the red warning came back. Classifier, Router, Investigator on Opus." },
+  { id: "scenario-5", order: "CD-420576", label: "Scenario 5: GPS deviation explained", detail: "Earlier today support agreed that the driver collects the second key at Varnela Lappeenranta. Now the driver writes 'Turning off to Lappeenranta now' and GPS shows km to go rising. The Monitor sees the deviation; the Investigator should find the agreement and close it without a card." },
   { id: "scenario-7", order: "CD-420692", others: ["CD-420697"], label: "Scenario 7: protest near Lille", detail: "The regional traffic service publishes a notice: farmers' blockades around Lille from Thu 22 Oct. The Monitor matches it to the orders planned through Lille and starts one Investigator run for all of them, before any driver says anything." },
   { id: "gig-cancelled", order: "CD-420442", label: "Driver cancels a gig", detail: "Kasper Darevik cancels tomorrow's Stockholm pickup in the driver app and writes nothing else. The Monitor notices at once and puts a card in For you to republish the gig, with a fee raise for the time left." },
   { id: "car-not-moving", order: "CD-420145", label: "Car not moving", detail: "CD-420145 is on the road from Lahti to Helsinki. The driver app keeps reporting 96 km to go for over an hour and the driver writes nothing. The Monitor notices and the Investigator asks the driver." },
@@ -87,6 +88,31 @@ export async function playDemoEvent(id: string, mode: PlayMode = "live"): Promis
     })
     await runMonitor({ only: ["gig-cancelled"] })
     return { orderId: file.order.id, entryId, mode }
+  }
+  if (id === "scenario-5") {
+    await resetOrderLiveState(file.order.id)
+    const now = await clockNow()
+    const zone = file.order.route.to?.zone ?? null
+    const driver = file.order.driver?.name ?? "the driver"
+    // Earlier today (fictional, authored): the agreement in support chat, and the driver's yes. Read by the Classifier like any message.
+    const agreedAt = new Date(Math.max(new Date(file.order.pickedUpAt ?? now).getTime() + 20 * 60_000, now.getTime() - 40 * 60_000))
+    const agreement = await ingest({
+      order: event.order, at: agreedAt, source: "support", channel: "support_chat", authorType: "operator", authorLabel: "Support desk",
+      body: `Hi ${driver.split(" ")[0]}, as agreed with Varnela: please collect the second key at Varnela Lappeenranta on your way (front desk, ask for Ilona). Varnela Lahti confirmed the delivery can be until 18:00 today because of the detour.`,
+      demoKind: "route agreement",
+    })
+    const yes = await ingest({ order: event.order, at: new Date(agreedAt.getTime() + 2 * 60_000), source: "support", channel: "support_chat", authorType: "driver", authorLabel: driver, body: "OK, I'll go via Lappeenranta and pick up the key.", demoKind: "route agreement" })
+    const turning = await ingest({ order: event.order, at: new Date(now.getTime() - 12 * 60_000), source: "driver_chat", channel: "driver_chat", authorType: "driver", authorLabel: driver, body: "Turning off to Lappeenranta now.", demoKind: "route deviation" })
+    // New GPS: km to go rises as the car heads east, away from Lahti.
+    const km = file.plan.lastPosition?.kmToGo ?? 116
+    await writeDemoGps(file.order.id, new Date(now.getTime() - 25 * 60_000), { kmToGo: km - 9, eta: new Date(now.getTime() + 3 * 3_600_000) }, zone)
+    await writeDemoGps(file.order.id, now, { kmToGo: km + 12, eta: new Date(now.getTime() + 4.5 * 3_600_000) }, zone)
+    void (async () => {
+      const { classifyEntry } = await import("./agents/classifier")
+      for (const entry of [agreement, yes, turning]) await classifyEntry(entry.entryId, { trigger: "Message from the demo's scenario 5" }).catch((error) => console.error("scenario 5 classify", error))
+      await runMonitor({ startAgents: true, only: ["silent-car"] })
+    })().catch((error) => console.error("scenario 5", error))
+    return { orderId: file.order.id, mode }
   }
   if (id === "car-not-moving") {
     await resetOrderLiveState(file.order.id)

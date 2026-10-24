@@ -11,9 +11,19 @@ import { chromium } from "playwright"
 const DEFAULT_SHOTS = [
   "for-you=/",
   "for-you-open=/+expand",
+  "agents=/agents",
+  "agents-done=/agents?show=done",
+  "agents-quiet=/agents?show=quiet",
+  "orders=/orders",
   "order-CD-420322=/orders/CD-420322",
   "order-CD-420299=/orders/CD-420299",
   "order-CD-420603=/orders/CD-420603",
+  "order-CD-420123=/orders/CD-420123",
+  "settings=/settings",
+  "learning=/settings/learning",
+  "demo=/demo",
+  "search=/+search",
+  "not-found=/orders/CD-999999",
 ]
 
 function option(args: string[], name: string, fallback: string): string {
@@ -43,7 +53,11 @@ async function main() {
         const [path, action] = (maybePath ?? "/").split("+")
         const name = nameOrPath ?? (path === "/" ? "home" : path.replace(/^\//, "").replace(/\//g, "-"))
         const response = await page.goto(`${base}${path}`, { waitUntil: "networkidle" })
-        if (!response?.ok()) throw new Error(`${path}: HTTP ${response?.status()}`)
+        if (!response?.ok() && name !== "not-found") throw new Error(`${path}: HTTP ${response?.status()}`)
+        if (action === "search") {
+          await page.locator(".search-box input").fill("Hamburg ferry")
+          await page.waitForTimeout(600)
+        }
         if (action === "expand") {
           await page.locator(".row-head").first().click()
           await page.waitForTimeout(150)

@@ -23,14 +23,17 @@ export type IngestInput = {
   status?: string | null
   /** What the demo page called it ("red warning light"), kept on the demo event. */
   demoKind?: string
+  /** When it happened, if earlier than now (an authored entry from earlier the same day). Default: now. */
+  at?: Date
 }
 
 export async function ingest(input: IngestInput): Promise<{ entryId: string; eventId: string; orderId: string }> {
   const file = await getCase(input.order)
   if (!file) throw new Error(`No order ${input.order}`)
-  const at = await clockNow()
+  const at = input.at ?? await clockNow()
   const kind = input.kind ?? "message"
-  const eventId = await writeDemoEvent(file.order.id, input.demoKind ?? kind, { ...input }, at)
+  const { at: _at, ...payload } = input
+  const eventId = await writeDemoEvent(file.order.id, input.demoKind ?? kind, { ...payload }, at)
   const entryId = await writeEntry({
     orderId: file.order.id, at, source: input.source, channel: input.channel ?? null, authorType: input.authorType, authorLabel: input.authorLabel,
     kind, summary: input.summary ?? input.body ?? "", body: input.body ?? null, visibility: input.visibility ?? "public",
