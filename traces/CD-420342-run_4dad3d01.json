@@ -1,0 +1,176 @@
+{
+  "run": {
+    "id": "run_4dad3d01",
+    "orderId": "ord-00342",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 5 messages on this order; filed 4 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 1758,
+    "outputTokens": 3149,
+    "cacheReadTokens": 8070,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.001831,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 5,
+        "input": 1758,
+        "output": 3149,
+        "costUsd": 0.001831,
+        "cacheRead": 8070,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 5 messages on this order; filed 4 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420342"
+  },
+  "steps": [
+    {
+      "id": "run_4dad3d01:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x652cf1954043fa32",
+        "message": "Navigation says twenty minutes to the vehicle gate for CD-420342. The cutoff looks comfortable from here."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "The driver reports a navigation ETA to the vehicle gate and says the cutoff looks comfortable, which adds no new fact or risk on an order already marked delivered.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Elina Ivermere"
+    },
+    {
+      "id": "run_4dad3d01:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x9c173b0233308986",
+        "message": "The gate rejected the manifest entry, although you reached it before cutoff. We are correcting the car registration with the carrier. Please wait for the gate's new result; this is not a boarding confirmation."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Colleague at Bahn: gate rejected the manifest entry although the car was reached before cutoff; car registration is being corrected with the carrier.",
+            "subject": "Route"
+          },
+          {
+            "kind": "agreement",
+            "value": "Colleague at Bahn: wait for the gate's new result; this is not a boarding confirmation.",
+            "subject": "Instruction to the driver"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The order is marked delivered on 19 Oct, but this message from 15 Oct says the car's boarding was rejected and still pending, which contradicts the records and could threaten the delivery promise.",
+        "factIds": [
+          "fact_a8fbc55c-66d",
+          "fact_24b09add-9e5"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Driver travel; filed 2 facts; the Investigator looks into it"
+    },
+    {
+      "id": "run_4dad3d01:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xa53512bc9c2a3046",
+        "message": "The corrected manifest was accepted at the vehicle gate. Keep the booking reference; we still need boarding and arrival evidence separately."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "The colleague reports that a corrected manifest was accepted and asks that the booking reference be kept and boarding and arrival evidence be gathered separately; this is internal guidance that adds no new fact or risk to the order.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Driver travel"
+    },
+    {
+      "id": "run_4dad3d01:3",
+      "idx": 3,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x655f946d513efa64",
+        "message": "I understand the receiving contact is unavailable over the weekend. I have the vehicle locked and its keys with me. I plan to request an attended handover on Monday; I have not sent a parking location."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Driver Elina Ivermere says she has the vehicle locked and its keys with her, as of Sat 17 Oct.",
+            "subject": "Keys"
+          },
+          {
+            "kind": "fact",
+            "value": "Driver Elina Ivermere says she plans to request an attended handover on Monday; no parking location sent yet.",
+            "subject": "Handover"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The order is marked delivered on Mon 19 Oct, but the driver says she still holds the car and keys over the weekend, which contradicts the records.",
+        "factIds": [
+          "fact_e7ab1321-fe8",
+          "fact_de003c9d-956"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Elina Ivermere; filed 2 facts; the Investigator looks into it"
+    },
+    {
+      "id": "run_4dad3d01:4",
+      "idx": 4,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xb6cd55cbe39f098a",
+        "message": "Thanks. Please send your current location and confirm the vehicle remains secure. We will check the Monday receiving appointment separately from the ferry booking status."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "request",
+        "reason": "The colleague asks the driver for a location and a security confirmation, and states an internal check, but the message adds no fact, time, or instruction the order does not already show.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a request from Support desk"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

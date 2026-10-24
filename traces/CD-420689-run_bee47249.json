@@ -1,0 +1,120 @@
+{
+  "run": {
+    "id": "run_bee47249",
+    "orderId": "ord-00689",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 3 messages on this order; filed 2 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 1043,
+    "outputTokens": 1855,
+    "cacheReadTokens": 4842,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00108022,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 3,
+        "input": 1043,
+        "output": 1855,
+        "costUsd": 0.00108022,
+        "cacheRead": 4842,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 3 messages on this order; filed 2 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420689"
+  },
+  "steps": [
+    {
+      "id": "run_bee47249:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xa89af197576aeb8f",
+        "message": "For Thursday we see CD-420154 and CD-420689 in the same collection window. Our release desk needs the driver and document set for each vehicle separately. Friday's CD-420656 and CD-420692 are a separate handover queue; please do not roll Thursday's release instruction forward."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Rivellon Marseille desk (site) says the release desk needs the driver and document set for CD-420689 handled separately from CD-420154 in the Thursday collection window.",
+            "subject": "Handover"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The Thursday pickup slot is the next day and the order still has no driver, while the site now requires a separate driver and document set for this vehicle.",
+        "factIds": [
+          "fact_ca4eb810-e11"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Rivellon Marseille desk; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_bee47249:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x576f5ee4d2f8216b",
+        "message": "CD-420154 has a booked driver; CD-420689 still has a live offer and no booking. We will verify the import documents and named driver for 154 first, then confirm each vehicle's release separately. Please hold the keys against their own references."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Driver marketplace colleague (Bahn) asked to hold the keys for CD-420689 against its own reference; release to be confirmed separately after CD-420154 checks.",
+            "subject": "Keys"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "agreement",
+        "reason": "CD-420689 has no driver or booking, its release is unconfirmed, and the Thursday 10:00 pickup slot is close, so the risk to that slot needs checking.",
+        "factIds": [
+          "fact_1477d4b2-c3a"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an agreement from Driver marketplace; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_bee47249:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x65c1dd58e33a9449",
+        "message": "The site's message is a request for separate release instructions, not evidence that the import is cleared or that the domestic market job has a driver. Check 154's travel and release authority; keep 689's live offer and Friday's booked/ready pair distinct when planning site contact."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "other",
+        "reason": "This internal note is planning guidance from a colleague and records no decision, so nothing new is filed and no agent needs to act on it.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Driver marketplace"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

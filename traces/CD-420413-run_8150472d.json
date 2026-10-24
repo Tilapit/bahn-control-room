@@ -1,0 +1,194 @@
+{
+  "run": {
+    "id": "run_8150472d",
+    "orderId": "ord-00413",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 6 messages on this order; filed 3 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 2083,
+    "outputTokens": 3719,
+    "cacheReadTokens": 9684,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00216464,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 6,
+        "input": 2083,
+        "output": 3719,
+        "costUsd": 0.00216464,
+        "cacheRead": 9684,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 6 messages on this order; filed 3 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420413"
+  },
+  "steps": [
+    {
+      "id": "run_8150472d:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x87b3e65c2d8124f9@ord-00413",
+        "message": "We received the returned trade-in for CD-420177 yesterday. CD-420941 is listed for Friday collection and CD-420413 for Monday. Please send the vehicle references and key contacts separately; the returned car is not one of those outbound releases."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "request",
+        "reason": "The site asks for vehicle references and key contacts to be sent separately, which someone needs to action, and the message clarifies that the returned trade-in CD-420177 is not one of this order's outbound releases.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a request from Kervandorio Tampere desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_8150472d:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x468ec71a6d048648@ord-00413",
+        "message": "Thank you. We will check the Friday vehicle identity and collection authority for CD-420941 before assigning a driver. The Monday bundle driver for CD-420413 will receive only that car's release instruction after the site confirms it."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Support desk (colleague at Bahn) said the Monday driver for CD-420413 will receive only that car's release instruction after the site confirms it",
+            "subject": "Instruction to the driver"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The release instruction for the Monday pickup now depends on site confirmation, which could threaten the 10:00 Monday pickup slot, and the message also concerns a different order, CD-420941.",
+        "factIds": [
+          "fact_4f8c8135-d62"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_8150472d:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x1ec4c9ccb77e5875@ord-00413",
+        "message": "The 177 trade-in has a recorded delivery to this site; that historical receipt does not authorize a new release. The 941 job has no driver yet, while 413 is booked as the first bundle leg. Verify vehicle and key custody per reference; do not use the bundle booking as authority for Friday's car."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "other",
+        "reason": "The colleague's note flags a possible mix-up between this order and other references over vehicle and key custody, and asks for verification before release, so someone needs to check it.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Support desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_8150472d:3",
+      "idx": 3,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xb03f8088fcee4c09",
+        "message": "I accepted the two Golf job, CD-420413 then CD-420384. The first car ends at the same Tampere branch where the second begins the next day. Am I meant to collect the second set of keys on Monday and keep the car overnight?"
+      },
+      "output": {
+        "facts": [],
+        "needs": "driver_support",
+        "intent": "question",
+        "reason": "The driver asks a routine question about collecting keys and keeping the car overnight, which the order's handover records should be able to answer.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Hanna Wenverin; Driver support answers"
+    },
+    {
+      "id": "run_8150472d:4",
+      "idx": 4,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x198a5145d80b5c90",
+        "message": "No overnight custody has been agreed. The accepted offer covers both paid legs, but it does not authorize taking the second car a day early or leaving it unattended. We must confirm the branch release time and your Tuesday return plan first."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Support desk: no overnight custody agreed; accepted offer does not allow taking the second car early or leaving it unattended.",
+            "subject": "Instruction to the driver"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The note refers to a second car, a day-early release and a Tuesday return plan, which do not match this order's Monday 26 Oct pickup and delivery times, so the records need checking.",
+        "factIds": [
+          "fact_34972bd2-7b6"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_8150472d:5",
+      "idx": 5,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xfb907bbd32ffcebd",
+        "message": "Understood. I will only collect the first Golf on Monday. Please tell me who confirms Tuesday's keys and where I should report."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Driver (Hanna Wenverin) says they will only collect the first Golf on Monday, per their understanding of the instruction; asks who confirms Tuesday's keys and where to report.",
+            "subject": "Instruction to the driver"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "question",
+        "reason": "The driver's message refers to a second Golf and Tuesday's keys, which the order summary does not show, so the scope of the booking may be in conflict with the records and needs checking.",
+        "factIds": [
+          "fact_7dee20ef-a7a"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Hanna Wenverin; filed 1 fact; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

@@ -1,0 +1,90 @@
+{
+  "run": {
+    "id": "run_c70567cb",
+    "orderId": "ord-00442",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 2 messages on this order; filed 1 fact and agreement, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 746,
+    "outputTokens": 584,
+    "cacheReadTokens": 3228,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00039888,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 2,
+        "input": 746,
+        "output": 584,
+        "costUsd": 0.00039888,
+        "cacheRead": 3228,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 2 messages on this order; filed 1 fact and agreement, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420442"
+  },
+  "steps": [
+    {
+      "id": "run_c70567cb:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x54be9be73cbb3839",
+        "message": "When will the car reach Tampere?"
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "question",
+        "reason": "The customer asks when the car will arrive, which the order's delivery promise already answers, so no new fact or action is needed.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Vekarino Vehicle Group"
+    },
+    {
+      "id": "run_c70567cb:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x03301f0eca44b0f5",
+        "message": "The selected delivery window is 26 Oct 12:00–16:00 (Europe/Helsinki). That is not a live ETA; no precise arrival time is confirmed in this conversation."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Support desk (Bahn) says the selected delivery window is Mon 26 Oct 12:00–16:00 Helsinki time; no precise arrival time is confirmed.",
+            "subject": "Delivery time"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The colleague's delivery window of 12:00–16:00 may conflict with the recorded 12:00 delivery promise, so someone should check what was promised to the customer.",
+        "factIds": [
+          "fact_0589d4f3-3f5"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; filed 1 fact; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

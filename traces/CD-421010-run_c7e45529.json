@@ -1,0 +1,112 @@
+{
+  "run": {
+    "id": "run_c7e45529",
+    "orderId": "ord-01010",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 3 messages on this order; filed 1 fact and agreement, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 923,
+    "outputTokens": 1546,
+    "cacheReadTokens": 4842,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00091372,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 3,
+        "input": 923,
+        "output": 1546,
+        "costUsd": 0.00091372,
+        "cacheRead": 4842,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 3 messages on this order; filed 1 fact and agreement, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-421010"
+  },
+  "steps": [
+    {
+      "id": "run_c7e45529:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x35df3c1b0b339f7a",
+        "message": "Tämä on ensimmäinen kuljetuksemme. Onko CD-421010 jo kuljettajan vastuulla?"
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "question",
+        "reason": "The customer asks whether the order is already with a driver; this is a question with no new fact or change, and the order shows no driver yet, so it is for the order owner to answer rather than a support agent.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Varellivo Cars"
+    },
+    {
+      "id": "run_c7e45529:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x8d3d5881fbba0eda",
+        "message": "Ei vielä. Suunnitelma on aktiivinen, mutta tilausta ei ole julkaistu kuljettajille eikä noutoa ole kirjattu."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "A colleague's status note says the order is not yet published to drivers and no pickup is recorded, which does not change any time, place, handover or booking and does not conflict with the order summary.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk"
+    },
+    {
+      "id": "run_c7e45529:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xce5c641651cbebb4",
+        "message": "Selvä. Odotamme varaustietoa ennen kuin valmistelemme luovutuksen."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Customer (Varellivo Cars) says they are waiting for booking information before preparing the handover.",
+            "subject": "Handover"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The customer is waiting on booking information before preparing the handover, and the Pickup slot is Mon 26 Oct 10:00, so someone should confirm that the information is sent in time.",
+        "factIds": [
+          "fact_1aa3f749-a62"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Varellivo Cars; filed 1 fact; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

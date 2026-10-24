@@ -1,0 +1,296 @@
+{
+  "run": {
+    "id": "run_dfcda079",
+    "orderId": "ord-00516",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 9 messages on this order; filed 8 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 3129,
+    "outputTokens": 4382,
+    "cacheReadTokens": 14526,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.0026491600000000002,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 9,
+        "input": 3129,
+        "output": 4382,
+        "costUsd": 0.0026491600000000002,
+        "cacheRead": 14526,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 9 messages on this order; filed 8 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420516"
+  },
+  "steps": [
+    {
+      "id": "run_dfcda079:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "order_notes:note-x7b4b75e5977108cd",
+        "message": "Use the side gate for vehicle collection."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Customer said to use the side gate for vehicle collection (order note, Sun 18 Oct 13:44 EEST)",
+            "subject": "Instruction from the customer"
+          }
+        ],
+        "needs": "nothing",
+        "intent": "agreement",
+        "reason": "The customer's instruction on the collection gate is recorded for the pickup, and it does not raise a risk, a missed time, or a question the order records cannot answer.",
+        "factIds": [
+          "fact_de585808-0f5"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an agreement from Auvelloria Motor Collection; filed 1 fact"
+    },
+    {
+      "id": "run_dfcda079:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x96d66b17e32a5df4",
+        "message": "The pickup contact says reception has the keys for CD-420516; the pickup note still tells the driver to use the side gate."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Customer (support chat, Mon 19 Oct) says the pickup contact reports reception holds the keys for CD-420516; the pickup note still tells the driver to use the side gate.",
+            "subject": "Keys"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The customer's report that reception holds the keys contradicts the pickup note's side-gate instruction, and the order's open task to find the key holder makes this worth checking.",
+        "factIds": [
+          "fact_4762bf1a-70c"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Auvelloria Motor Collection; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_dfcda079:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x9d496778f6446ec4",
+        "message": "I will reconcile those instructions with the site before the offer goes live."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "other",
+        "reason": "The Support desk colleague only says they will reconcile instructions with the site before the offer goes live, which records no decision, time, or handover change and needs no follow-up from an agent.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Support desk"
+    },
+    {
+      "id": "run_dfcda079:3",
+      "idx": 3,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x6212ba949ed4d6d0",
+        "message": "Ready vehicle, disputed handover path. Confirm desk and access hours; leave readiness intact while checking."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "other",
+        "reason": "The colleague's internal note flags a disputed handover path and asks for desk and access hours to be confirmed, which bears on the open pickup contact and keys alert.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Support desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_dfcda079:4",
+      "idx": 4,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x1772ff247d962065",
+        "message": "The selected collection slot is still fine. We only need the driver sent to the right person."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Customer says the selected collection slot is still fine and asks that the driver be sent to the right person; no person is named.",
+            "subject": "Instruction from the customer"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "request",
+        "reason": "The customer asks for the driver to go to the right person, but the pickup contact and keys are still unconfirmed and the message does not say who that person is.",
+        "factIds": [
+          "fact_fea78e62-51e"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read a request from Auvelloria Motor Collection; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_dfcda079:5",
+      "idx": 5,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x94eb969bdd719386",
+        "message": "The key desk on CD-420516 is still unclear. Did the site contact confirm it?"
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "question",
+        "reason": "The customer asks whether the site contact confirmed the key desk, and the order still shows pickup contact and keys unconfirmed with an open task, so someone must check the status and answer.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Auvelloria Motor Collection; the Investigator looks into it"
+    },
+    {
+      "id": "run_dfcda079:6",
+      "idx": 6,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x81c0f09a2f5bddac",
+        "message": "Not yet. The selected window remains, but we will not send a driver to an unverified handover point."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Support desk (colleague at Bahn) decided no driver will be sent to the pickup point until the handover point is verified; the selected window remains.",
+            "subject": "Pickup handover"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The pickup handover is unverified and no driver will be sent until it is, so the Mon 26 Oct 09:00 pickup slot is at risk and the open pickup contact and keys alerts need follow-up.",
+        "factIds": [
+          "fact_37dcd3af-265"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_dfcda079:7",
+      "idx": 7,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x5d8006558b9e7cc6",
+        "message": "Reception does not have the keys for this car. The side gate is only for vehicle entry, not a collection desk. Our stock screen lists a warehouse transfer but no named person to release the vehicle. I cannot confirm the handover point or key holder for the selected slot; please hold a driver until stock control checks this car."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Velantora Helsinki desk said reception does not hold the keys for this car and the side gate is for vehicle entry only, not a collection desk.",
+            "subject": "Keys"
+          },
+          {
+            "kind": "agreement",
+            "value": "Velantora Helsinki desk asked that a driver be held until stock control checks the car; the desk cannot confirm the handover point or key holder for the selected slot.",
+            "subject": "Instruction to the driver"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The pickup handover and key holder are unconfirmed for the Mon 26 Oct 09:00 slot, which threatens the 10:00 delivery promise, and the site asks for a driver to be held.",
+        "factIds": [
+          "fact_065cdf16-055",
+          "fact_11f7d833-998"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Velantora Helsinki desk; filed 2 facts; the Investigator looks into it"
+    },
+    {
+      "id": "run_dfcda079:8",
+      "idx": 8,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x692e27641c8877b2",
+        "message": "The site checked this car: reception has no key and the side gate is not a handover desk. Stock control is finding the key holder. The selected slot is still recorded, but collection is not confirmed and we are holding driver dispatch."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Readiness desk (Bahn) reports the site reception has no key and the side gate is not a handover desk; stock control is finding the key holder",
+            "subject": "Keys"
+          },
+          {
+            "kind": "agreement",
+            "value": "Readiness desk (Bahn) is holding driver dispatch until collection is confirmed",
+            "subject": "Instruction to the driver"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "Collection is unconfirmed and dispatch is on hold against the Mon 26 Oct 09:00 pickup slot, so the slot may be at risk.",
+        "factIds": [
+          "fact_12bf5583-412",
+          "fact_5ee17c7a-930"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Readiness desk; filed 2 facts; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

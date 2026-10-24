@@ -1,14 +1,15 @@
 import { and, asc, desc, eq, inArray } from "drizzle-orm"
 import { getCase } from "@/lib/case"
-import { now } from "@/lib/clock"
+import { demoStart, now } from "@/lib/clock"
 import { db } from "@/lib/db"
 import { autoReplyEnabled } from "@/lib/demo"
+import { replayState } from "@/lib/recording"
 import { agentRuns, orders, timelineEntries } from "@/lib/schema"
 
 /** Demo page state: the clock, the switch, one order's driver chat, and the latest agent runs. */
 export async function GET(request: Request) {
   const reference = new URL(request.url).searchParams.get("order")
-  const [clock, autoReply] = await Promise.all([now(), autoReplyEnabled()])
+  const [clock, start, autoReply, replay] = await Promise.all([now(), demoStart(), autoReplyEnabled(), replayState()])
   let thread: { id: string; at: string; who: string; mine: boolean; text: string; simulated: boolean }[] = []
   let driver: string | null = null
   if (reference) {
@@ -28,5 +29,5 @@ export async function GET(request: Request) {
     .from(agentRuns).leftJoin(orders, eq(orders.id, agentRuns.orderId))
     .where(inArray(agentRuns.agent, ["Investigator", "Driver support", "Classifier"]))
     .orderBy(desc(agentRuns.startedAt), desc(agentRuns.id)).limit(8)
-  return Response.json({ now: clock.toISOString(), autoReply, driver, thread, runs })
+  return Response.json({ now: clock.toISOString(), start: start.toISOString(), autoReply, replay, driver, thread, runs })
 }

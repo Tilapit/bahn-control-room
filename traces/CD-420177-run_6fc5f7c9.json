@@ -1,0 +1,202 @@
+{
+  "run": {
+    "id": "run_6fc5f7c9",
+    "orderId": "ord-00177",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 6 messages on this order; filed 4 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 2250,
+    "outputTokens": 4476,
+    "cacheReadTokens": 9684,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00255984,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 6,
+        "input": 2250,
+        "output": 4476,
+        "costUsd": 0.00255984,
+        "cacheRead": 9684,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 6 messages on this order; filed 4 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420177"
+  },
+  "steps": [
+    {
+      "id": "run_6fc5f7c9:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xed4323d02afe67b3",
+        "message": "Voisitteko vastaanottaa vaihtoauton jo tiistaina 20.10. klo 13–14? Alkuperäinen paluuaikapyyntö on torstaille; emme siirrä sitä ilman vahvistustanne."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Customer proposed receiving replacement car Tue 20 Oct 13-14; original Thursday return request stays unless they confirm",
+            "subject": "Instruction from the customer"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "request",
+        "reason": "The customer asks to change a return date and time, which is a booking change that needs someone to check and answer before the Tuesday slot.",
+        "factIds": [
+          "fact_6745e288-806"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read a request from Driver marketplace; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_6fc5f7c9:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xca60a8064ee4eacb",
+        "message": "Tiistai 20.10. käy. Vastaanotto on paikalla klo 13–14 ja ottaa auton sekä avaimet vastaan."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Calverin Espoo desk (site) said Tuesday 20 Oct works; reception on site 13–14 to take over the car and keys.",
+            "subject": "Pickup slot"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "agreement",
+        "reason": "The site confirms a new handover date and time that differs from the recorded Espoo pickup on Fri 16 Oct, so someone should check the booking change.",
+        "factIds": [
+          "fact_6a1c5494-509"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an agreement from Calverin Espoo desk; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_6fc5f7c9:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xf77d14b4398ac2b0",
+        "message": "Vaihtoauto ja avaimet vastaanotettu klo 13.50. Vastaanotto kuittasi auton; luovutuskuvat voitte tarkistaa erikseen."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Calverin Espoo desk says it received the trade-in car and keys at 13:50; the message does not state the date.",
+            "subject": "Keys"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The desk's 13:50 receipt is not clearly tied to this Enyaq's Espoo pickup or Tampere delivery, and the date is unstated, so the records may contradict it.",
+        "factIds": [
+          "fact_1ed02eeb-2a8"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Calverin Espoo desk; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_6fc5f7c9:3",
+      "idx": 3,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x87b3e65c2d8124f9@ord-00177",
+        "message": "We received the returned trade-in for CD-420177 yesterday. CD-420941 is listed for Friday collection and CD-420413 for Monday. Please send the vehicle references and key contacts separately; the returned car is not one of those outbound releases."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Kervandorio Tampere desk (site) said on Wed 21 Oct that it received the returned trade-in for CD-420177 on Tue 20 Oct; the returned car is not one of its outbound releases CD-420941 or CD-420413.",
+            "subject": "Handover"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The site reports the car came back as a trade-in after delivery and asks for vehicle references and key contacts for other orders, which this order's records do not cover.",
+        "factIds": [
+          "fact_fd1a8a63-dbc"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Kervandorio Tampere desk; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_6fc5f7c9:4",
+      "idx": 4,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x468ec71a6d048648@ord-00177",
+        "message": "Thank you. We will check the Friday vehicle identity and collection authority for CD-420941 before assigning a driver. The Monday bundle driver for CD-420413 will receive only that car's release instruction after the site confirms it."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "The note concerns orders CD-420941 and CD-420413, not this delivered order CD-420177, and records no change to this order.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": "CD-420941"
+      },
+      "summary": "Read an update from Support desk"
+    },
+    {
+      "id": "run_6fc5f7c9:5",
+      "idx": 5,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x1ec4c9ccb77e5875@ord-00177",
+        "message": "The 177 trade-in has a recorded delivery to this site; that historical receipt does not authorize a new release. The 941 job has no driver yet, while 413 is booked as the first bundle leg. Verify vehicle and key custody per reference; do not use the bundle booking as authority for Friday's car."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The internal note warns that the bundle booking and trade-in receipt should not be used as release authority and asks for vehicle and key custody to be verified, which may conflict with this delivered order's records.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

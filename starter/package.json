@@ -20,7 +20,13 @@
     "agents:investigate": "tsx scripts/investigate.ts",
     "scenario": "tsx scripts/scenario.ts",
     "agents:classify": "tsx scripts/classify.ts",
-    "agents:trace": "tsx scripts/trace.ts"
+    "agents:trace": "tsx scripts/trace.ts",
+    "agents:backfill": "tsx scripts/backfill.ts",
+    "fixtures:load": "tsx scripts/fixtures.ts load",
+    "fixtures:export": "tsx scripts/fixtures.ts export",
+    "scenario:record": "tsx scripts/record-scenario.ts",
+    "agents:narrate": "tsx scripts/narrate.ts",
+    "setup": "npm run db:seed && npm run attachments:seed && npm run timeline:build && npm run cards:alerts && npm run fixtures:load"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",

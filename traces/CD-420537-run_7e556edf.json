@@ -1,0 +1,82 @@
+{
+  "run": {
+    "id": "run_7e556edf",
+    "orderId": "ord-00537",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 2 messages on this order; filed 0 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 661,
+    "outputTokens": 324,
+    "cacheReadTokens": 3228,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00026038000000000005,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 2,
+        "input": 661,
+        "output": 324,
+        "costUsd": 0.00026038000000000005,
+        "cacheRead": 3228,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 2 messages on this order; filed 0 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420537"
+  },
+  "steps": [
+    {
+      "id": "run_7e556edf:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xe77c44dd2ec14d74",
+        "message": "Should I tell the buyer a driver is confirmed for CD-420537?"
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "question",
+        "reason": "The customer asks whether they can tell their buyer a driver is confirmed; this is a question with no new fact, change or risk, and the order already names the driver.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Norveldin Motor"
+    },
+    {
+      "id": "run_7e556edf:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x1115c371470e4cc2",
+        "message": "Yes, a driver accepted the assignment. The driver app records collection of CD-420537 at 20 Oct 10:30. That is a pickup record, not a delivery confirmation."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "The Support desk colleague only confirms the pickup time already shown on the order and notes it is not a delivery confirmation, so no new fact or action is needed.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

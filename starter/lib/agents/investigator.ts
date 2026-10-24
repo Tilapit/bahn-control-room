@@ -126,7 +126,15 @@ export async function answerWithSimulation(runId: string, options: Omit<StartOpt
   const started = Date.now()
   for (const pending of state.pending) {
     if (pending.party === "person") continue
-    const reply = await simulateReply(file, pending.party, pending.question, { side: pending.side, questionEntryId: pending.questionEntryId })
+    let reply: Awaited<ReturnType<typeof simulateReply>>
+    try {
+      reply = await simulateReply(file, pending.party, pending.question, { side: pending.side, questionEntryId: pending.questionEntryId })
+    } catch (cause) {
+      // The simulated person could not answer: the run is truly waiting for a reply, as it would for a real one.
+      console.error(`simulated reply on ${runId}:`, cause instanceof Error ? cause.message : cause)
+      await addWallTime(runId, Date.now() - started)
+      return { runId, status: run.status, summary: `Waiting for the ${pending.party}`, pending: state.pending }
+    }
     await addUsageToRun(runId, reply.usage.model, reply.usage.usage)
     // The same zone as the timeline lines the agent reads, with its name, so the agent never guesses one.
     const zone = orderView(file).zone
@@ -199,8 +207,10 @@ async function loop(runId: string, orderId: string, reference: string, startMode
       })
     } catch (cause) {
       // The SDK already retried. Keep the conversation so the run can be retried from here.
+      // People read a plain sentence; the API's own error stays in the step's details.
       const reason = cause instanceof Error ? cause.message : String(cause)
-      await finish("failed", `Stopped: the model could not be reached (${reason}).`)
+      await addStep(runId, idx++, { at: await clockNow(), type: "message", output: { error: reason }, summary: "The model could not be reached; the run stopped here. Nothing was changed." })
+      await finish("failed", "Stopped: the agent could not reach the model. Nothing was changed; the order needs another run.")
       return { runId, status: "failed", summary: reason }
     }
     state.modelCalls += 1

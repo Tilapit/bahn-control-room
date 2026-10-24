@@ -1,0 +1,98 @@
+{
+  "run": {
+    "id": "run_9e972bf0",
+    "orderId": "ord-00291",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 2 messages on this order; filed 2 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 765,
+    "outputTokens": 1253,
+    "cacheReadTokens": 3228,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00073528,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 2,
+        "input": 765,
+        "output": 1253,
+        "costUsd": 0.00073528,
+        "cacheRead": 3228,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 2 messages on this order; filed 2 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420291"
+  },
+  "steps": [
+    {
+      "id": "run_9e972bf0:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "support_inbox_messages:inboxmsg-xf4492b7c694418e9",
+        "message": "Meine Parkquittung über 35.50 EUR von der Fahrt in Deutschland am 15.10.2026 wurde noch nicht erstattet. Ich habe sie in der App hochgeladen."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Driver Carl Birkelane says a parking receipt of 35.50 EUR from the Germany trip on 15 Oct 2026 was uploaded in the app and has not been reimbursed yet.",
+            "subject": "Costs"
+          }
+        ],
+        "needs": "driver_support",
+        "intent": "complaint",
+        "reason": "The driver is asking about the status of an expense reimbursement, which the order's records and expense process can answer.",
+        "factIds": [
+          "fact_a56ff4ff-c67"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a complaint from Carl Birkelane; filed 1 fact; Driver support answers"
+    },
+    {
+      "id": "run_9e972bf0:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "support_inbox_messages:inboxmsg-x5fe53f6ca2f11b14",
+        "message": "Ich habe eine genehmigte Parkausgabe für Ihren abgeschlossenen Auftrag CD-420291 gefunden. Die Genehmigung bestätigt noch keine Auszahlung. Ich prüfe die Abrechnung; bitte laden Sie die Quittung nicht noch einmal hoch."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Support desk (colleague at Bahn) says an approved parking expense on this order is not yet a confirmed payout; they are checking the settlement and asked that the receipt not be uploaded again.",
+            "subject": "Costs"
+          }
+        ],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "The colleague is already checking the settlement and no driver question, risk, or booking change needs follow-up.",
+        "factIds": [
+          "fact_25a7f963-ddf"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; filed 1 fact"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

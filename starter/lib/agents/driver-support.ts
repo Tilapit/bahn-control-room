@@ -70,7 +70,8 @@ export async function runDriverSupport(orderRef: string, messageEntryId: string,
         thinking: { type: "adaptive", display: "summarized" }, output_config: { effort: "low" },
       })
     } catch (cause) {
-      await updateRun(runId, { status: "failed", finishedAt: await clockNow(), outcomeSummary: `Stopped: the model could not be reached (${cause instanceof Error ? cause.message : cause}).` })
+      await addStep(runId, idx++, { at: await clockNow(), type: "message", output: { error: cause instanceof Error ? cause.message : String(cause) }, summary: "The model could not be reached; the run stopped here." })
+      await updateRun(runId, { status: "failed", finishedAt: await clockNow(), outcomeSummary: "Stopped: the agent could not reach the model. The driver got no answer from it; a person or another run has to reply." })
       await close()
       return { runId, status: "failed", summary: "Model unreachable" }
     }

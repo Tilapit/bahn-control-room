@@ -1,0 +1,82 @@
+{
+  "run": {
+    "id": "run_2480884a",
+    "orderId": "ord-00111",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 2 messages on this order; filed 0 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 617,
+    "outputTokens": 187,
+    "cacheReadTokens": 3228,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00018748,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 2,
+        "input": 617,
+        "output": 187,
+        "costUsd": 0.00018748,
+        "cacheRead": 3228,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 2 messages on this order; filed 0 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420111"
+  },
+  "steps": [
+    {
+      "id": "run_2480884a:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xf992cf10f609f481",
+        "message": "Can you confirm that CD-420111 reached the receiving address?"
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "question",
+        "reason": "The customer asks a question that the order's delivered status already answers, so no investigator or driver support is needed.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Arventia Autotalo"
+    },
+    {
+      "id": "run_2480884a:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x1ae33a427f219632",
+        "message": "The order is marked delivered. I can check the handover evidence separately if you need it."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "The colleague only offers to check handover evidence separately; it reports no new fact, time, or instruction, and the order already shows the delivery.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

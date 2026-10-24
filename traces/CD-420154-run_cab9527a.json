@@ -1,0 +1,238 @@
+{
+  "run": {
+    "id": "run_cab9527a",
+    "orderId": "ord-00154",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 8 messages on this order; filed 3 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 2981,
+    "outputTokens": 3929,
+    "cacheReadTokens": 12912,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00239172,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 8,
+        "input": 2981,
+        "output": 3929,
+        "costUsd": 0.00239172,
+        "cacheRead": 12912,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 8 messages on this order; filed 3 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420154"
+  },
+  "steps": [
+    {
+      "id": "run_cab9527a:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xca84242259327091",
+        "message": "Earliest vehicle crossing returned sold out. A later crossing is only a quote. The assigned driver is based away from Marseille; positioning, rest and the customer promise still need a reviewed plan."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The earliest ferry crossing is sold out, the only later option is a quote, and the driver's positioning and the customer's delivery promise still need a reviewed plan, so the Tue 27 Oct delivery promise may be at risk.",
+        "factIds": [],
+        "urgency": "time",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_cab9527a:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x134a5c64fa5b8822",
+        "message": "I can collect from Marseille tomorrow if my trip there is confirmed. Please send the actual travel booking, not just a suggested route."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "request",
+        "reason": "The driver can only collect for the Thu 22 Oct 10:00 pickup if the travel is confirmed, and the order shows the ferry is sold out with the travel plan still undecided, so the pickup slot may be at risk.",
+        "factIds": [],
+        "urgency": "time",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a request from Jonas Haverforde; the Investigator looks into it"
+    },
+    {
+      "id": "run_cab9527a:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x723058488a6872ac",
+        "message": "We are checking the route and vehicle space. The pickup slot and delivery promise have not been changed. We will ask before proposing a later handover."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "The support desk reports that the route and vehicle space are being checked and that the pickup slot and delivery promise are unchanged, which the order already shows, and the open ferry alert is already recorded.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk"
+    },
+    {
+      "id": "run_cab9527a:3",
+      "idx": 3,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xa89af197576aeb8f@ord-00154",
+        "message": "For Thursday we see CD-420154 and CD-420689 in the same collection window. Our release desk needs the driver and document set for each vehicle separately. Friday's CD-420656 and CD-420692 are a separate handover queue; please do not roll Thursday's release instruction forward."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Marseille site desk (site_chat, 21 Oct) says the release desk needs a separate driver and document set for each vehicle in Thursday's window, CD-420154 and CD-420689; Friday's CD-420656 and CD-420692 are a separate queue and Thursday's release instruction should not roll forward.",
+            "subject": "Handover"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The site changes how Thursday's pickup handover must be set up for this order, which is tied to a time-sensitive pickup slot, so someone should confirm the arrangement.",
+        "factIds": [
+          "fact_2ceae726-534"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Rivellon Marseille desk; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_cab9527a:4",
+      "idx": 4,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xc9c0de8086ad8c68",
+        "message": "Please keep the agreed attended delivery window. If the route cannot make it, send the revised date and reason for approval before contacting the recipient at the home address."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Customer asked to keep the attended delivery window. If the route cannot make it, send revised date and reason first, before contacting the home recipient.",
+            "subject": "Instruction from the customer"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "request",
+        "reason": "The customer's conditional instruction may apply because the ferry is sold out and the travel plan is undecided, so the delivery window may be at risk.",
+        "factIds": [
+          "fact_403fd550-9c7"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read a request from Auvelloria Motor Collection; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_cab9527a:5",
+      "idx": 5,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x576f5ee4d2f8216b@ord-00154",
+        "message": "CD-420154 has a booked driver; CD-420689 still has a live offer and no booking. We will verify the import documents and named driver for 154 first, then confirm each vehicle's release separately. Please hold the keys against their own references."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Driver marketplace colleague (Bahn): hold keys against each vehicle's own reference; 154 release to follow import document and named driver checks.",
+            "subject": "Keys"
+          }
+        ],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "The colleague's note records a decision on keys and release sequencing, but it does not raise a risk, missed time, or conflict with the order's records.",
+        "factIds": [
+          "fact_c7c562ac-719"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Driver marketplace; filed 1 fact"
+    },
+    {
+      "id": "run_cab9527a:6",
+      "idx": 6,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x708cd7f5af63fd8e",
+        "message": "Compare the available crossing with road time, driver rest, check-in and arrival at the private delivery address. Neither the crossing quote nor positioning quote is a purchase. Escalate if the promise needs revision and confirm the recipient separately."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "other",
+        "reason": "The internal note asks for a comparison of crossing and road time against the delivery promise, and the open ferry-sold-out alert means that promise may need revision.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Support desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_cab9527a:7",
+      "idx": 7,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x65c1dd58e33a9449@ord-00154",
+        "message": "The site's message is a request for separate release instructions, not evidence that the import is cleared or that the domestic market job has a driver. Check 154's travel and release authority; keep 689's live offer and Friday's booked/ready pair distinct when planning site contact."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "other",
+        "reason": "The colleague asks for travel and release authority on CD-420154 to be checked, which is internal guidance about planning rather than a recorded decision, so an investigator should review it.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Driver marketplace; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

@@ -10,6 +10,8 @@ import type { CardFinding, CardOption, CardProposal, VerifierNote } from "./sche
 import { liveSignals } from "./signals"
 import { compareUrgency, type Urgency, urgency } from "./urgency"
 
+const HANDLING_AGENTS = ["Investigator", "Driver support"]
+
 export type QueueCard = {
   id: string
   kind: string
@@ -91,7 +93,8 @@ export async function getQueue(): Promise<{ now: string; items: QueueItem[]; cou
   const [openCards, files, ordersWithRun] = await Promise.all([
     db.select().from(cards).where(eq(cards.status, "open")),
     getCases(),
-    db.selectDistinct({ orderId: agentRuns.orderId }).from(agentRuns),
+    // Only agents that work a case count as handling it: not the Classifier reading messages, not a quiet check.
+    db.selectDistinct({ orderId: agentRuns.orderId }).from(agentRuns).where(inArray(agentRuns.agent, HANDLING_AGENTS)),
   ])
   const byOrder = new Map(files.map((file) => [file.order.id, file]))
   const runs = await runInfo(openCards.map((row) => row.runId))

@@ -1,0 +1,112 @@
+{
+  "run": {
+    "id": "run_e5c63124",
+    "orderId": "ord-00692",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 3 messages on this order; filed 1 fact and agreement, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 999,
+    "outputTokens": 1557,
+    "cacheReadTokens": 4842,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.0009268199999999999,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 3,
+        "input": 999,
+        "output": 1557,
+        "costUsd": 0.0009268199999999999,
+        "cacheRead": 4842,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 3 messages on this order; filed 1 fact and agreement, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420692"
+  },
+  "steps": [
+    {
+      "id": "run_e5c63124:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xa89af197576aeb8f@ord-00692",
+        "message": "For Thursday we see CD-420154 and CD-420689 in the same collection window. Our release desk needs the driver and document set for each vehicle separately. Friday's CD-420656 and CD-420692 are a separate handover queue; please do not roll Thursday's release instruction forward."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Rivellon Marseille desk (site) said CD-420692 is in a separate Friday handover queue, apart from Thursday's collection window, and Thursday's release instruction must not be rolled forward to it.",
+            "subject": "Handover"
+          }
+        ],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "The site is confirming how this Friday vehicle is queued and asking that Thursday's instruction not be carried over, which the order can record without any investigation or driver question.",
+        "factIds": [
+          "fact_96c5802a-b3a"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Rivellon Marseille desk; filed 1 fact"
+    },
+    {
+      "id": "run_e5c63124:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x576f5ee4d2f8216b@ord-00692",
+        "message": "CD-420154 has a booked driver; CD-420689 still has a live offer and no booking. We will verify the import documents and named driver for 154 first, then confirm each vehicle's release separately. Please hold the keys against their own references."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "other",
+        "reason": "The message concerns CD-420154 and CD-420689 only, adds no fact or agreement for CD-420692, and needs no action on this order.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Driver marketplace"
+    },
+    {
+      "id": "run_e5c63124:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x65c1dd58e33a9449@ord-00692",
+        "message": "The site's message is a request for separate release instructions, not evidence that the import is cleared or that the domestic market job has a driver. Check 154's travel and release authority; keep 689's live offer and Friday's booked/ready pair distinct when planning site contact."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "other",
+        "reason": "This internal note gives planning guidance about other orders and records no decision on CD-420692, so nothing is filed and no agent needs to act on this order.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Driver marketplace"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

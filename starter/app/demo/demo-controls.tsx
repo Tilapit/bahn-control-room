@@ -7,7 +7,9 @@ import { clock, at as fullTime } from "@/lib/time"
 
 type State = {
   now: string
+  start: string
   autoReply: boolean
+  replay: { scenario: string; order: string; startedAt: string; durationMs: number } | null
   driver: string | null
   thread: { id: string; at: string; who: string; mine: boolean; text: string; simulated: boolean }[]
   runs: { id: string; agent: string; status: string; outcome: string | null; startedAt: string; reference: string | null }[]
@@ -16,7 +18,9 @@ type State = {
 const STATUS: Record<string, string> = { running: "Working", waiting_driver: "Waiting for driver", waiting_site: "Waiting for site", waiting_person: "Waiting for you", done: "Done", failed: "Stopped" }
 const DESK_ZONE = "Europe/Helsinki"
 
-export function DemoControls({ events, orders, defaultOrder }: { events: DemoEvent[]; orders: { reference: string; label: string }[]; defaultOrder: string }) {
+const mmss = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`
+
+export function DemoControls({ events, orders, defaultOrder, live }: { events: (DemoEvent & { recorded: boolean })[]; orders: { reference: string; label: string }[]; defaultOrder: string; live: boolean }) {
   const router = useRouter()
   const [order, setOrder] = useState(defaultOrder)
   const [state, setState] = useState<State | null>(null)
@@ -68,7 +72,7 @@ export function DemoControls({ events, orders, defaultOrder }: { events: DemoEve
         <span className="demo-clock num">{state ? `${fullTime(state.now, DESK_ZONE)}` : "…"}</span>
         <button type="button" className="btn small" disabled={!!busy} onClick={() => post("/api/demo/clock", { minutes: 15 }, "clock")}>+15 min</button>
         <button type="button" className="btn small" disabled={!!busy} onClick={() => post("/api/demo/clock", { minutes: 60 }, "clock")}>+1 h</button>
-        <button type="button" className="btn small quiet" disabled={!!busy} onClick={() => post("/api/demo/clock", { reset: true }, "clock")}>Back to the snapshot (Wed 21 Oct 12:00)</button>
+        <button type="button" className="btn small quiet" disabled={!!busy} onClick={() => post("/api/demo/clock", { reset: true }, "clock")}>Back to the start{state ? ` (${fullTime(state.start, DESK_ZONE)})` : ""}</button>
       </div>
       <label className="demo-switch">
         <input type="checkbox" checked={state?.autoReply ?? true} onChange={(event) => post("/api/demo/settings", { autoReply: event.target.checked }, "switch")} />
@@ -78,10 +82,15 @@ export function DemoControls({ events, orders, defaultOrder }: { events: DemoEve
 
     <section className="demo-block" aria-label="Scripted events">
       <div className="section-title"><span>Scripted events</span></div>
+      {!live && <p className="note">No API key is set, so agents cannot run live. Replay plays back a recorded live run of the same event at its real speed, marked as a replay.</p>}
+      {state?.replay && <p className="replay-status" role="status"><span className="replay-tag">Replay</span> Playing back a recorded live run on {state.replay.order}: {mmss(Math.min(state.replay.durationMs, Date.now() - Date.parse(state.replay.startedAt)))} of {mmss(state.replay.durationMs)}. Watch it on For you, the order page or Agents.</p>}
       <ul className="demo-events">
         {events.map((event) => <li key={event.id}>
           <div><div className="demo-event-title">{event.label}</div><div className="note">{event.detail}</div></div>
-          <button type="button" className="btn small" disabled={!!busy} onClick={() => post("/api/demo/event", { id: event.id }, event.id)}>{busy === event.id ? "Starting…" : "Play"}</button>
+          <div className="demo-row">
+            {event.recorded && <button type="button" className="btn small" disabled={!!busy} title="Plays back the rows a live run of this event wrote, at the speed they were written." onClick={() => post("/api/demo/event", { id: event.id, mode: "replay" }, `${event.id}:replay`)}>{busy === `${event.id}:replay` ? "Starting…" : "Replay recorded run"}</button>}
+            <button type="button" className={`btn small${live ? "" : " quiet"}`} disabled={!!busy || !live} title={live ? "Real agents, with the simulated driver." : "Needs an API key."} onClick={() => post("/api/demo/event", { id: event.id, mode: "live" }, event.id)}>{busy === event.id ? "Starting…" : "Play live"}</button>
+          </div>
         </li>)}
       </ul>
       {notice && <p className="note" role="alert">{notice}</p>}

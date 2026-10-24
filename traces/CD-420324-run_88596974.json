@@ -1,0 +1,98 @@
+{
+  "run": {
+    "id": "run_88596974",
+    "orderId": "ord-00324",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 2 messages on this order; filed 2 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 734,
+    "outputTokens": 1103,
+    "cacheReadTokens": 3228,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00065718,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 2,
+        "input": 734,
+        "output": 1103,
+        "costUsd": 0.00065718,
+        "cacheRead": 3228,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 2 messages on this order; filed 2 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420324"
+  },
+  "steps": [
+    {
+      "id": "run_88596974:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x20ec6edc572a8fdd",
+        "message": "The hotel offered to park the car and keep its key until morning. I have not handed the key over. Is that allowed before the ferry?"
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Driver (stated, Tue 20 Oct): hotel in Malmö offered to park the car and keep its key until morning; driver has not handed the key over.",
+            "subject": "Keys"
+          }
+        ],
+        "needs": "driver_support",
+        "intent": "question",
+        "reason": "The driver asks a routine question about handling the keys before the ferry, which the order's records and handover instructions should be able to answer.",
+        "factIds": [
+          "fact_4888de48-437"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Nadia Halverick; filed 1 fact; Driver support answers"
+    },
+    {
+      "id": "run_88596974:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xe59787a31fb676c5",
+        "message": "Please keep the key with you for now. We need the vehicle owner's approval before any third party takes custody. Tell us if you need another parking arrangement."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Support desk (colleague at Bahn) asked the driver to keep the key until the vehicle owner approves any third party taking custody.",
+            "subject": "Instruction to the driver"
+          }
+        ],
+        "needs": "nothing",
+        "intent": "agreement",
+        "reason": "The message gives an instruction about the key and custody that is filed for the order, with no question, risk, or timing change needing follow-up.",
+        "factIds": [
+          "fact_601924a1-b7d"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an agreement from Support desk; filed 1 fact"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

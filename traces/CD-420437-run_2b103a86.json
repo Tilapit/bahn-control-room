@@ -1,0 +1,254 @@
+{
+  "run": {
+    "id": "run_2b103a86",
+    "orderId": "ord-00437",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 8 messages on this order; filed 5 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 2816,
+    "outputTokens": 4280,
+    "cacheReadTokens": 12912,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00255072,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 8,
+        "input": 2816,
+        "output": 4280,
+        "costUsd": 0.00255072,
+        "cacheRead": 12912,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 8 messages on this order; filed 5 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420437"
+  },
+  "steps": [
+    {
+      "id": "run_2b103a86:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x47456eacbe1e0e07",
+        "message": "For CD-420437, the receiving contact in Munich is available only until early afternoon on the planned date."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Customer said the Munich receiving contact is available only until early afternoon on the planned date (Wed 21 Oct).",
+            "subject": "Delivery contact"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The receiver's window ends early afternoon, but the driver app ETA is 15:58 and the delivery promise is 11:00, so the delivery may not be received as planned.",
+        "factIds": [
+          "fact_fc4af562-320"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Calverona Auto; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_2b103a86:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xcbac351c850b0222",
+        "message": "That differs from the selected window. I will check the route and get a named handover contact before changing instructions."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The colleague flags that the driver's ETA differs from the selected window while the delivery promise is at risk and no receiver is confirmed, so someone needs to check the route and handover contact.",
+        "factIds": [],
+        "urgency": "time",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_2b103a86:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x83f70e1534def561",
+        "message": "Treat this as a proposed access constraint until the receiving contact confirms exact hours."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "other",
+        "reason": "The note flags a possible access-hour limit at delivery while no receiver is confirmed and the driver's ETA is already later than the delivery promise, so someone should check whether the delivery is at risk.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Support desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_2b103a86:3",
+      "idx": 3,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x711fe49a5667eeff",
+        "message": "We can discuss another slot if the driver cannot make it safely."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Customer (Calverona Auto) said they can discuss another slot if the driver cannot make it safely",
+            "subject": "Delivery time"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "other",
+        "reason": "The customer has opened the possibility of moving the Munich delivery slot, and the driver's ETA is already later than the 11:00 delivery promise, so someone should look at the promise before it is missed or changed.",
+        "factIds": [
+          "fact_a89497a0-09f"
+        ],
+        "urgency": "time",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Calverona Auto; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_2b103a86:4",
+      "idx": 4,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xf61ef17129348509",
+        "message": "The receiving contact still cannot take CD-420437 after early afternoon. Is the driver on course?"
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Calverona Auto said the receiving contact cannot take CD-420437 after early afternoon on Wed 21 Oct.",
+            "subject": "Delivery contact"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "question",
+        "reason": "The customer reports the receiver is unavailable and asks whether the driver is on course, which puts the 11:00 delivery promise and the 15:58 ETA at risk.",
+        "factIds": [
+          "fact_e551b7c2-811"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Calverona Auto; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_2b103a86:5",
+      "idx": 5,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xe07b5330dd6944c9",
+        "message": "I am checking the latest ETA and an authorized receiver. We have not changed the delivery promise yet."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The order's 11:00 delivery promise is at risk, since the driver app ETA is 15:58 and no receiver is confirmed, so the colleague's check needs follow-up.",
+        "factIds": [],
+        "urgency": "time",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_2b103a86:6",
+      "idx": 6,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x0049fe6fc2fd0b0e",
+        "message": "Correction to my earlier message: the delivery address can be accessed until 18:00 local today. I still cannot confirm who is authorized to inspect and sign for the car."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Customer said in support chat (Wed 21 Oct 10:42) that the delivery address can be accessed until 18:00 local today; receiver still not confirmed.",
+            "subject": "Delivery time"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The customer changed the access window and still cannot confirm who will receive the car, while the 11:00 delivery promise is close and the driver's ETA is later.",
+        "factIds": [
+          "fact_ca30a36a-bf0"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Calverona Auto; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_2b103a86:7",
+      "idx": 7,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x9132e201b7caf7ec",
+        "message": "The later access time may fit the current arrival estimate. I will not tell the driver to hand over the car or keys until you identify an authorized receiver who can attend."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Support desk said they will not tell the driver to hand over the car or keys until an authorized receiver who can attend is identified.",
+            "subject": "Instruction to the driver"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "agreement",
+        "reason": "The 11:00 Wed delivery promise is at risk: no receiver is confirmed, the driver ETA is 15:58, and the support desk is holding the handover.",
+        "factIds": [
+          "fact_6e5f52b1-ad2"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an agreement from Support desk; filed 1 fact; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

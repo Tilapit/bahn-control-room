@@ -1,0 +1,176 @@
+{
+  "run": {
+    "id": "run_027ca74b",
+    "orderId": "ord-00347",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 5 messages on this order; filed 4 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 1814,
+    "outputTokens": 2322,
+    "cacheReadTokens": 8070,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.0014230999999999996,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 5,
+        "input": 1814,
+        "output": 2322,
+        "costUsd": 0.0014230999999999996,
+        "cacheRead": 8070,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 5 messages on this order; filed 4 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420347"
+  },
+  "steps": [
+    {
+      "id": "run_027ca74b:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x5618b0bd842b9136",
+        "message": "For CD-420347: Our handover sheet names a vehicle yard, but the booking says to wait outside the showroom. Where should collection start?"
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "question",
+        "reason": "The customer reports a contradiction between their handover sheet and the booking about where collection starts, before the Friday pickup slot, so the records need checking.",
+        "factIds": [],
+        "urgency": "time",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Tervellin Biler; the Investigator looks into it"
+    },
+    {
+      "id": "run_027ca74b:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x56d19eaaadeef5bd",
+        "message": "For CD-420347: The booking says showroom handover, but the customer's sheet names a nearby vehicle yard. Can you verify where this car and its keys are before anyone travels? Please check this order, not the general site profile."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "request",
+        "reason": "The support desk reports that the booking's showroom handover conflicts with the customer's sheet naming a vacant vehicle yard, so someone must verify the car and keys location before anyone travels.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a request from Support desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_027ca74b:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x99139786ef725c35",
+        "message": "I can see the booking, but our collection screen says showroom handover and the handover sheet says the nearby yard. I cannot confirm where this car or its keys are. Stock control will check the vehicle record and call us back by 14:00 local time today. Please do not send a driver before we confirm the collection point."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Arvelano Hamburg desk (site) says the collection screen shows showroom handover but the handover sheet shows the nearby yard, and they cannot confirm where the car or its keys are.",
+            "subject": "Pickup handover"
+          },
+          {
+            "kind": "agreement",
+            "value": "Arvelano Hamburg desk asked that no driver be sent before the collection point is confirmed; stock control to check the vehicle record and call back by 14:00 local time today.",
+            "subject": "Instruction to the driver"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The site's records contradict each other on the collection point, and the site has asked that no driver be sent until stock control confirms it, which affects the Fri 23 Oct 11:00 pickup slot.",
+        "factIds": [
+          "fact_f47014cf-284",
+          "fact_fafa2f97-319"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Arvelano Hamburg desk; filed 2 facts; the Investigator looks into it"
+    },
+    {
+      "id": "run_027ca74b:3",
+      "idx": 3,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xd317c50cd2241a12",
+        "message": "For CD-420347, neither the car nor its keys have been located at the showroom or nearby yard. Stock control will call back by 14:00 local time. Please do not send anyone yet; the planned slot has not been changed."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Support desk (Bahn) said car and keys not located at showroom or nearby yard; stock control to call back by 14:00 local time.",
+            "subject": "Car's location (stated)"
+          },
+          {
+            "kind": "agreement",
+            "value": "Support desk (Bahn) said do not send anyone yet.",
+            "subject": "Instruction to the driver"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The car and keys are unlocated, the order already has an open alert about conflicting location records, and the driver offer decision depends on the stock control callback.",
+        "factIds": [
+          "fact_0c5a2fb9-446",
+          "fact_98a1f40d-94b"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; filed 2 facts; the Investigator looks into it"
+    },
+    {
+      "id": "run_027ca74b:4",
+      "idx": 4,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x455c2c860fa5b6da",
+        "message": "The site reply did not establish a collection point. Keep the live market offer under review and do not turn either location into a confirmed instruction."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "other",
+        "reason": "This internal note is guidance to keep the offer under review and not treat either location as confirmed, and it records no decision or new fact about the order.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Support desk"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

@@ -13,6 +13,8 @@ const OPTION_ID = /\b(?:ferry|hotel|travel|shop):[a-z0-9-]+/i
 const BOOKED_CLAIM = /\b(is|was|are|were|has been|have been|now|already|got) booked\b/i
 const BOOKED_DENIAL = /\bnot booked\b|\bno .{0,30}booked\b|\bnothing .{0,20}booked\b|\bisn't booked\b|\bunbooked\b/i
 const LOCATION_FACT = /\b(?:driver|they|she|he|car)\s+(?:is|are)\s+(?:now\s+)?(?:at|in|near|on|by)\b/i
+/** A pronoun guessed from a name misgenders a real person. "they" is always right. */
+const GUESSED_PRONOUN = /\b(he|she|him|her|his|hers|himself|herself)\b/i
 const HEDGE = /\b(says?|said|writes?|wrote|reports?|reported|claims?|claimed|according to|told|states?|stated|messaged)\b/i
 
 export function textProblems(label: string, text: string): string[] {
@@ -24,6 +26,9 @@ export function textProblems(label: string, text: string): string[] {
   if (HANDLE.test(text)) problems.push(`${label} contains a source handle like E12 in its text; put handles only in "source"`)
   const code = text.match(CODE)?.[0]
   if (code) problems.push(`${label} shows a code ("${code}"); say it in words`)
+  // A quote of what someone wrote keeps their words; only the agent's own words are checked.
+  const pronoun = text.replace(/[“"‘][^”"’]*[”"’]/g, "").match(GUESSED_PRONOUN)?.[0]
+  if (pronoun) problems.push(`${label} uses "${pronoun}"; never guess a pronoun from a name: use the name, the role, or they/them`)
   return problems
 }
 

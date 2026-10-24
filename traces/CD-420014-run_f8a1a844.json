@@ -1,0 +1,156 @@
+{
+  "run": {
+    "id": "run_f8a1a844",
+    "orderId": "ord-00014",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 4 messages on this order; filed 4 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 1402,
+    "outputTokens": 2114,
+    "cacheReadTokens": 4842,
+    "cacheWriteTokens": 1614,
+    "costUsd": 0.00144737,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 4,
+        "input": 1402,
+        "output": 2114,
+        "costUsd": 0.00144737,
+        "cacheRead": 4842,
+        "cacheWrite": 1614
+      }
+    },
+    "narration": "Read 4 messages on this order; filed 4 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420014"
+  },
+  "steps": [
+    {
+      "id": "run_f8a1a844:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xb09148d229b5d279",
+        "message": "I am not available to take the Helsinki delivery myself. Our receiving lead may cover, but I need the buyer to authorize who can inspect and sign before you change the driver instruction."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Lena Alderbrook (handover contact) says she cannot take the Helsinki delivery herself; the customer's receiving lead may cover, subject to the buyer authorizing who can inspect and sign.",
+            "subject": "Delivery receiving contact"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The customer's handover contact says the Helsinki receiver may change and the driver instruction should wait for buyer authorization, which could put the Mon 26 Oct 12:00 delivery promise at risk.",
+        "factIds": [
+          "fact_12f8f469-834"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Lena Alderbrook; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_f8a1a844:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xf2a547e3e2f3fff4",
+        "message": "The intake names Wilfred as the Helsinki recipient, but we have a different recipient reported. Who may sign and take the keys for this order? Please confirm the person and role before we update the driver instruction."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "question",
+        "reason": "The Support desk reports a conflict between the intake's named Helsinki recipient (Wilfred) and another reported recipient, and asks who may sign and take the keys before the driver instruction is updated.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Support desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_f8a1a844:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x3790b64544a9294c",
+        "message": "For this delivery I authorize Lena Alderbrook, our receiving lead, to inspect the car, sign the handover and take the keys. Wilfred is away and should not be used as the recipient."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Customer (Auvelloria Motor Collection) authorized Lena Alderbrook, their receiving lead, to inspect the car, sign the handover and take the keys; Wilfred is away and should not be used as recipient.",
+            "subject": "Delivery receiving contact"
+          }
+        ],
+        "needs": "nothing",
+        "intent": "agreement",
+        "reason": "The message settles who receives the car at delivery and does not change a time, booking or cost, so no agent needs to look at it.",
+        "factIds": [
+          "fact_affaf257-316"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an agreement from Auvelloria Motor Collection; filed 1 fact"
+    },
+    {
+      "id": "run_f8a1a844:3",
+      "idx": 3,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x707a05a4c3b48ee0",
+        "message": "I am Lena Alderbrook, the receiving lead for this delivery. I will be at the recorded Helsinki address and can sign for the vehicle and take the keys. Please ask the driver to call me on arrival; I will meet them at the door."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Lena Alderbrook (receiving lead) asked the driver to call them on arrival in Helsinki; they will meet the driver at the door.",
+            "subject": "Instruction to the driver"
+          },
+          {
+            "kind": "fact",
+            "value": "Lena Alderbrook (receiving lead) said they will sign for the vehicle and take the keys at the recorded Helsinki address.",
+            "subject": "Keys"
+          }
+        ],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "The message confirms the receiving arrangements and gives a routine arrival instruction, with no risk, missed time, or contradiction with the records.",
+        "factIds": [
+          "fact_8bceaeb0-d21",
+          "fact_4ffc2fa5-a2b"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Lena Alderbrook; filed 2 facts"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

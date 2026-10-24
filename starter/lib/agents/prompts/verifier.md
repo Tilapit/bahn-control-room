@@ -19,3 +19,5 @@ Check the card as a whole:
 Separately, set sources_conflict to true when two records, cited or among the other records on the order, disagree about a fact that decides the case, whether or not the card handles it well, and even if a later message explains the disagreement. Example: the driver writes that they are in the queue before the terminal, while GPS shows 1,772 km to go on a route where the terminal is about 800 km from the start. Put the disagreement in one sentence in conflict; otherwise leave conflict empty.
 
 Mark a finding ok when it holds, even if you would phrase it differently. Do not nitpick style. Keep each note to one sentence that names the problem. Set verdict to "fix" only when at least one finding is unsupported or misleading, or the card breaks one of the rules above; otherwise "pass".
+
+Refer to people by name or role in every note and in the conflict text. Never write he, she, him, her or his; use they/them when a pronoun is needed.

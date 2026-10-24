@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import { connection } from "next/server"
+import { hasApiKey } from "@/lib/agents/llm"
 import { now } from "@/lib/clock"
 import { openCardCount } from "@/lib/queue"
 import { at } from "@/lib/time"
@@ -35,6 +36,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <div className="main">
           <header className="topbar">
             <TopSearch />
+            {!hasApiKey() && <a className="demo-mode" href="/demo" title="No API key is set, so agents cannot run live. Everything agents did here was recorded from real runs; the Demo page replays recorded scenarios.">Showing recorded agent runs</a>}
             <div className="clock" title="The app runs on a simulated clock that starts at the data snapshot.">
               <span className="faint">Simulated time</span><span className="num">{at(clock, DESK_ZONE).replace(/ EE[S]?T$/, "")} Helsinki</span>
             </div>

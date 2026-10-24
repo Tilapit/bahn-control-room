@@ -1,0 +1,90 @@
+{
+  "run": {
+    "id": "run_027fe2b8",
+    "orderId": "ord-00806",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 2 messages on this order; filed 1 fact and agreement, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 610,
+    "outputTokens": 1086,
+    "cacheReadTokens": 3228,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.0006362799999999999,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 2,
+        "input": 610,
+        "output": 1086,
+        "costUsd": 0.0006362799999999999,
+        "cacheRead": 3228,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 2 messages on this order; filed 1 fact and agreement, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420806"
+  },
+  "steps": [
+    {
+      "id": "run_027fe2b8:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x709ec582943611c5",
+        "message": "The destination is in another time zone. Which local delivery range should they use?"
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "question",
+        "reason": "The customer asks which local delivery range applies in another time zone, and the order's Oulu ETA (14:40) is already later than the 12:00 delivery promise, so someone needs to check what the customer was promised.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Velantora Automotive Group; the Investigator looks into it"
+    },
+    {
+      "id": "run_027fe2b8:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x96bcea9a342c465d",
+        "message": "The range in the destination time zone is 21 Oct 12:00–16:00 local."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Support desk reports the customer email gives a delivery range of 21 Oct 12:00–16:00 local (destination time zone).",
+            "subject": "Delivery time"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The stated delivery range does not match the recorded 12:00 EEST delivery promise, so someone needs to check which time the customer was promised.",
+        "factIds": [
+          "fact_b372c602-606"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; filed 1 fact; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

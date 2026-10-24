@@ -4,9 +4,9 @@
 
 import { and, eq, inArray, sql } from "drizzle-orm"
 import { db } from "../db"
-import { agentRuns, agentSteps, cards, decisions, demoEvents, evalCases, facts, timelineEntries } from "../schema"
+import { agentRuns, agentSteps, cards, decisions, demoEvents, evalCases, facts, policies, timelineEntries } from "../schema"
 
-export async function resetOrderLiveState(orderId: string): Promise<void> {
+export async function resetOrderLiveState(orderId: string, options: { allFacts?: boolean } = {}): Promise<void> {
   const runs = await db.select({ id: agentRuns.id }).from(agentRuns).where(eq(agentRuns.orderId, orderId))
   const runIds = runs.map((run) => run.id)
   const cardRows = await db.select({ id: cards.id, origin: cards.origin }).from(cards).where(eq(cards.orderId, orderId))
@@ -20,8 +20,9 @@ export async function resetOrderLiveState(orderId: string): Promise<void> {
     }
     await tx.delete(cards).where(and(eq(cards.orderId, orderId), eq(cards.origin, "agent")))
     await tx.update(cards).set({ status: "open" }).where(and(eq(cards.orderId, orderId), eq(cards.origin, "alert")))
-    // Facts read from the dataset's own messages stay; facts from live entries go with their entries.
-    await tx.delete(facts).where(and(eq(facts.orderId, orderId), inArray(facts.origin, ["classifier", "agent"]),
+    // Facts read from the dataset's own messages stay (unless the messages are read again); facts from live entries go with their entries.
+    if (options.allFacts) await tx.delete(facts).where(and(eq(facts.orderId, orderId), inArray(facts.origin, ["classifier", "agent"])))
+    else await tx.delete(facts).where(and(eq(facts.orderId, orderId), inArray(facts.origin, ["classifier", "agent"]),
       sql`${facts.sourceEntryId} in (select id from timeline_entries where order_id = ${orderId} and origin = 'live')`))
     await tx.delete(timelineEntries).where(and(eq(timelineEntries.orderId, orderId), eq(timelineEntries.origin, "live")))
     await tx.delete(demoEvents).where(eq(demoEvents.orderId, orderId))
@@ -44,5 +45,21 @@ export async function resetOrderDecisions(orderId: string): Promise<void> {
     }
     await tx.update(cards).set({ status: "open" }).where(eq(cards.id, newest.id))
     if (newest.runId) await tx.update(agentRuns).set({ status: "waiting_person", finishedAt: null }).where(eq(agentRuns.id, newest.runId))
+  })
+}
+
+/** Forget all live work on every order, for a clean backfill: runs, agent cards, decisions, live entries and facts. */
+export async function resetAllLiveState(): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(agentSteps)
+    await tx.delete(agentRuns)
+    await tx.delete(decisions)
+    await tx.delete(evalCases)
+    await tx.delete(cards).where(eq(cards.origin, "agent"))
+    await tx.update(cards).set({ status: "open" }).where(eq(cards.origin, "alert"))
+    await tx.delete(facts).where(inArray(facts.origin, ["classifier", "agent"]))
+    await tx.delete(timelineEntries).where(eq(timelineEntries.origin, "live"))
+    await tx.delete(demoEvents)
+    await tx.update(policies).set({ approvedUnchangedCount: 0, decidedCount: 0 })
   })
 }

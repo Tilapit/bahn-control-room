@@ -1,7 +1,11 @@
 import type { Metadata } from "next"
 import { connection } from "next/server"
 import { getCases } from "@/lib/case"
+import { existsSync } from "node:fs"
+import { join } from "node:path"
+import { hasApiKey } from "@/lib/agents/llm"
 import { DEMO_EVENTS } from "@/lib/demo-scenarios"
+import { RECORDING_DIR } from "@/lib/recording"
 import { DemoControls } from "./demo-controls"
 
 export const metadata: Metadata = { title: "Demo controls" }
@@ -19,6 +23,9 @@ export default async function DemoPage() {
         <p className="page-sub">For the demo only. Everything here is simulated: the clock, the driver&apos;s phone and the scripted events.</p>
       </div>
     </div>
-    <DemoControls events={DEMO_EVENTS} orders={withDriver} defaultOrder="CD-420322" />
+    <DemoControls
+      events={DEMO_EVENTS.map((event) => ({ ...event, recorded: existsSync(join(RECORDING_DIR, `${event.id}.json`)) }))}
+      orders={withDriver} defaultOrder="CD-420322" live={hasApiKey()}
+    />
   </main>
 }

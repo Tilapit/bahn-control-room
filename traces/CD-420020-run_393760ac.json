@@ -1,0 +1,82 @@
+{
+  "run": {
+    "id": "run_393760ac",
+    "orderId": "ord-00020",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 2 messages on this order; filed 0 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 679,
+    "outputTokens": 454,
+    "cacheReadTokens": 1614,
+    "cacheWriteTokens": 1614,
+    "costUsd": 0.0005127900000000001,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 2,
+        "input": 679,
+        "output": 454,
+        "costUsd": 0.0005127900000000001,
+        "cacheRead": 1614,
+        "cacheWrite": 1614
+      }
+    },
+    "narration": "Read 2 messages on this order; filed 0 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420020"
+  },
+  "steps": [
+    {
+      "id": "run_393760ac:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xa4e2cb82bdca7365",
+        "message": "Is the handover file for CD-420020 ready for our records?"
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "question",
+        "reason": "The customer asks whether the handover file is ready for their records, which the order summary does not show, so someone needs to check and reply.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Velantora Automotive Group; the Investigator looks into it"
+    },
+    {
+      "id": "run_393760ac:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x1c2485d770f99b9b",
+        "message": "The driver app records delivery of CD-420020 at 19 Oct 14:00. The CMR on file records collection, but it has no receiver signature. Delivery photos were submitted but have not been reviewed. I will check what we can provide for your records."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The support desk reports a records gap: the CMR has no receiver signature and the delivery photos are unreviewed, so someone should check the delivery proof for this order.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

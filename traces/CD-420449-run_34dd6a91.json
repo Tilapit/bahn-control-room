@@ -1,0 +1,268 @@
+{
+  "run": {
+    "id": "run_34dd6a91",
+    "orderId": "ord-00449",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 9 messages on this order; filed 4 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 3653,
+    "outputTokens": 5338,
+    "cacheReadTokens": 14526,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00317956,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 9,
+        "input": 3653,
+        "output": 5338,
+        "costUsd": 0.00317956,
+        "cacheRead": 14526,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 9 messages on this order; filed 4 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420449"
+  },
+  "steps": [
+    {
+      "id": "run_34dd6a91:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x9cabcbec3ad929f3",
+        "message": "I am unwell this morning. I may not be fit to collect CD-420449 in the booked slot; I can confirm by early evening."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Carl Birkelane said this morning they are unwell and may not be fit for the booked pickup; will confirm by early evening.",
+            "subject": "Driver's condition (stated)"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The driver reports being unwell and may not make the booked pickup slot, which puts the Hamburg pickup and the Thu 23 Oct delivery promise at risk and may require a backup driver.",
+        "factIds": [
+          "fact_327a12ed-a83"
+        ],
+        "urgency": "safety",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Carl Birkelane about safety; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_34dd6a91:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x31b28080e175b6fc",
+        "message": "Thanks for letting us know. Please update us this evening; I'll look for cover in case you can't drive."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "request",
+        "reason": "The order has an open task to decide on a backup driver because the driver may be ill, and the support desk is looking for cover and asks for an update this evening.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a request from Support desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_34dd6a91:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x811535ad4bce24c8",
+        "message": "The driver has not cancelled. Keep the assignment visible and prepare a replacement option without double-booking."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "request",
+        "reason": "The internal note asks for a replacement driver option to be prepared while the driver is still assigned, which ties to the open backup-driver task and the Thursday pickup.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a request from Support desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_34dd6a91:3",
+      "idx": 3,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x06bd39bba7251b4f",
+        "message": "I will update you before 18:00. Do not cancel the gig yet."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Carl Birkelane said they will update before 18:00 on Tue 20 Oct and asked that the gig not be cancelled yet.",
+            "subject": "Driver's condition (stated)"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The driver has promised an update by 18:00 today while the backup-driver decision is still open, so someone needs to check that the update arrives and decide on the backup driver.",
+        "factIds": [
+          "fact_a4c010bf-5b4"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Carl Birkelane; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_34dd6a91:4",
+      "idx": 4,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "internal_notifications:inote-x2809d7b5b587b746",
+        "message": "Assigned driver may be unwell. A backup search can begin without cancelling the current assignment."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "other",
+        "reason": "The note suggests starting a backup driver search for an order whose driver may be unwell and whose pickup slot is Thu 22 Oct 10:00, so someone needs to look into whether the slot is at risk.",
+        "factIds": [],
+        "urgency": "time",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Alert routing in #dispatch-desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_34dd6a91:5",
+      "idx": 5,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "internal_notifications:inote-x78757f853a6f689f",
+        "message": "Approved preparing a named backup and a driver check-in; replacement is not booked."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Bahn (driver marketplace) approved preparing a named backup driver and a driver check-in; no replacement booked yet.",
+            "subject": "Driver change"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The driver may be ill, no replacement is booked, and the Thursday 10:00 Hamburg pickup is at risk, so someone needs to follow up.",
+        "factIds": [
+          "fact_baaca488-c64"
+        ],
+        "urgency": "safety",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Driver marketplace in #dispatch-desk about safety; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_34dd6a91:6",
+      "idx": 6,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x20e5c01f9996654c",
+        "message": "I am still unsure whether I will be well enough to drive CD-420449."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The driver is unsure whether they will be well enough to drive, the pickup is Thursday 10:00, and the order still has an open task to decide on a backup driver.",
+        "factIds": [],
+        "urgency": "safety",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Carl Birkelane about safety; the Investigator looks into it"
+    },
+    {
+      "id": "run_34dd6a91:7",
+      "idx": 7,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "order_notes:note-x86145cdcdd1949c3",
+        "message": "The driver remains assigned after reporting illness. They promised an update by 18:00 local, then said they were still unsure. No cancellation or replacement is recorded. Prepare coverage against the existing slot and check any paid positioning travel before deciding what to change."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The driver's illness leaves the Thursday pickup slot at risk, and the note asks for backup coverage to be prepared and paid positioning travel checked before any change is decided.",
+        "factIds": [],
+        "urgency": "time",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Shift lead; the Investigator looks into it"
+    },
+    {
+      "id": "run_34dd6a91:8",
+      "idx": 8,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x61865fc4e0904293",
+        "message": "Thanks for updating us. The assignment remains active while we prepare a backup and wait for your definite answer."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Support desk (Bahn) says the assignment stays active while they prepare a backup and wait for the driver's definite answer",
+            "subject": "Driver change"
+          }
+        ],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "The colleague's note is a status update on the open backup-driver task and adds no new time, place, handover or booking, so no one needs to look into it or support a driver.",
+        "factIds": [
+          "fact_8e01958e-1d9"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; filed 1 fact"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

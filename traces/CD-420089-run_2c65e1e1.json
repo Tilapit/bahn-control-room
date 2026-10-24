@@ -1,0 +1,104 @@
+{
+  "run": {
+    "id": "run_2c65e1e1",
+    "orderId": "ord-00089",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 3 messages on this order; filed 0 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 975,
+    "outputTokens": 854,
+    "cacheReadTokens": 4842,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00057292,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 3,
+        "input": 975,
+        "output": 854,
+        "costUsd": 0.00057292,
+        "cacheRead": 4842,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 3 messages on this order; filed 0 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420089"
+  },
+  "steps": [
+    {
+      "id": "run_2c65e1e1:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xa135d00bec8b2533",
+        "message": "Does a delivery target mean the vehicle has left the pickup site?"
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "question",
+        "reason": "The Turku desk asks a general question about what a delivery target means; it changes no order fact and needs no investigation or driver support.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Norvessia Turku desk"
+    },
+    {
+      "id": "run_2c65e1e1:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xba88be3581d4da83",
+        "message": "No. The target window is planning information; pickup needs its own recorded event."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "other",
+        "reason": "This is an internal colleague's guidance about how the order's records should be structured, not a decision, booking change, or agreed fact about the car, so nobody needs to act on it.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Support desk"
+    },
+    {
+      "id": "run_2c65e1e1:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "order_notes:note-x30f784d8cd92ba78",
+        "message": "Driver's train is due at 26 Oct 08:20 local; Espoo pickup opens at 26 Oct 10:00. Check the station-to-branch transfer before treating the booking as a complete positioning plan."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The colleague's note gives the driver's train arrival as 26 Oct 08:20 local, which contradicts the recorded 07:00 Lahti train time, and asks for the station-to-branch transfer to be checked before the booking is treated as complete.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Shift lead; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

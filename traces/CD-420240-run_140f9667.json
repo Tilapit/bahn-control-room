@@ -1,0 +1,90 @@
+{
+  "run": {
+    "id": "run_140f9667",
+    "orderId": "ord-00240",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 2 messages on this order; filed 1 fact and agreement, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 663,
+    "outputTokens": 829,
+    "cacheReadTokens": 3228,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00051308,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 2,
+        "input": 663,
+        "output": 829,
+        "costUsd": 0.00051308,
+        "cacheRead": 3228,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 2 messages on this order; filed 1 fact and agreement, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420240"
+  },
+  "steps": [
+    {
+      "id": "run_140f9667:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x263fb11a9382a6fb",
+        "message": "When will the car reach Frankfurt?"
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "question",
+        "reason": "The customer is asking about arrival timing, which the order's recorded times already answer; no new fact or risk is stated.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Kervalin Autohaus"
+    },
+    {
+      "id": "run_140f9667:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xc06fa052959e7395",
+        "message": "The selected delivery window is 21 Oct 10:00–16:00 (Europe/Berlin). That is not a live ETA; no precise arrival time is confirmed in this conversation."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Support desk (colleague at Bahn) says the selected delivery window is 21 Oct 10:00-16:00 Europe/Berlin; not a live ETA, no precise arrival time confirmed.",
+            "subject": "Delivery time"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The window conflicts with the recorded 10:00 delivery promise and the 15:35 driver app ETA, which the desk says is not confirmed, so someone must check the records and the promise to the customer.",
+        "factIds": [
+          "fact_0bde513e-c54"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; filed 1 fact; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

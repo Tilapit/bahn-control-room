@@ -1,0 +1,133 @@
+{
+  "run": {
+    "id": "run_037f0318",
+    "orderId": "ord-00291",
+    "agent": "Investigator",
+    "model": "claude-sonnet-5-5",
+    "trigger": "Backfill. Open signals on this order: open support inbox thread.",
+    "startedAt": "2026-10-21T09:12:00.000Z",
+    "finishedAt": "2026-10-21T09:12:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Delivered on time; the driver's €35.50 parking expense is approved but not yet paid, and the support desk is already checking settlement and told the driver not to re-upload.",
+    "nextCheckAt": "2026-10-22T09:12:00.000Z",
+    "inputTokens": 238,
+    "outputTokens": 299,
+    "cacheReadTokens": 15004,
+    "cacheWriteTokens": 2158,
+    "costUsd": 0.01068418,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 1,
+        "input": 232,
+        "output": 61,
+        "costUsd": 0.00006198,
+        "cacheRead": 828,
+        "cacheWrite": 0
+      },
+      "claude-sonnet-5-5": {
+        "calls": 2,
+        "input": 6,
+        "output": 238,
+        "costUsd": 0.0106222,
+        "cacheRead": 14176,
+        "cacheWrite": 2158
+      }
+    },
+    "narration": "Read the case file and closed without a card: delivered on time, with the driver's €35.50 parking expense approved but not yet paid while the support desk checks settlement.",
+    "wallMs": 2983,
+    "replay": false,
+    "reference": "CD-420291"
+  },
+  "steps": [
+    {
+      "id": "run_037f0318:0",
+      "idx": 0,
+      "at": "2026-10-21T09:12:00.000Z",
+      "type": "tool_call",
+      "tool": "get_case",
+      "input": {
+        "order": "CD-420291"
+      },
+      "output": null,
+      "summary": "Called get_case"
+    },
+    {
+      "id": "run_037f0318:1",
+      "idx": 1,
+      "at": "2026-10-21T09:12:00.000Z",
+      "type": "tool_result",
+      "tool": "get_case",
+      "input": {
+        "order": "CD-420291"
+      },
+      "output": {
+        "data": null,
+        "content": "CD-420291 · Bentley Flying Spur 2022 · Delivered\nCustomer (pays; any contact needs a person's approval): Kervanio Bilhus, their reference PO-032-0291\nRoute: Marvellin Hamburg, Hamburg → private address, Copenhagen · 410 km\nDriver: Carl Birkelane, finished, lives in Aalborg, DK\nNow: Wed 21 Oct, 11:12 in Copenhagen and Hamburg (09:12 UTC). Timeline times are Copenhagen time (CEST); key times are in their own place's time.\n\nKEY TIMES\n- Picked up, Hamburg: Thu 15 Oct 11:00 CEST. Source: Carl Birkelane [E1]\n- Delivery promise, Copenhagen: Fri 16 Oct 13:00–15:00 CEST. Source: Kervanio Bilhus, order form [E2]\n- Delivered, Copenhagen: Fri 16 Oct 14:00 CEST. Source: Carl Birkelane [E3]\n\nAGREED AND STATED\n- Costs: Support desk (colleague at Bahn) says an approved parking expense on this order is not yet a confirmed payout; they are checking the settlement and asked that the receipt not be uploaded again. (stated, not confirmed; Support desk, driver chat) [E4]\n- (5 details from before the handovers are historical, left out)\n\nOPEN\n- Open support request: Expense payout. Driver identity, German parking, service date and amount match one approved expense on a completed assignment; approval is not proof of payout. [E5]\n\nROUTE AND TRAVEL\n- Leg: Marvellin Hamburg, Hamburg → Copenhagen (private), drive, 410 km, completed, Carl Birkelane\n- Driver gig: taken by a driver, fee €486\nBOOKED: nothing is booked for this order\n\nTIMELINE (newest first; the 35 most recent entries, stage changes left out; use timeline() for older ones)\nWed 21 Oct\n10:24 Support desk (Driver app chat): \"Ich habe eine genehmigte Parkausgabe für Ihren abgeschlossenen Auftrag CD-420291 gefunden. Die Genehmigung bestätigt noch keine Auszahlung. Ich prüfe die Abrechnung; bitte laden Sie die Quittung nicht noch einmal hoch.\" [E4]\n10:17 Carl Birkelane (Driver app chat): \"Meine Parkquittung über 35.50 EUR von der Fahrt in Deutschland am 15.10.2026 wurde noch nicht erstattet. Ich habe sie in der App hochgeladen.\" [E5]\nFri 16 Oct\n16:00 Handover evidence: Delivery photos approved [E6]\n14:35 Handover evidence: Pickup photos approved [E7]\n14:03 Driver app: Delivery photos sent by the driver (3 files) [E8]\n14:02 Carl Birkelane: Carl Birkelane finished the gig [E9]\n14:00 Carl Birkelane: Car delivered at private address in Copenhagen [E3]\n00:57 Driver expense review: Parking claim approved (not paid yet): €35.50 [E10]\n00:09 Carl Birkelane: Parking cost claimed by the driver: €35.50 at Quell City Garage [E11]\nThu 15 Oct\n11:23 Handover evidence: Key photos at pickup approved [E12]\n11:15 Documents: Digital CMR signed at pickup only; the receiver has not signed [E13]\n11:07 Driver app: Pickup photos sent by the driver (4 files) [E14]\n11:00 Carl Birkelane: Car picked up at Marvellin Hamburg, Hamburg [E1]\n10:58 Driver app: Key photos at pickup sent by the driver (1 files) [E15]\n09:32 Carl Birkelane: Carl Birkelane started the gig [E16]\nSun 11 Oct\n16:35 Driver expense review: Train to the pickup claim approved (not paid yet): DKK 362 [E17]\n16:15 Carl Birkelane: Train to the pickup cost claimed by the driver: DKK 362 at Fenn Rail [E18]\nSat 10 Oct\n23:41 Driver expense review: Taxi to the pickup claim approved (not paid yet): €67.53 [E19]\n22:11 Carl Birkelane: Taxi to the pickup cost claimed by the driver: €67.53 at Juniper Taxi [E20]\n20:37 Carl Birkelane: Carl Birkelane took the gig [E21]\n14:07 Dispatch agent: Gig offered to drivers at €486 [E22]\n12:36 Ops, with the route plan: Pickup slot: Thu 15 Oct 11:00–13:00 CEST at Marvellin Hamburg, Hamburg [E23]\n12:36 Transport planning: Route plan activated [E24]\n12:17 Readiness desk: Pickup availability confirmed [E25]\n11:26 Transport planning: Route plan drafted [E26]\n11:17 Kervanio Bilhus, order form: Delivery handover: A named receiver must accept the car and keys; there is no agreed unattended drop. [E27]\nThu 8 Oct\n15:15 Kervanio Bilhus, order form: Pickup availability: Thu 15 Oct 09:00–17:00 CEST at Marvellin Hamburg, Hamburg [E28]\n15:15 Kervanio Bilhus, order form: Delivery promise: Fri 16 Oct 13:00–15:00 CEST at private address in Copenhagen [E2]\n15:15 Kervanio Bilhus: Order placed by Kervanio Bilhus [E29]",
+        "isError": false
+      },
+      "summary": "Read the case file of CD-420291"
+    },
+    {
+      "id": "run_037f0318:2",
+      "idx": 2,
+      "at": "2026-10-21T09:12:00.000Z",
+      "type": "thought",
+      "tool": null,
+      "input": null,
+      "output": {
+        "text": "Support desk already owns the settlement check and nothing is lost before they act.",
+        "model": "claude-sonnet-5-5"
+      },
+      "summary": "Support desk already owns the settlement check and nothing is lost before they act."
+    },
+    {
+      "id": "run_037f0318:3",
+      "idx": 3,
+      "at": "2026-10-21T09:12:00.000Z",
+      "type": "tool_call",
+      "tool": "resolve",
+      "input": {
+        "summary": "Delivered on time; the driver's €35.50 parking expense is approved but not yet paid, and the support desk is already checking settlement and told the driver not to re-upload.",
+        "explained_by": [
+          "E4",
+          "E5",
+          "E10"
+        ],
+        "check_again_minutes": 1440
+      },
+      "output": null,
+      "summary": "Called resolve"
+    },
+    {
+      "id": "run_037f0318:4",
+      "idx": 4,
+      "at": "2026-10-21T09:12:00.000Z",
+      "type": "tool_result",
+      "tool": "resolve",
+      "input": {
+        "summary": "Delivered on time; the driver's €35.50 parking expense is approved but not yet paid, and the support desk is already checking settlement and told the driver not to re-upload.",
+        "explained_by": [
+          "E4",
+          "E5",
+          "E10"
+        ],
+        "check_again_minutes": 1440
+      },
+      "output": {
+        "data": {
+          "explainedBy": [
+            "support_inbox_messages:inboxmsg-x5fe53f6ca2f11b14",
+            "support_inbox_messages:inboxmsg-xf4492b7c694418e9",
+            "expenses:expense-x9e188323448b74ed:review"
+          ]
+        },
+        "content": "Closed. Your run ends here.",
+        "isError": false
+      },
+      "summary": "Closed without a card: Delivered on time; the driver's €35.50 parking expense is approved but not yet paid, and the support desk is already checking settlement and told the driver not to re-upload."
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

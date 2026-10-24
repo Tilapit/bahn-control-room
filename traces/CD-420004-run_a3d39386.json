@@ -1,0 +1,96 @@
+{
+  "run": {
+    "id": "run_a3d39386",
+    "orderId": "ord-00004",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 2 messages on this order; filed 2 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 650,
+    "outputTokens": 1040,
+    "cacheReadTokens": 1614,
+    "cacheWriteTokens": 1614,
+    "costUsd": 0.0008028900000000001,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 2,
+        "input": 650,
+        "output": 1040,
+        "costUsd": 0.0008028900000000001,
+        "cacheRead": 1614,
+        "cacheWrite": 1614
+      }
+    },
+    "narration": "Read 2 messages on this order; filed 2 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420004"
+  },
+  "steps": [
+    {
+      "id": "run_a3d39386:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x62ba2946bcc349a5",
+        "message": "I have stopped for the night. The car is locked and I have the keys. I will continue toward delivery in the morning."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Driver Amelia Elvenby said on Tue 13 Oct 19:00 EEST that they stopped for the night with the car locked; no place given",
+            "subject": "Car's location (stated)"
+          },
+          {
+            "kind": "fact",
+            "value": "Driver Amelia Elvenby said on Tue 13 Oct 19:00 EEST that they have the keys",
+            "subject": "Keys"
+          }
+        ],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "The driver reports a routine overnight stop with the car locked and keys held, which the order does not show and which is recorded as a fact; no danger, missed time, or question is raised.",
+        "factIds": [
+          "fact_967546ee-3dd",
+          "fact_5993e0e0-92f"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Amelia Elvenby; filed 2 facts"
+    },
+    {
+      "id": "run_a3d39386:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x2a3bd20b5807e1f6",
+        "message": "Thanks. Please send your current location and a new arrival estimate when you resume."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "question",
+        "reason": "The support desk is asking the driver for a location and arrival estimate, which is a routine question with no new fact, change, or risk for the order.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Support desk"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

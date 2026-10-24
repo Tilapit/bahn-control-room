@@ -1,0 +1,126 @@
+{
+  "run": {
+    "id": "run_bb8aa244",
+    "orderId": "ord-00194",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 4 messages on this order; filed 0 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 1357,
+    "outputTokens": 867,
+    "cacheReadTokens": 6456,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.0006337599999999999,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 4,
+        "input": 1357,
+        "output": 867,
+        "costUsd": 0.0006337599999999999,
+        "cacheRead": 6456,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 4 messages on this order; filed 0 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420194"
+  },
+  "steps": [
+    {
+      "id": "run_bb8aa244:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x9669aeca84166b36",
+        "message": "Can you confirm which purchase-order reference was attached to CD-420194? Our accounts team cannot match the delivery."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "question",
+        "reason": "The customer asks which purchase-order reference is attached to the order, and accounts cannot match the delivery, so someone needs to check the records.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Auvelloria Motor Collection; the Investigator looks into it"
+    },
+    {
+      "id": "run_bb8aa244:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x4de26b46efcebe28",
+        "message": "The order currently carries PO-005-0194. I will check whether the invoice uses that same reference before advising accounts."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "A colleague is checking an invoice reference and reports no new time, place, booking, or instruction; nothing needs looking into or answering for a driver.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk"
+    },
+    {
+      "id": "run_bb8aa244:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xe8cf796d3400c5a0",
+        "message": "Do not claim an invoice exists or that it was issued. The order reference and billing document are separate records."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "other",
+        "reason": "The note is internal guidance on how to answer the open invoice question and records no decision, change, or new fact about the order.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Support desk"
+    },
+    {
+      "id": "run_bb8aa244:3",
+      "idx": 3,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x10e044c51eea6b51",
+        "message": "That helps. Please tell us if the billing record needs a correction after you check."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "request",
+        "reason": "The customer asks for the billing record to be checked and for them to be told if it needs correcting, which concerns the open invoice alert on this order.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a request from Auvelloria Motor Collection; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

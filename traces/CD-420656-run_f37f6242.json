@@ -1,0 +1,254 @@
+{
+  "run": {
+    "id": "run_f37f6242",
+    "orderId": "ord-00656",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 8 messages on this order; filed 5 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 2721,
+    "outputTokens": 4471,
+    "cacheReadTokens": 12912,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00263672,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 8,
+        "input": 2721,
+        "output": 4471,
+        "costUsd": 0.00263672,
+        "cacheRead": 12912,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 8 messages on this order; filed 5 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420656"
+  },
+  "steps": [
+    {
+      "id": "run_f37f6242:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x30a84e718591defa",
+        "message": "Pour CD-420656, le véhicule ne sera pas libéré à la date prévue. Peut-on décaler l'enlèvement de deux jours ?"
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Customer (Orvellane Automobiles) wrote on 21 Oct that the vehicle will not be released on the planned date and asked to move pickup by two days.",
+            "subject": "Pickup slot"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "request",
+        "reason": "The customer asks to move the Marseille pickup by two days, which changes a booked date and may put the Fri 23 Oct slot at risk.",
+        "factIds": [
+          "fact_ef4d913d-9f2"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read a request from Orvellane Automobiles; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_f37f6242:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x27e15bb99bd84ee6",
+        "message": "Le conducteur est déjà affecté. Je vais vérifier sa disponibilité, le créneau du site et les réservations liées avant de proposer une nouvelle date."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "The colleague only says they are checking driver availability, the site slot and linked bookings before proposing a new date; no new date or decision has been made, so nothing needs investigating yet.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk"
+    },
+    {
+      "id": "run_f37f6242:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x488144ab691ee379",
+        "message": "Le service de préparation attend encore une pièce. Je n'ai pas de date ferme de leur part."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Customer (Orvellane Automobiles) says the car is still waiting on a part at preparation and they have no firm date from them; pickup slot Fri 23 Oct 09:00 may be at risk.",
+            "subject": "Pickup time"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The customer reports the car is not ready and no firm date exists, which threatens the Fri 23 Oct 09:00 pickup slot.",
+        "factIds": [
+          "fact_5443f03a-049"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Orvellane Automobiles; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_f37f6242:3",
+      "idx": 3,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x569211057d80e6f1",
+        "message": "Dans ce cas je signale un risque sur l'enlèvement, mais je ne remplace pas le créneau confirmé par une date incertaine."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Support desk (colleague) flagged a risk on the pickup but said the confirmed slot is not replaced by an uncertain date.",
+            "subject": "Pickup time"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "A colleague flags an unspecified risk to the confirmed Friday pickup slot, so someone needs to look into what the risk is and whether the slot holds.",
+        "factIds": [
+          "fact_4b923cf0-843"
+        ],
+        "urgency": "time",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_f37f6242:4",
+      "idx": 4,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x6cf50349a70a473c",
+        "message": "Workshop cannot give a firm release date. Preserve booked slot as current state while planning searches replacement capacity."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Support desk (internal): keep the booked slot as the current state while replacement capacity is searched; workshop gives no firm release date",
+            "subject": "Pickup time"
+          }
+        ],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The workshop cannot give a firm release date, so the Friday pickup and the Monday delivery promise may be at risk and need someone to look into them.",
+        "factIds": [
+          "fact_1c7b8116-4f1"
+        ],
+        "urgency": "time",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; filed 1 fact; the Investigator looks into it"
+    },
+    {
+      "id": "run_f37f6242:5",
+      "idx": 5,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xa89af197576aeb8f@ord-00656",
+        "message": "For Thursday we see CD-420154 and CD-420689 in the same collection window. Our release desk needs the driver and document set for each vehicle separately. Friday's CD-420656 and CD-420692 are a separate handover queue; please do not roll Thursday's release instruction forward."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Marseille site desk says CD-420656 is in a separate Friday handover queue and Thursday's release instruction should not be rolled forward to it.",
+            "subject": "Pickup handover"
+          }
+        ],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "The site is clarifying how this Friday pickup is queued and states that a Thursday instruction does not carry over, which the order can record without anyone looking into it.",
+        "factIds": [
+          "fact_6d96434c-17a"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Rivellon Marseille desk; filed 1 fact"
+    },
+    {
+      "id": "run_f37f6242:6",
+      "idx": 6,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x576f5ee4d2f8216b@ord-00656",
+        "message": "CD-420154 has a booked driver; CD-420689 still has a live offer and no booking. We will verify the import documents and named driver for 154 first, then confirm each vehicle's release separately. Please hold the keys against their own references."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "other",
+        "reason": "The message concerns orders CD-420154 and CD-420689 and does not mention CD-420656, so nothing on this order needs action.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Driver marketplace"
+    },
+    {
+      "id": "run_f37f6242:7",
+      "idx": 7,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x65c1dd58e33a9449@ord-00656",
+        "message": "The site's message is a request for separate release instructions, not evidence that the import is cleared or that the domestic market job has a driver. Check 154's travel and release authority; keep 689's live offer and Friday's booked/ready pair distinct when planning site contact."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "other",
+        "reason": "The internal note asks for a check of travel and release authority on orders 154 and 689, which needs someone to look into it, but it records no decision and does not concern this order's booking.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Driver marketplace; the Investigator looks into it"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

@@ -1,0 +1,156 @@
+{
+  "run": {
+    "id": "run_fbb1a225",
+    "orderId": "ord-00015",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 5 messages on this order; filed 1 fact and agreement, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 1474,
+    "outputTokens": 2193,
+    "cacheReadTokens": 6456,
+    "cacheWriteTokens": 1614,
+    "costUsd": 0.0015102100000000001,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 5,
+        "input": 1474,
+        "output": 2193,
+        "costUsd": 0.0015102100000000001,
+        "cacheRead": 6456,
+        "cacheWrite": 1614
+      }
+    },
+    "narration": "Read 5 messages on this order; filed 1 fact and agreement, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420015"
+  },
+  "steps": [
+    {
+      "id": "run_fbb1a225:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x8bea80eaaec7b4fb",
+        "message": "For CD-420015, our order form names Elena Alderbrook, but the branch has not confirmed that contact will release the keys. Can you check?"
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "question",
+        "reason": "The customer asks whether the branch has confirmed Elena Alderbrook as the pickup key-release contact, which needs checking against the Pickup contact record before the Thu 22 Oct 11:00 pickup.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Suvellio Motors; the Investigator looks into it"
+    },
+    {
+      "id": "run_fbb1a225:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x697bc1d37c25d9e6",
+        "message": "Sorry this took until today. We are checking the order-specific release contact. This reply does not confirm that the branch has approved handover."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "update",
+        "reason": "The colleague says the order-specific release contact is still being checked and handover is not yet approved, so the Thursday pickup slot may be at risk.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; the Investigator looks into it"
+    },
+    {
+      "id": "run_fbb1a225:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x212a11333c94f5d0",
+        "message": "We still have no name from the branch. Please tell us who is checking it before anyone travels."
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "question",
+        "reason": "The customer is holding travel until someone at the branch is named, which could put the Thu 11:00 Espoo pickup slot at risk and needs someone to look into it.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Suvellio Motors; the Investigator looks into it"
+    },
+    {
+      "id": "run_fbb1a225:3",
+      "idx": 3,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x6a9a91f4537d7a5b",
+        "message": "I have taken this over from support and will call the branch. Keep the existing collection instruction in place until the contact is confirmed."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "A colleague reports taking over the order and plans to call the branch, which records no new time, place, handover or decision and raises no risk or routine driver question.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Readiness desk"
+    },
+    {
+      "id": "run_fbb1a225:4",
+      "idx": 4,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x472a2444403c1eff",
+        "message": "Readiness owns the direct branch check now. The customer's repeated request and our delayed first reply do not verify a release contact or change the collection plan."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Readiness desk (Bahn) decided it owns the direct branch check; the customer's repeated request does not verify a release contact or change the collection plan.",
+            "subject": "Handover"
+          }
+        ],
+        "needs": "nothing",
+        "intent": "other",
+        "reason": "This internal note records a decision on who verifies the release contact and does not ask anyone to act on the order.",
+        "factIds": [
+          "fact_b6c5e016-1a7"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a message from Readiness desk; filed 1 fact"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

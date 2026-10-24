@@ -1,0 +1,90 @@
+{
+  "run": {
+    "id": "run_f4904f53",
+    "orderId": "ord-00585",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 2 messages on this order; filed 1 fact and agreement, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 583,
+    "outputTokens": 673,
+    "cacheReadTokens": 3228,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00042708,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 2,
+        "input": 583,
+        "output": 673,
+        "costUsd": 0.00042708,
+        "cacheRead": 3228,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 2 messages on this order; filed 1 fact and agreement, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420585"
+  },
+  "steps": [
+    {
+      "id": "run_f4904f53:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x2a43f2d69e388cbf",
+        "message": "Has the pickup time for CD-420585 been selected from the available window?"
+      },
+      "output": {
+        "facts": [],
+        "needs": "investigator",
+        "intent": "question",
+        "reason": "The customer asks whether the pickup time has been selected from the window, and the order shows only a pickup slot with no record of a selection, so someone needs to check and answer.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Norveldin Motor; the Investigator looks into it"
+    },
+    {
+      "id": "run_f4904f53:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x3feddbea732ea162",
+        "message": "The selected collection window is 26 Oct 10:00–13:00 (Europe/Berlin). That is the full planned slot, not a confirmed arrival minute."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Support desk (colleague at Bahn) says the collection window is 26 Oct 10:00-13:00 Berlin time, not a confirmed arrival minute.",
+            "subject": "Pickup slot"
+          }
+        ],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "A colleague is clarifying the pickup window's extent and status, which is recorded for later reference, and no risk, change request, or driver question is raised.",
+        "factIds": [
+          "fact_a18dbcc0-c5a"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; filed 1 fact"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

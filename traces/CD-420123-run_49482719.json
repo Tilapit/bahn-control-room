@@ -1,0 +1,142 @@
+{
+  "run": {
+    "id": "run_49482719",
+    "orderId": "ord-00123",
+    "agent": "Classifier",
+    "model": "claude-haiku-5-5",
+    "trigger": "Backfill: read the messages already on this order",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Read 4 messages on this order; filed 2 facts and agreements, each marked as stated, not confirmed.",
+    "nextCheckAt": null,
+    "inputTokens": 1543,
+    "outputTokens": 1228,
+    "cacheReadTokens": 6456,
+    "cacheWriteTokens": 0,
+    "costUsd": 0.00083286,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 4,
+        "input": 1543,
+        "output": 1228,
+        "costUsd": 0.00083286,
+        "cacheRead": 6456,
+        "cacheWrite": 0
+      }
+    },
+    "narration": "Read 4 messages on this order; filed 2 facts and agreements, each marked as stated, not confirmed.",
+    "wallMs": 0,
+    "replay": false,
+    "reference": "CD-420123"
+  },
+  "steps": [
+    {
+      "id": "run_49482719:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x1e694688eafa8bf9",
+        "message": "Our buyer sees the prepared CMR for the Cologne to Odense car. Can they treat that as signed?"
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "question",
+        "reason": "The customer is asking whether a prepared CMR can be treated as signed, which is a question for a person to answer rather than a fact or agreement to file, and it needs no investigator or driver support.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read a question from Vandellora Biler"
+    },
+    {
+      "id": "run_49482719:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xe26b0b53692c1320",
+        "message": "No. The CMR is prepared for the trip. Signatures belong to the actual handovers, which have not happened on this order."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "fact",
+            "value": "Support desk (colleague): CMR is prepared for the trip; signatures belong to actual handovers, and none have happened yet.",
+            "subject": "Handover"
+          }
+        ],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "A colleague reports that the CMR is prepared and that no handovers have taken place, which is status information that needs no action.",
+        "factIds": [
+          "fact_efabd653-0b8"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk; filed 1 fact"
+    },
+    {
+      "id": "run_49482719:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-xb7df3ce5c4f18135",
+        "message": "Understood. Please leave the file as prepared until the driver has the physical signatures."
+      },
+      "output": {
+        "facts": [
+          {
+            "kind": "agreement",
+            "value": "Customer (Vandellora Biler) asked to leave the file as prepared until the driver has the physical signatures",
+            "subject": "Instruction from the customer"
+          }
+        ],
+        "needs": "nothing",
+        "intent": "agreement",
+        "reason": "The customer confirms an instruction about the file and asks for nothing that needs investigating or routine support.",
+        "factIds": [
+          "fact_d543e686-c94"
+        ],
+        "urgency": "normal",
+        "changes_a_fact": true,
+        "suggested_order": null
+      },
+      "summary": "Read an agreement from Vandellora Biler; filed 1 fact"
+    },
+    {
+      "id": "run_49482719:3",
+      "idx": 3,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "classify",
+      "input": {
+        "entryId": "messages:msg-x8e61bdfe947ed74b",
+        "message": "That is the current document state. I have not changed it from this conversation."
+      },
+      "output": {
+        "facts": [],
+        "needs": "nothing",
+        "intent": "update",
+        "reason": "The colleague's note only states that the document state was not changed from this conversation, which adds no new fact, time, or instruction the order needs.",
+        "factIds": [],
+        "urgency": "normal",
+        "changes_a_fact": false,
+        "suggested_order": null
+      },
+      "summary": "Read an update from Support desk"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}
