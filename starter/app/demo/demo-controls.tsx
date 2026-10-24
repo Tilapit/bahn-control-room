@@ -98,7 +98,7 @@ export function DemoControls({ events, orders, defaultOrder, live }: { events: (
         {events.map((event) => <li key={event.id}>
           <div><div className="demo-event-title">{event.label}</div><div className="note">{event.detail}</div></div>
           <div className="demo-row">
-            {event.id !== "gig-cancelled" && <select className="demo-select small" value={state?.answers[event.order] ?? "always"} aria-label={`Does the simulated driver on ${event.order} answer?`} title="Does the simulated driver or site answer agent questions?"
+            {!["gig-cancelled", "scenario-7", "slack-note", "customer-email"].includes(event.id) && <select className="demo-select small" value={state?.answers[event.order] ?? "always"} aria-label={`Does the simulated driver on ${event.order} answer?`} title="Does the simulated driver or site answer agent questions?"
               onChange={(eventChange) => post("/api/demo/settings", { answers: { order: event.order, value: eventChange.target.value } }, "answers")}>
               <option value="always">Driver answers</option>
               <option value="sometimes">Sometimes no answer</option>

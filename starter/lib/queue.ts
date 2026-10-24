@@ -1,7 +1,7 @@
 // The For you queue: open cards, each with its order and the consequence that
 // sorts it. Urgency is computed now, against the simulated clock, not stored.
 
-import { and, count, eq, inArray, or, sql } from "drizzle-orm"
+import { and, count, eq, inArray, notInArray, or, sql } from "drizzle-orm"
 import { type CaseFile, getCases } from "./case"
 import { now as clockNow } from "./clock"
 import { db } from "./db"
@@ -83,7 +83,7 @@ async function runInfo(runIds: (string | null)[]): Promise<Map<string, RunInfo>>
   if (!ids.length) return new Map()
   const [runRows, stepRows] = await Promise.all([
     db.select().from(agentRuns).where(inArray(agentRuns.id, ids)),
-    db.select({ runId: agentSteps.runId, n: count() }).from(agentSteps).where(and(inArray(agentSteps.runId, ids), eq(agentSteps.type, "tool_call"))).groupBy(agentSteps.runId),
+    db.select({ runId: agentSteps.runId, n: count() }).from(agentSteps).where(and(inArray(agentSteps.runId, ids), eq(agentSteps.type, "tool_call"), notInArray(agentSteps.tool, ["add_finding", "add_step", "add_affected_order"]))).groupBy(agentSteps.runId),
   ])
   const steps = new Map(stepRows.map((row) => [row.runId, row.n]))
   return new Map(runRows.map((run) => [run.id, {

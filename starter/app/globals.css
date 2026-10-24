@@ -510,3 +510,7 @@ a.filter { text-decoration: none; }
 .ask-sources { display: grid; gap: 4px; }
 .ask-sources li { display: grid; gap: 0; }
 .ask-source-text { font-size: 13px; color: var(--text-2); }
+.demo-events li { display: grid; grid-template-columns: minmax(0, 1fr) 300px; align-items: start; }
+.demo-events li > .demo-row { justify-content: flex-end; }
+.demo-events li > .demo-row .demo-select { width: 100%; }
+@media (max-width: 760px) { .demo-events li { grid-template-columns: 1fr; } .demo-events li > .demo-row { justify-content: flex-start; } }

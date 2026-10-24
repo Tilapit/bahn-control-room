@@ -49,7 +49,9 @@ async function main() {
       page.on("pageerror", (error) => errors.push(error.message))
       page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()) })
       for (const shot of shots.length ? shots : DEFAULT_SHOTS) {
-        const [nameOrPath, maybePath] = shot.includes("=") ? shot.split("=") : [null, shot]
+        // Only the first "=" names the shot; a query string keeps its own ("/agents?show=done").
+        const cut = shot.indexOf("=")
+        const [nameOrPath, maybePath] = cut > 0 && !shot.slice(0, cut).includes("/") ? [shot.slice(0, cut), shot.slice(cut + 1)] : [null, shot]
         const [path, action] = (maybePath ?? "/").split("+")
         const name = nameOrPath ?? (path === "/" ? "home" : path.replace(/^\//, "").replace(/\//g, "-"))
         const response = await page.goto(`${base}${path}`, { waitUntil: "networkidle" })

@@ -9,6 +9,8 @@ import { cards, evalCases, orders, policies, policyChanges } from "./schema"
 export type PermissionRow = {
   action: string; label: string; level: "auto" | "approval" | "never"; defaultLevel: string; reason: string
   locked: string | null; approvedUnchanged: number; decided: number; limitEur: number | null; costs: boolean
+  /** Reading, asking and looking up: always allowed, shown together as one line. */
+  always: boolean
 }
 
 const COSTS = new Set(["book_ferry", "change_ferry_booking", "book_hotel", "book_driver_travel", "book_tow", "approve_repair_cost", "raise_fee"])
@@ -22,7 +24,8 @@ export async function permissions(): Promise<{ rows: PermissionRow[]; changes: (
       const row = byAction.get(entry.action)
       return {
         action: entry.action, label: entry.label, level: (row?.level ?? entry.level) as PermissionRow["level"], defaultLevel: entry.level, reason: entry.reason,
-        locked: entry.customerContact ? "Always asks: it contacts a customer." : NEVER_AUTO.has(entry.action) ? "Always asks: it changes a date the customer was promised." : !entry.proposable ? "Reading, asking and looking up are always allowed." : null,
+        locked: entry.customerContact ? "Always asks: it contacts a customer." : NEVER_AUTO.has(entry.action) ? "Always asks: it changes a date the customer was promised." : !entry.proposable ? entry.reason : null,
+        always: !entry.proposable,
         approvedUnchanged: row?.approvedUnchangedCount ?? 0, decided: row?.decidedCount ?? 0, limitEur: row?.autoLimitEur ?? null, costs: COSTS.has(entry.action),
       }
     }),
