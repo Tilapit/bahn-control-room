@@ -29,7 +29,8 @@
     "setup": "npm run db:seed && npm run attachments:seed && npm run timeline:build && npm run cards:alerts && npm run disruptions:seed && npm run fixtures:load",
     "disruptions:seed": "tsx scripts/seed-disruptions.ts",
     "monitor": "tsx scripts/monitor.ts",
-    "api:check": "tsx scripts/api-check.ts"
+    "api:check": "tsx scripts/api-check.ts",
+    "eval:injection": "tsx scripts/eval-injection.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",
