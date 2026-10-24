@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type { DemoEvent } from "@/lib/demo-scenarios"
 import { clock, at as fullTime } from "@/lib/time"
 
@@ -23,6 +23,10 @@ export function DemoControls({ events, orders, defaultOrder }: { events: DemoEve
   const [draft, setDraft] = useState("")
   const [busy, setBusy] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const threadRef = useRef<HTMLDivElement>(null)
+  const lastMessage = state?.thread[state.thread.length - 1]?.id
+  // Like a chat: the newest message is in view.
+  useEffect(() => { threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight }) }, [lastMessage])
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/demo/state?order=${encodeURIComponent(order)}`, { cache: "no-store" })
@@ -91,7 +95,7 @@ export function DemoControls({ events, orders, defaultOrder }: { events: DemoEve
         </select>
         <div className="phone">
           <div className="phone-head">{state?.driver ?? "No driver"} · driver app</div>
-          <div className="phone-thread">
+          <div className="phone-thread" ref={threadRef}>
             {state?.thread.slice(-12).map((message) => <div key={message.id} className={`bubble${message.mine ? " mine" : ""}`}>
               <div className="bubble-who">{message.mine ? "You" : message.who}{message.simulated && message.mine ? " · simulated" : ""} · {clock(message.at, DESK_ZONE)}</div>
               <div>{message.text}</div>

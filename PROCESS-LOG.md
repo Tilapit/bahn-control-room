@@ -508,3 +508,96 @@ passes (all 100 order pages). Screenshot of For you with agent cards, looked at;
   (phase 8) will show them.
 - Not built: a ferry "hold" action (the agent had to propose a phone call for it). Contacting a supplier such as a
   ferry line could be automatic like asking a site; left for later.
+
+---
+
+## Phase 6 — Classifier, ingest, Router, Driver support, simulated driver, Demo page
+
+**Built**
+
+- `lib/agents/classifier.ts` + `prompts/classifier.md` (Haiku, JSON output). It reads every human message once and
+  returns intent, urgency, whether a fact changes, up to two facts or agreements, and what is needed next. It may
+  only write facts, always as "stated, not confirmed". A newer statement on the same subject supersedes an older
+  one. `npm run agents:classify -- CD-… | --all` is the backfill path (oldest first, no routing).
+- `lib/ingest.ts` + `POST /api/ingest`: stores a timeline entry with a `demo_events` row as its evidence, then
+  classifies and routes it in the background (`?wait=1` waits).
+- `lib/router.ts` (code). In order:
+  1. A run waiting for this driver or site gets the message as its answer, and resumes.
+  2. Safety, or anything the Classifier marks for investigation, starts the Investigator (Opus for safety, decided
+     in code).
+  3. A driver's routine question goes to Driver support.
+  4. Otherwise nothing; the facts stay on file.
+- `lib/agents/driver-support.ts` + `prompts/driver-support.md` (Sonnet, step cap 5). It replies to the driver from the
+  case file, in the driver's language; replying is automatic by policy. It hands safety, decisions and anything the
+  records do not answer to the Investigator, with what it found.
+- The simulated driver and site (built in phase 4) answer agent questions when the demo switch is on. A real message
+  from the driver (the phone mock) resumes a waiting run the same way.
+- `/demo`, "Demo controls" (linked from the rail's footer, not the main nav):
+  - the simulated clock (+15 min, +1 h, back to the snapshot);
+  - the auto-answer switch;
+  - scripted events: scenario 1, scenario 2, a Slack note, a customer email. Each scenario resets its order first,
+    so it can be played again from the same start;
+  - the driver phone mock: chat as the driver on any order;
+  - a live list of what the agents are doing.
+- Pages refresh themselves when agents change something (`/api/activity` polled every 3 s), but never under an
+  open undo toast or a half-typed reply. Phase 7 replaces this with SSE for the Agents view.
+- `npm run scenario -- 2`: plays scenario 2 in the browser, screenshotting each step (screens/scenario-2/).
+  `npm run agents:trace -- <run|CD-…>`: prints a run as a readable trace.
+
+**How I checked it**
+
+- Classifier on CD-420322's 10 messages: five current facts, each useful. Customer: keep the car stopped until
+  their service contact decides. Instruction to the driver: journey paused pending the owner. Recovery: no
+  booking until a person decides. The driver's condition and the car's stated location. Earlier versions are
+  marked superseded.
+- Driver support, through the real path (ingest → Classifier → Router): the CD-420299 driver asked who to ask for
+  in Leipzig and whether they can just take the keys. The answer came from the records: "Ask for Oscar Alderfield at
+  the site desk… the workshop completion sheet has to be signed before they hand over the keys. Your pickup slot is
+  Fri 23 Oct, 11:00–13:00." Cost $0.015.
+- Scenario 2 live, twice, in the browser:
+  1. Demo controls: play scenario 2. The driver's message appears on the phone.
+  2. The Classifier marks it safety; the Router starts the Investigator on Opus.
+  3. The agent asks the driver: safe? Blocking the entrance? Which service area? Photo? The simulated driver
+     answers (marked "simulated").
+  4. Recovery look-up, then the card in For you: safety mark, the driver's words with times, stale GPS, the
+     customer's instruction, recovery quotes, and a proposal to call the dealer with the call script shown.
+  5. Reply "call the seller first", with the toast "Sending to the agent in 8 s · Undo".
+  6. After the window, the same Opus conversation continues and proposes a new card: call the Munich seller about
+     the warning's history and breakdown cover, then the dealer, and say today's delivery will be late. Nothing is
+     booked.
+  Full trace: traces/CD-420322-run_37030593.json ($0.28).
+- Typecheck clean.
+
+**What was wrong in the first attempt, and what changed**
+
+1. **The Classifier filed noise and one dangerous fact.** About 20 facts from 10 messages, with fragmented subjects
+   and our own agent's question filed as an agreement. Worst: the Shift lead's "no recovery booking or delivery
+   promise yet" became a "Delivery promise" agreement saying the 12:00 promise "is not to be made", contradicting
+   the real promise. Now: a short subject vocabulary, at most two facts per message, never restate a time unless the
+   message changes it, never turn "not decided yet" into a statement about the existing promise, and skip our own
+   agents' messages.
+2. **Facts were filed out of order.** Messages were processed in arbitrary order, so an older message could
+   supersede a newer fact. Now oldest first, and only a newer statement supersedes.
+3. **Pronoun guessing** ("he is safe") in the Classifier. Same rule as the Investigator: name, role, or they/them.
+4. **The demo reset would have deleted the Classifier's facts from dataset messages**, such as the customer's
+   instruction. It now deletes only facts that came from live entries.
+5. **Verifier notes were amber.** Amber means time risk. They are now neutral italic text: "Not confirmed by the
+   verifier: …".
+6. **A Verifier false positive caused by my mock**: the repair look-up said "tow to the delivery address" without
+   the city, so the Verifier could not tie €810 to Hamburg. It names the city now. The call heading printed the
+   agent's long "to" text ("For the call to The seller at the private pickup address…"); trimmed.
+7. **The demo phone showed the oldest messages first**, with the new ones below the fold. It now scrolls to the
+   newest message, like a chat.
+
+**Decisions and things left out**
+
+- The Classifier reads human messages only. Our agents' own messages are not new facts, and classifying them would
+  echo the agent back at itself.
+- Live refresh by polling a cheap version number. SSE is in phase 7, as the spec plans for the Agents view.
+- The demo's scripted messages are fictional and go through exactly the same path as a typed message. Only the
+  reset and the auto-answer switch are demo-only.
+- In both scenario-2 runs the card said the delivery "is at risk" or "will be late" depending on the run. With a
+  flatbed to Hamburg at €810 an on-time arrival is not impossible, so "at risk" is a fair reading; the spec's
+  sentence is not forced.
+- Not built yet (phase 7): the Agents view with SSE and the Narrator, the backfill over all 30 live-signal orders,
+  the fixtures and demo mode without an API key.

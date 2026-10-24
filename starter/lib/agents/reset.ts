@@ -20,8 +20,10 @@ export async function resetOrderLiveState(orderId: string): Promise<void> {
     }
     await tx.delete(cards).where(and(eq(cards.orderId, orderId), eq(cards.origin, "agent")))
     await tx.update(cards).set({ status: "open" }).where(and(eq(cards.orderId, orderId), eq(cards.origin, "alert")))
+    // Facts read from the dataset's own messages stay; facts from live entries go with their entries.
+    await tx.delete(facts).where(and(eq(facts.orderId, orderId), inArray(facts.origin, ["classifier", "agent"]),
+      sql`${facts.sourceEntryId} in (select id from timeline_entries where order_id = ${orderId} and origin = 'live')`))
     await tx.delete(timelineEntries).where(and(eq(timelineEntries.orderId, orderId), eq(timelineEntries.origin, "live")))
-    await tx.delete(facts).where(and(eq(facts.orderId, orderId), inArray(facts.origin, ["classifier", "agent"])))
     await tx.delete(demoEvents).where(eq(demoEvents.orderId, orderId))
   })
 }

@@ -79,9 +79,10 @@ export async function classifyEntry(entryId: string, options: { trigger?: string
 
   // File the facts. A message is a claim; a newer fact on the same subject supersedes the older one.
   const factIds: string[] = []
-  for (const fact of classification.facts.slice(0, 6)) {
+  for (const fact of classification.facts.slice(0, 2)) {
     const id = `fact_${randomUUID().slice(0, 12)}`
-    const older = known.filter((candidate) => candidate.subject.toLowerCase() === fact.subject.toLowerCase() && candidate.origin !== "dataset")
+    // Only a newer statement supersedes: backfill and late uploads can arrive out of order.
+    const older = known.filter((candidate) => candidate.subject.toLowerCase() === fact.subject.toLowerCase() && candidate.origin !== "dataset" && candidate.statedAt <= row.occurredAt)
     await db.insert(facts).values({
       id, orderId: row.orderId, subject: fact.subject.slice(0, 80), value: fact.value.slice(0, 240), status: "claimed",
       sourceEntryId: row.id, statedByLabel: `${row.authorLabel ?? "Someone"}, ${sourceWord(row)}`, statedAt: row.occurredAt,

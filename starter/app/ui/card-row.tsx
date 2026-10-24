@@ -26,7 +26,9 @@ function tokens(n: number): string {
 function Words({ step, customer }: { step: CardStep; customer: string }) {
   const text = typeof step.params.text === "string" ? step.params.text : null
   if (!text) return null
-  const to = typeof step.params.to === "string" && step.params.to ? step.params.to : customer
+  // The agent's "to" can carry a description in brackets; the heading needs only who.
+  const rawTo = typeof step.params.to === "string" && step.params.to ? step.params.to.replace(/\s*\(.*\)\s*$/, "") : customer
+  const to = rawTo.replace(/^The /, "the ")
   const title = step.action === "message_customer" ? `Email to ${to}, sent only if you approve`
     : step.action === "call_customer" || step.action === "call_contact" ? `For the call to ${to}: what to ask`
     : step.action === "message_driver" ? "Message to the driver"
@@ -118,7 +120,7 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
           {card.findings.map((finding, index) => {
             const note = failing.find((candidate) => candidate.finding === index)
             return <li className="finding" key={`${finding.source_entry_id}-${index}`}>
-              <span className="finding-text">{finding.text}{note && <span className="finding-note">Verifier: {note.note}</span>}</span>
+              <span className="finding-text">{finding.text}{note && <span className="finding-note">Not confirmed by the verifier: {note.note}</span>}</span>
               <span className="chips">
                 <SourceChip label={finding.source_label} at={finding.at} now={now} zone={order.zone} href={entryHref(order.reference, finding.source_entry_id)} />
                 {finding.also && <SourceChip label={finding.also.source_label} at={finding.also.at} now={now} zone={order.zone} href={entryHref(order.reference, finding.also.source_entry_id)} />}
@@ -130,7 +132,7 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
           {failing.length === 0
             ? `Checked by the verifier: all ${checked} facts match their sources.`
             : `Checked by the verifier: ${checked - failing.filter((note) => note.finding != null).length} of ${checked} facts match their sources.`}
-          {failing.filter((note) => note.finding == null).map((note, index) => <span key={index} className="verifier-card-note">{note.note}</span>)}
+          {failing.filter((note) => note.finding == null).map((note, index) => <span key={index} className="verifier-card-note">Verifier: {note.note}</span>)}
         </p>}
       </section>}
       {fromAgent && primary && <section>

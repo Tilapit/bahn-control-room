@@ -18,7 +18,9 @@
     "cards:alerts": "tsx scripts/cards-from-alerts.ts",
     "screens": "tsx scripts/screens.ts",
     "agents:investigate": "tsx scripts/investigate.ts",
-    "scenario": "tsx scripts/scenario.ts"
+    "scenario": "tsx scripts/scenario.ts",
+    "agents:classify": "tsx scripts/classify.ts",
+    "agents:trace": "tsx scripts/trace.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",

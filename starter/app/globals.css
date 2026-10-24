@@ -388,9 +388,10 @@ time[title] { cursor: help; text-decoration: none; }
 .words p { white-space: pre-wrap; }
 .other-option { margin-top: 12px; display: grid; gap: 6px; font-size: 14px; color: var(--text-2); }
 .other-label { font-weight: 500; color: var(--text); }
-.finding-note { display: block; margin-top: 2px; font-size: 13px; color: var(--amber); }
+/* Verifier notes are neutral: amber means time risk and red means safety. */
+.finding-note { display: block; margin-top: 2px; font-size: 13px; color: var(--text-2); font-style: italic; }
 .note.verifier { margin-top: 10px; }
-.verifier-card-note { display: block; margin-top: 2px; color: var(--amber); }
+.verifier-card-note { display: block; margin-top: 2px; color: var(--text-2); font-style: italic; }
 .row-reply { padding: 0 0 16px 20px; display: grid; gap: 8px; }
 .row-reply .reply { max-width: 640px; }
 .run-line { font-variant-numeric: tabular-nums; }

@@ -341,7 +341,7 @@ const EXECUTORS: Record<string, Executor> = {
     const near = text(input.near)
     const file = ctx.file ?? await caseOf(ctx)
     const shops = findRepairShops(near, file?.plan.lastPosition?.kmToGo ?? null)
-    const lines = shops.map((shop) => `- ${shop.id}: ${shop.name}, ${shop.kind}, ${shop.distanceKm} km away${shop.towEtaMinutes ? `, tow truck in about ${shop.towEtaMinutes} min` : ""}${shop.towToShopCents ? `, tow to their workshop about ${money(shop.towToShopCents, "EUR")}` : ""}${shop.towToDeliveryCents ? `, tow to the delivery address about ${money(shop.towToDeliveryCents, "EUR")}` : ""}. ${shop.note}`)
+    const lines = shops.map((shop) => `- ${shop.id}: ${shop.name}, ${shop.kind}, ${shop.distanceKm} km away${shop.towEtaMinutes ? `, tow truck in about ${shop.towEtaMinutes} min` : ""}${shop.towToShopCents ? `, tow to their workshop about ${money(shop.towToShopCents, "EUR")}` : ""}${shop.towToDeliveryCents ? `, tow to the delivery address in ${file?.order.route.to?.city ?? "the delivery city"} about ${money(shop.towToDeliveryCents, "EUR")}` : ""}. ${shop.note}`)
     const entryId = await lookupEntry(ctx, {
       source: "agent", author: "Repair shop lookup", summary: `Recovery and workshops near ${near}: ${shops.map((shop) => shop.name).join(", ")}`, body: lines.map((line) => line.replace(/^- [^:]+: /, "")).join("\n"),
     })
