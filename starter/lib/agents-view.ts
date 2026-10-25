@@ -12,9 +12,9 @@ export type RunFilter = "active" | "done" | "quiet"
 
 export const RUN_STATUS: Record<string, string> = {
   running: "Working", waiting_driver: "Waiting for driver", waiting_site: "Waiting for site", waiting_person: "Waiting for you",
-  done: "Done", failed: "Stopped",
+  done: "Done", failed: "Stopped", paused: "Paused: you have it",
 }
-const ACTIVE = ["running", "waiting_driver", "waiting_site", "waiting_person"]
+const ACTIVE = ["running", "waiting_driver", "waiting_site", "waiting_person", "paused"]
 const DESK_ZONE = "Europe/Helsinki"
 const QUIET_ROWS = 100
 

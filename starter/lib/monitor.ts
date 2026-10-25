@@ -216,7 +216,7 @@ async function cancelledGigRule(files: CaseFile[], now: Date): Promise<MonitorHi
     const raiseEur = fee ? Math.round((fee * raise) / 5) * 5 : 0
     const left = Number.isFinite(hoursLeft) ? hoursLeft >= 1 ? `${Math.round(hoursLeft)} h` : `${Math.max(0, Math.round(hoursLeft * 60))} min` : "no pickup slot recorded"
     const who = entry.authorLabel ?? "The driver"
-    const runId = await recordHit(file, now, "driver cancelled a gig", `${who} cancelled the gig in the driver app. Time left to the pickup slot: ${left}.`, `Noticed ${who}'s cancellation; put a card in For you to republish the gig${raiseEur ? ` with the fee raised by €${raiseEur}` : ""}.`)
+    const runId = await recordHit(file, now, "driver cancelled a gig", `${who} cancelled the gig in the driver app. Time left to the pickup slot: ${left}.`, `Noticed ${who}'s cancellation; proposed in For you to offer the gig to drivers again${raiseEur ? ` with the fee raised by €${raiseEur}` : ""}.`)
     await writeEntry({ id, orderId: file.order.id, at: now, source: "alert", channel: "monitor", authorType: "system", authorLabel: "Monitor (code)", kind: "alert", status: "signal", visibility: "internal", summary: `Driver cancelled the gig: republish needed${slot ? ` before the pickup ${at(slot.start, slot.zone)}` : ""}.`, evidence: { table: "timeline_entries", id: entry.id } })
     const placeTime = slot ? `${slot.place ?? "the pickup"} ${at(slot.start, slot.zone)}` : "a pickup with no slot yet"
     const findings: CardFinding[] = [

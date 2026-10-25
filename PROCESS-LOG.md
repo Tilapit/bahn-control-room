@@ -1617,3 +1617,41 @@ Monday): they show the weekday now.
 **Checked:** typecheck; `npm run smoke`; screenshots `for-you-*`, `for-you-open-*`, `order-CD-420299-*`,
 `order-CD-420603-*` in light and dark, looked at. The footage script's selectors for the old card are updated with
 the footage itself (see the end).
+
+### 5. Agents view, and the recorded runs narrated again
+
+**Layout.** The status column (150 px wide, empty whenever a group heading already said the status) is gone: a run
+row is the dot, then the text. Active is now in this order: Working now, Waiting for driver (a driver or a site was
+asked), Paused (orders a person took over, from item 2), then **Waiting for you collapsed to one row**, "Waiting for
+you (24) · each is a proposal in your For you list · Open For you", then Watching. The proposals themselves are on
+For you; the Agents view no longer lists them a second time.
+
+**Narrated again with Haiku.** 16 recorded narrations used words from inside the app ("Read the case file…", "the
+proposed card was sent back by checks", "the verifier sent the card back twice"). `npm run agents:narrate -- --all`
+wrote all 34 Investigator and Driver support narrations again with the current narrator prompt, and the narrator now
+has a code check like its pronoun check: a sentence with card, verifier, case file, sent back, held back or "by
+checks" is asked for once more, then replaced by code's own summary. The narrator's input no longer says "card"
+either ("ITS PROPOSAL (shown to a person)"). Result: 33 sentences changed ("Read the order's records and found…"),
+one kept code's summary, and **0 recorded narrations** use those words now. Narrating costs money and the cost is
+counted on each run, so the recorded morning's model cost moved from $4.6267 to $4.6311. Exported to
+`fixtures/agent-runs.json`; nothing else in the recording changed.
+- The Monitor's own sentence for a cancelled gig said "put a card in For you"; it is code, so the code says
+  "proposed in For you to offer the gig to drivers again" now.
+- **Three replays were recorded again** (`npm run scenario:record`), because their narrations had the same words:
+  scenario 5 (closed without a card in 9 s, as before), the cancelled gig (code only), and the car that is not moving.
+
+**A bug the re-recording found.** The car-not-moving replay first came back as a *failed* run: 12 steps, five cards
+refused, "Stopped at the 12-step limit". The simulated driver this time reported a warning light (there is no
+scenario note for CD-420145, so it improvises; the earlier recording had "all fine"), so the agent wanted a card,
+and the card builder refused every one: "This card rests on a disruption notice: add a finding that cites the
+notice itself". Code treated every run the Monitor starts as resting on a disruption notice
+(`ctx.trigger.startsWith("Monitor:")`), but the silent-car and no-reply rules start runs too. A silent car could
+never become a card; the recorded morning never showed it because both silent cars closed without one. Fixed in
+`lib/agents/propose.ts`: only the disruption rule's trigger (`Monitor: <source> reports "<notice>"`) or a cited
+notice counts. Recorded again: the run asked the driver, moved to Opus, and proposed a tow to the Kellerbrook
+workshop, 198 s, waiting for a person. The replay now ends on a card, not on "all fine": a different story from the
+first recording, and the true one for this play.
+
+**Checked:** typecheck; the recorded evals (11 groups pass, including scenario 5 from its new recording); 0
+narrations with those words in the fixtures and in the three new recordings; screenshots `agents-*` in light and
+dark, looked at.

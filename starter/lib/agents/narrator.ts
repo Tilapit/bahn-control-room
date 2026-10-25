@@ -14,7 +14,8 @@ const STATE: Record<string, string> = {
   running: "still working",
   waiting_driver: "waiting for the driver's reply",
   waiting_site: "waiting for the site's reply",
-  waiting_person: "waiting for an operations person to decide on its card",
+  waiting_person: "waiting for an operations person to decide on its proposal",
+  paused: "paused: a person took the order over and handles it",
   done: "finished",
   failed: "stopped without finishing",
 }
@@ -24,6 +25,8 @@ const QUIET_TOOLS = new Set(["add_finding", "add_step"])
 /** A pronoun guessed from a name misgenders a real person; the sentence is asked for again, then replaced by code's. */
 const GUESSED_PRONOUN = /\b(he|she|him|her|his|hers|himself|herself)\b/i
 const SENT_BACK = /^(Card sent back|Card held back|Close sent back|Card call arrived)/
+/** Words from inside the app that a person should not read in the Agents view: the sentence is asked for again, then replaced by code's. */
+const INTERNAL_WORDS = /\b(cards?|verifier|case files?|sent back|held back|by (?:the )?checks|code checks|handles? E\d+|\[?E\d+\]?)\b/i
 
 export async function narrateRun(runId: string): Promise<string | null> {
   if (!hasApiKey()) return null
@@ -43,7 +46,7 @@ export async function narrateRun(runId: string): Promise<string | null> {
     `ORDER ${orderRows[0]?.reference ?? "(none)"}`,
     `AGENT ${run.agent} (${modelName(run.model)})`,
     `WHERE IT STANDS\nThe run is ${STATE[run.status] ?? run.status}.${run.outcomeSummary ? ` Outcome: ${run.outcomeSummary}` : ""}`,
-    card ? `ITS CARD (shown to a person)\nHeadline: ${card.headline.replace(/^[^:]+:\s*/, "")}\nProposal: ${card.options[0]?.label ?? "none"}${card.status !== "open" ? `\nThe card is ${card.status}.` : ""}` : null,
+    card ? `ITS PROPOSAL (shown to a person)\nHeadline: ${card.headline.replace(/^[^:]+:\s*/, "")}\nProposal: ${card.options[0]?.label ?? "none"}${card.status !== "open" ? `\nThe proposal is ${card.status}.` : ""}` : null,
     `WHY IT STARTED\n${run.trigger.slice(0, 600)}`,
     `WHAT IT DID, IN ORDER\n${did.slice(-14).join("\n") || "- nothing yet"}`,
   ].filter(Boolean).join("\n\n")
@@ -53,13 +56,13 @@ export async function narrateRun(runId: string): Promise<string | null> {
     for (const attempt of [0, 1]) {
       const result = await callJson<{ sentence: string }>({
         model: ROLE_MODEL.narrator, system: prompt("narrator"), effort: "low", maxTokens: 4000, schema,
-        user: attempt === 0 ? user : `${user}\n\nYour last sentence used he, she, him, her or his. Refer to people by role or name only: "${sentence}"`,
+        user: attempt === 0 ? user : `${user}\n\nYour last sentence ${GUESSED_PRONOUN.test(sentence) ? "used he, she, him, her or his. Refer to people by role or name only" : "used a word from inside the app (card, verifier, checks, sent back, case file). Say proposal, the order's records, and leave out drafts that were sent back"}: "${sentence}"`,
       })
       await addUsageToRun(runId, result.model, result.usage)
       sentence = result.value.sentence.trim().replace(/\s+/g, " ")
-      if (!GUESSED_PRONOUN.test(sentence)) break
+      if (!GUESSED_PRONOUN.test(sentence) && !INTERNAL_WORDS.test(sentence)) break
     }
-    if (!sentence || GUESSED_PRONOUN.test(sentence)) return null
+    if (!sentence || GUESSED_PRONOUN.test(sentence) || INTERNAL_WORDS.test(sentence)) return null
     await updateRun(runId, { narration: sentence })
     return sentence
   } catch (cause) {

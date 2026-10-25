@@ -185,7 +185,9 @@ export async function propose(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
     problems.push(`Nobody has answered since ${ctx.noReplySince}: start the headline with "Driver not answering since ${ctx.noReplySince}" (or "Site not answering since ${ctx.noReplySince}")`)
   }
   // A card that rests on a disruption notice names its source and says nobody on the ground confirmed it (code, not the prompt).
-  const fromNotice = ctx.trigger.startsWith("Monitor:") || cited.some((entry) => entry.channel === "disruption_feed")
+  // Only the disruption rule's trigger names a notice ("Monitor: Rail operator notice reports "…""); the Monitor's other
+  // rules (a car not moving, no reply) start runs too, and their cards rest on GPS and messages, not on a notice.
+  const fromNotice = /^Monitor: [^"]* reports "/.test(ctx.trigger) || cited.some((entry) => entry.channel === "disruption_feed")
   if (fromNotice) {
     if (!cited.some((entry) => entry.channel === "disruption_feed")) problems.push("This card rests on a disruption notice: add a finding that cites the notice itself, so the person sees who reported it")
     const words = [whatHappened, ...drafts.map((draft) => draft.text)].join(" ")

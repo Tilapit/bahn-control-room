@@ -717,3 +717,16 @@ a.filter { text-decoration: none; }
 .later-toggle[aria-expanded="true"] .row-chevron { transform: rotate(90deg); }
 .later-toggle:hover { color: var(--text); }
 .queue-note { padding: 8px 0 4px; }
+
+/* ---------- Agents: no empty column; what waits for you is one row ---------- */
+
+.run-row { grid-template-columns: 8px minmax(0, 1fr); gap: 14px; }
+.run-state { align-self: start; margin-top: 7px; }
+.run-label { font-size: 13px; font-weight: 500; color: var(--text-2); }
+.run-label.running { color: var(--accent-text); }
+.runs-collapsed { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; gap: 14px; align-items: center; margin: 16px -12px 8px; padding: 12px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--text-2); font-size: 14px; text-decoration: none; }
+.runs-collapsed b { color: var(--text); font-weight: 600; margin-right: 6px; }
+.runs-collapsed:hover { background: var(--hover); }
+.runs-collapsed .run-state { margin-top: 0; align-self: center; }
+.runs-collapsed .link { display: inline-flex; align-items: center; gap: 4px; color: var(--accent-text); font-weight: 500; }
+.run-state.paused .dot { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent); }

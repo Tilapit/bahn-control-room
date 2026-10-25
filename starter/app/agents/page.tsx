@@ -3,6 +3,7 @@ import Link from "next/link"
 import { connection } from "next/server"
 import { hasApiKey } from "@/lib/agents/llm"
 import { agentsView, dollars, type RunFilter, tokenWords } from "@/lib/agents-view"
+import { Icon } from "../ui/icons"
 import { When } from "../ui/when"
 
 export const metadata: Metadata = { title: "Agents" }
@@ -27,9 +28,10 @@ type Row = Awaited<ReturnType<typeof agentsView>>["rows"][number]
 function RunRow({ row, now, label = true }: { row: Row; now: string; label?: boolean }) {
   return <li>
     <Link className="run-row" href={`/agents/${row.id}`}>
-      <span className={`run-state ${row.status}`}><span className="dot" aria-hidden="true" />{label ? row.statusLabel : <span className="sr-only">{row.statusLabel}</span>}</span>
+      <span className={`run-state ${row.status}`}><span className="dot" aria-hidden="true" /></span>
       <span className="run-main">
         <span className="run-top">
+          {label ? <span className={`run-label ${row.status}`}>{row.statusLabel}</span> : <span className="sr-only">{row.statusLabel}</span>}
           <span className="run-agent">{row.agent}</span>
           {row.reference && <span className="run-order">{row.reference}{row.car ? ` · ${row.car}` : ""}</span>}
           {row.safety && <span className="tag safety">Safety</span>}
@@ -53,15 +55,29 @@ function RunRow({ row, now, label = true }: { row: Row; now: string; label?: boo
  */
 function RunGroups({ filter, rows, now }: { filter: RunFilter; rows: Row[]; now: string }) {
   if (filter === "active") {
+    // The agents' own work first; what waits for a person is one row: the proposals themselves are on For you.
     const groups = [
-      { key: "working", title: "Working now", note: "", rows: rows.filter((row) => row.status !== "waiting_person" && row.statusLabel !== "Watching"), label: true },
-      { key: "you", title: "Waiting for you", note: "each is a proposal in your For you list", rows: rows.filter((row) => row.status === "waiting_person"), label: false },
-      { key: "watching", title: "Watching", note: "agents are handling these without you and look again at the next check", rows: rows.filter((row) => row.statusLabel === "Watching"), label: false },
+      { key: "working", title: "Working now", note: "", rows: rows.filter((row) => row.status === "running"), label: false },
+      { key: "driver", title: "Waiting for driver", note: "asked a driver or a site, waiting for the reply", rows: rows.filter((row) => row.status === "waiting_driver" || row.status === "waiting_site"), label: true },
+      { key: "paused", title: "Paused", note: "you took these orders over; the agent continues when you hand them back", rows: rows.filter((row) => row.status === "paused"), label: false },
     ].filter((item) => item.rows.length)
-    return <>{groups.map((item) => <section key={item.key}>
-      <p className="runs-group">{item.title} ({item.rows.length}){item.note ? `: ${item.note}` : ""}</p>
-      <ol className="runs">{item.rows.map((row) => <RunRow key={row.id} row={row} now={now} label={item.label} />)}</ol>
-    </section>)}</>
+    const forYou = rows.filter((row) => row.status === "waiting_person")
+    const watching = rows.filter((row) => row.statusLabel === "Watching")
+    return <>
+      {groups.map((item) => <section key={item.key}>
+        <p className="runs-group">{item.title} ({item.rows.length}){item.note ? `: ${item.note}` : ""}</p>
+        <ol className="runs">{item.rows.map((row) => <RunRow key={row.id} row={row} now={now} label={item.label} />)}</ol>
+      </section>)}
+      {forYou.length > 0 && <Link className="runs-collapsed" href="/">
+        <span className="run-state waiting_person"><span className="dot" aria-hidden="true" /></span>
+        <span><b>Waiting for you ({forYou.length})</b> each is a proposal in your For you list</span>
+        <span className="link">Open For you<Icon name="arrow" size={14} /></span>
+      </Link>}
+      {watching.length > 0 && <section>
+        <p className="runs-group">Watching ({watching.length}): agents are handling these without you and look again at the next check</p>
+        <ol className="runs">{watching.map((row) => <RunRow key={row.id} row={row} now={now} label={false} />)}</ol>
+      </section>}
+    </>
   }
   if (filter === "done") {
     const reading = rows.filter((row) => row.agent === "Classifier")
