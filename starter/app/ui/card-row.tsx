@@ -7,12 +7,13 @@ import { sourceKind } from "@/lib/sources"
 import { problemPhrase } from "@/lib/status"
 import { optionWords, stepList, type StepZones } from "@/lib/present/steps"
 import type { CardOption, CardStep } from "@/lib/schema"
-import { clock, long, relative, zoneShort } from "@/lib/time"
+import { clock, clockZone, long, relative, zoneShort } from "@/lib/time"
 import { DecisionReason, EMPTY_REASON, type ReasonValue } from "./decision-reason"
 import { SimilarCases } from "./similar-cases"
 import { Icon } from "./icons"
 import { TakenOverBar, TakeOverButton } from "./takeover"
 import { CrossBorder, useTeamView } from "./view-switcher"
+import { COLLEAGUES, initialsOf, isStale, quietMinutes, YOU } from "@/lib/people"
 import { inView, passesThrough } from "@/lib/teams"
 import { SourceChip } from "./when"
 
@@ -121,37 +122,53 @@ function proposalLine(item: QueueItem): string {
   return card.proposal?.effect_text ? `Next step noted: ${card.proposal.effect_text}` : "Built from an alert; no agent has worked on it yet"
 }
 
+/** "Stopped on red warning": the problem with a capital, for a card's title. */
+const titleCase = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
+
+/** Who has the order: you, a colleague (gone quiet after 30 simulated minutes with no action), or nobody. */
+export function claimOf(item: QueueItem, now: string): { kind: "you" | "colleague" | "stale" | "none"; who: string | null; minutes: number } {
+  const claim = item.takenOver
+  if (!claim) return { kind: "none", who: null, minutes: 0 }
+  if (claim.by === YOU) return { kind: "you", who: "You", minutes: 0 }
+  const at = new Date(now)
+  return { kind: isStale(claim, at) ? "stale" : "colleague", who: claim.by, minutes: quietMinutes(claim, at) }
+}
+
+function ClaimLine({ item, now }: { item: QueueItem; now: string }) {
+  const claim = claimOf(item, now)
+  if (claim.kind === "none") return <span className="claim"><span className="avatar none" aria-hidden="true" />Unclaimed</span>
+  if (claim.kind === "you") return <span className="claim you"><span className="avatar green" aria-hidden="true">Y</span>You have this</span>
+  const avatar = <span className={`avatar ${COLLEAGUES.find((colleague) => colleague.name === claim.who)?.tone ?? ""}`} aria-hidden="true">{initialsOf(claim.who!)}</span>
+  return claim.kind === "stale"
+    ? <span className="claim stale">{avatar}{claim.who} · no activity {claim.minutes} min</span>
+    : <span className="claim">{avatar}{claim.who} is on it</span>
+}
+
 /**
- * One case in the For you list: two lines, no buttons. Line 1 is the car and the problem with the countdown on the
- * right; line 2, muted, is what the agent proposes, with the order number small on the right. Text is cut at a word.
+ * One order in the For you list, as a card: its desk and reference with the time left, the problem in a few words,
+ * the car and route, and who has it. No buttons: the selected order opens on the right.
  */
-export function CaseListRow({ item, selected, onSelect }: { item: QueueItem; selected: boolean; onSelect: () => void }) {
+export function CaseListRow({ item, now, selected, onSelect }: { item: QueueItem; now: string; selected: boolean; onSelect: () => void }) {
   const { card, order, urgency } = item
   const tone = urgency.safety ? "safety" : urgency.timeRisk ? "time" : ""
   const missed = !!urgency.at && urgency.relative.endsWith("ago")
-  const when = missed ? `missed ${urgency.relative}` : urgency.relative
-  const cost = card.kind !== "question" && card.proposal?.cost_eur ? `€${Math.round(card.proposal.cost_eur)}` : ""
+  const when = missed ? `missed ${urgency.relative.replace(/ ago$/, "")} ago` : urgency.relative.replace(/^in /, "")
   const [view] = useTeamView()
-  // A row says "Cross-border" when it is in this view only because its route passes through the view's country,
-  // and names the country of a safety case listed from outside the view.
   const through = passesThrough(item.team, view)
   const foreign = !inView(item.team, view)
+  const problem = problemPhrase(card.headline) ?? card.headline
   return <li className="inbox-row" data-selected={selected} data-card={card.id}>
     <button type="button" onClick={onSelect} aria-current={selected ? "true" : undefined} title={card.headline}>
-      <span className={`mark ${tone}`} aria-hidden="true" />
-      <span className="inbox-line1">
-        <span className="inbox-title">{clip(problemLine(order.car, card.headline, card.group?.length ?? null), (urgency.safety ? 50 : 56) - when.length)}</span>
-        {urgency.safety && <span className="tag safety">Safety</span>}
-        {item.takenOver && <span className="tag yours">Yours</span>}
-        <span className={`when ${tone}`}>{when}</span>
-      </span>
-      <span className="inbox-line2">
-        <span className="inbox-proposal">{clip(proposalLine(item), (through ? 42 : foreign ? 46 : 54) - (cost ? cost.length + 2 : 0))}</span>
-        {cost && <span className="inbox-cost" title="New cost if you approve">{cost}</span>}
-        {through && <CrossBorder team={item.team} />}
-        {foreign && <span className="tag cross">{item.team.market === "Other" ? "Other country" : item.team.market}</span>}
+      <span className="fy-card-top">
+        <span className={`tag desk${urgency.safety ? " safety" : ""}`}>{card.group ? `${card.group.length} orders` : item.team.desk ?? "Ops"}</span>
         <span className="row-ref">{card.group ? "" : order.reference}</span>
+        {foreign && <span className="tag cross">{item.team.market === "Other" ? "Other country" : item.team.market}</span>}
+        {through && <CrossBorder team={item.team} />}
+        <span className={`when ${tone}`}>{when || "no deadline"}</span>
       </span>
+      <span className="fy-card-title">{clip(titleCase(problem), 64)}</span>
+      <span className="fy-card-car">{card.group ? card.group.map((member) => member.reference).join(", ") : `${order.car} · ${order.route}`}</span>
+      <ClaimLine item={item} now={now} />
     </button>
   </li>
 }
@@ -195,6 +212,7 @@ export function CaseDetail({ item, now, onOrderPage = false, keys = false, onDec
   const checked = notes.filter((note) => note.finding != null).length
   const question = card.kind === "question"
 
+  const claim = claimOf(item, now)
   // "R" opens the reply box and puts the cursor in it.
   useEffect(() => { if (answering) replyRef.current?.focus() }, [answering])
 
@@ -226,15 +244,46 @@ export function CaseDetail({ item, now, onOrderPage = false, keys = false, onDec
 
   return <article className="case-detail" aria-label={card.headline} data-card={card.id}>
     {!onOrderPage && <header className="cd-head">
-      <h2>{problemLine(order.car, card.headline, card.group?.length ?? null)}{urgency.safety && <span className="tag safety">Safety</span>}{item.takenOver && <span className="tag yours">Yours</span>}</h2>
-      <p className="cd-when"><span className={`when ${tone}`}>{urgency.sentence}</span>{urgency.relative && <span className="cd-rel">{urgency.relative.endsWith("ago") ? `missed ${urgency.relative}` : urgency.relative}</span>}</p>
-      <p className="cd-meta">{card.group ? `${card.group.length} orders, one cause` : <>{order.reference} · {order.route} · customer {customer}</>}
-        {!card.group && <CrossBorder team={item.team} />}{item.team.desk && <span>{item.team.desk} desk</span>}
-        {!card.group && <Link className="cd-open" href={orderHref(order.reference)}>Open order<Icon name="arrow" size={14} /></Link>}</p>
+      <div className="cd-top">
+        <span className={`tag desk${urgency.safety ? " safety" : ""}`}>{card.group ? `${card.group.length} orders` : item.team.desk ?? "Ops"}</span>
+        {!card.group && <Link className="cd-ref" href={orderHref(order.reference)} title="Open the order">{order.reference}</Link>}
+      </div>
+      <h2>{titleCase(problemPhrase(card.headline) ?? card.headline)}</h2>
+      <p className="cd-due"><span>Due</span><b className={`when ${tone}`}>{urgency.relative ? (urgency.relative.endsWith("ago") ? `missed ${urgency.relative}` : urgency.relative) : "no deadline"}</b></p>
     </header>}
 
-    {item.takenOver && !onOrderPage && <TakenOverBar reference={order.reference} since={item.takenOver.at} by={item.takenOver.by} zone={order.zone} />}
-    <p className="summary">{firstSentence(card.whatHappened)}</p>
+    {!onOrderPage && !card.group && <div className={`claim-banner ${claim.kind}`}>
+      {claim.kind === "none" && <><span className="avatar none" aria-hidden="true" /><p><b>Nobody has this yet.</b> Take it, and agents leave the order to you until you hand it back.</p></>}
+      {claim.kind === "colleague" && <><span className={`avatar ${COLLEAGUES.find((colleague) => colleague.name === claim.who)?.tone ?? ""}`} aria-hidden="true">{initialsOf(claim.who!)}</span><p><b>{claim.who} is on it</b>, since {clockZone(item.takenOver!.at, order.zone)}.</p></>}
+      {claim.kind === "stale" && <><span className={`avatar ${COLLEAGUES.find((colleague) => colleague.name === claim.who)?.tone ?? ""}`} aria-hidden="true">{initialsOf(claim.who!)}</span><p><b>{claim.who} claimed this {Math.round((new Date(now).getTime() - new Date(item.takenOver!.at).getTime()) / 60_000)} min ago</b> — no activity since. Free to pick up.</p></>}
+      {claim.kind !== "you" && <span className="key-wrap" data-key-host={keys ? "t" : undefined}><TakeOverButton reference={order.reference} className={`btn${claim.kind === "stale" ? " amber" : ""}`} label={claim.kind === "none" ? "Take this" : "Take over"} from={claim.kind === "none" ? null : claim.who} hint={keys ? <Key k="T" /> : null} /></span>}
+      {claim.kind === "you" && <TakenOverBar reference={order.reference} since={item.takenOver!.at} by={item.takenOver!.by} zone={order.zone} />}
+    </div>}
+
+    {!onOrderPage && !card.group && <dl className="cd-crd">
+      <div><dt>Car</dt><dd>{order.car}</dd></div>
+      <div><dt>Route</dt><dd>{order.route}{item.team.crossBorder && <> <CrossBorder team={item.team} /></>}</dd></div>
+      <div><dt>Driver</dt><dd>{order.driver ?? "Not booked yet"}</dd></div>
+      <div><dt>Customer</dt><dd>{customer}</dd></div>
+    </dl>}
+
+    {!onOrderPage && !card.group && item.journey.length > 1 && <section className="journey" aria-label="The car's journey">
+      <div className="journey-head"><h3>The car&apos;s journey</h3><span className="journey-legend"><i className="ms done" />Confirmed<i className="ms problem" />Problem<i className="ms planned" />Planned</span></div>
+      <ol>
+        {item.journey.map((stop, index) => <li key={index} className={stop.state}>
+          <i className={`ms ${stop.state}`} aria-hidden="true" />
+          <b>{stop.label}</b>
+          {stop.at && <time dateTime={stop.at}>{factTime(stop.at, now, stop.zone)}</time>}
+          <span>{stop.note}</span>
+        </li>)}
+      </ol>
+    </section>}
+
+    <section className="cd-what">
+      <h3>What happened</h3>
+      <p className="summary">{firstSentence(card.whatHappened)}</p>
+      {!onOrderPage && <p className={`cd-when when ${tone}`}>{urgency.sentence}</p>}
+    </section>
 
     {card.group && <ul className="group-list">
       {card.group.map((member) => <li key={member.order_id}>
@@ -243,54 +292,7 @@ export function CaseDetail({ item, now, onOrderPage = false, keys = false, onDec
       </li>)}
     </ul>}
 
-    {proposes && primary && <div className="approve-box">
-      <h3>{question ? "Agent asks you" : fromMonitor ? "If you approve (proposed by code)" : "If you approve"}</h3>
-      {question ? <p>Pick the answer that is right; the agent carries on from it. Nothing is booked or sent.</p> : <Effects option={primary} zones={order.zones} />}
-      {!question && (card.proposal?.cost_eur || card.proposal?.requires_approval_reason) && <p className="note">
-        {card.proposal?.cost_eur ? `New cost about €${Math.round(card.proposal.cost_eur)}. ` : ""}
-        {card.proposal?.requires_approval_reason ? `Needs your approval because ${approvalWords(primary, card.proposal.requires_approval_reason)}.` : ""}
-        {steps.some((step) => step.action === "call_customer" || step.action === "call_contact") ? " Approving does not dial anyone: the call is yours, with the script below; the rest happens when you approve." : ""}
-      </p>}
-      {steps.map((step, index) => <Words key={index} step={step} customer={customer} />)}
-    </div>}
-    {!proposes && card.proposal && <div className="approve-box">
-      <h3>Next step already noted</h3>
-      <p>{card.proposal.effect_text} {proposalSource?.source_label && <SourceChip label={proposalSource.source_label} at={proposalSource.source_at ?? null} now={now} zone={order.zone}
-        href={proposalSource.source_entry_id ? entryHref(order.reference, proposalSource.source_entry_id) : null} />}</p>
-      <p className="note">Built by code from the alert and the order&apos;s records. No agent has worked on it yet.</p>
-    </div>}
-
-    <div className="row-actions">
-      {buttons.map((option, index) => <button
-        key={option.id} type="button" className={`btn${proposes ? " primary" : ""}`} disabled={!!busy}
-        data-key={keys && proposes && !question && index === 0 ? "a" : undefined}
-        onClick={() => decide(option.id, option.label)}>{busy === option.id ? "Saving…" : buttonLabel(option)}{keys && proposes && !question && index === 0 && <Key k="A" />}</button>)}
-      {!onOrderPage && !item.takenOver && !card.group && <span className="key-wrap" data-key-host={keys ? "t" : undefined}><TakeOverButton reference={order.reference} className="btn" hint={keys ? <Key k="T" /> : null} /></span>}
-      {(rejects.length > 0 || others.length > 0) && <button type="button" className="btn" aria-expanded={answering} data-key={keys ? "r" : undefined} onClick={() => setAnswering((value) => !value)}>
-        {fromAgent && !fromMonitor ? "Reject or reply" : "Reject…"}{keys && <Key k="R" />}
-      </button>}
-      {error && <span className="note failed-note" role="alert">{error}</span>}
-    </div>
-
-    {answering && <div className="answer-box">
-      {!question && <DecisionReason value={reason} onChange={setReason} disabled={!!busy} />}
-      {others.map((option) => <div className="other-option" key={option.id}>
-        <button type="button" className="btn small" disabled={!!busy || (!question && !reason.reason)} onClick={() => decide(option.id, option.label, undefined, !question)}>{busy === option.id ? "Saving…" : buttonLabel(option)}</button>
-        <span className="note">If you choose it: {optionWords(option, order.zones) ?? option.effect_text}.</span>
-      </div>)}
-      <div className="answer-row">
-        {rejects.map((option) => <button key={option.id} type="button" className="btn small" disabled={!!busy || !reason.reason} onClick={() => decide(option.id, option.label, undefined, true)}>{busy === option.id ? "Saving…" : buttonLabel(option)}</button>)}
-      </div>
-      {fromAgent && !fromMonitor && <form className="reply" onSubmit={(event) => { event.preventDefault(); if (reply.trim() && reason.reason) decide("reply", "Reply sent to the agent", reply.trim(), true) }}>
-        <input ref={replyRef} value={reply} onChange={(event) => setReply(event.target.value)} placeholder="Or tell the agent what to do instead" aria-label="Reply to the agent" />
-        <button type="submit" className="btn small" disabled={!reply.trim() || !reason.reason || !!busy}>Send to agent</button>
-      </form>}
-    </div>}
-
-    {/* What people decided on the same kind of proposal before, why, and whether it worked: next to the decision. */}
-    {proposes && <SimilarCases cardId={card.id} />}
-
-    {card.findings.length > 0 && <section>
+    {card.findings.length > 0 && <section className="cd-facts">
       <h3>What we know<span className="h3-note">most important first{timesIn ? ` · times ${timesIn}` : ""}</span></h3>
       <ul className="facts-compact">
         {card.findings.map((finding, index) => {
@@ -318,6 +320,63 @@ export function CaseDetail({ item, now, onOrderPage = false, keys = false, onDec
         </div>
       })()}
     </section>}
+
+    {card.run && card.run.did.length > 0 && <section className="agent-did">
+      <h3>What the agent already did</h3>
+      <ul>{card.run.did.map((text, index) => <li key={index}><Icon name="check" size={14} />{text}</li>)}</ul>
+    </section>}
+
+    {proposes && primary && !question && <div className="suggests">
+      <p className="suggests-label"><Icon name="bot" size={14} />{fromMonitor ? "A rule in code suggests" : "Agent suggests"}</p>
+      <p className="suggests-text">{titleCase(primary.label.replace(/^approve:\s*/i, ""))}.</p>
+    </div>}
+
+    {proposes && primary && <div className="approve-box">
+      <h3>{question ? "Agent asks you" : fromMonitor ? "If you approve (proposed by code)" : "If you approve"}</h3>
+      {question ? <p>Pick the answer that is right; the agent carries on from it. Nothing is booked or sent.</p> : <Effects option={primary} zones={order.zones} />}
+      {!question && (card.proposal?.cost_eur || card.proposal?.requires_approval_reason) && <p className="note">
+        {card.proposal?.cost_eur ? `New cost about €${Math.round(card.proposal.cost_eur)}. ` : ""}
+        {card.proposal?.requires_approval_reason ? `Needs your approval because ${approvalWords(primary, card.proposal.requires_approval_reason)}.` : ""}
+        {steps.some((step) => step.action === "call_customer" || step.action === "call_contact") ? " Approving does not dial anyone: the call is yours, with the script below; the rest happens when you approve." : ""}
+      </p>}
+      {steps.map((step, index) => <Words key={index} step={step} customer={customer} />)}
+    </div>}
+    {!proposes && card.proposal && <div className="approve-box">
+      <h3>Next step already noted</h3>
+      <p>{card.proposal.effect_text} {proposalSource?.source_label && <SourceChip label={proposalSource.source_label} at={proposalSource.source_at ?? null} now={now} zone={order.zone}
+        href={proposalSource.source_entry_id ? entryHref(order.reference, proposalSource.source_entry_id) : null} />}</p>
+      <p className="note">Built by code from the alert and the order&apos;s records. No agent has worked on it yet.</p>
+    </div>}
+
+    <div className="row-actions">
+      {buttons.map((option, index) => <button
+        key={option.id} type="button" className={`btn${proposes ? " primary" : ""}`} disabled={!!busy}
+        data-key={keys && proposes && !question && index === 0 ? "a" : undefined}
+        onClick={() => decide(option.id, option.label)}>{busy === option.id ? "Saving…" : buttonLabel(option)}{keys && proposes && !question && index === 0 && <Key k="A" />}</button>)}
+      {(rejects.length > 0 || others.length > 0) && <button type="button" className="btn" aria-expanded={answering} data-key={keys ? "r" : undefined} onClick={() => setAnswering((value) => !value)}>
+        {fromAgent && !fromMonitor ? "Reject or reply" : "Reject…"}{keys && <Key k="R" />}
+      </button>}
+      {error && <span className="note failed-note" role="alert">{error}</span>}
+    </div>
+
+    {answering && <div className="answer-box">
+      {!question && <DecisionReason value={reason} onChange={setReason} disabled={!!busy} />}
+      {others.map((option) => <div className="other-option" key={option.id}>
+        <button type="button" className="btn small" disabled={!!busy || (!question && !reason.reason)} onClick={() => decide(option.id, option.label, undefined, !question)}>{busy === option.id ? "Saving…" : buttonLabel(option)}</button>
+        <span className="note">If you choose it: {optionWords(option, order.zones) ?? option.effect_text}.</span>
+      </div>)}
+      <div className="answer-row">
+        {rejects.map((option) => <button key={option.id} type="button" className="btn small" disabled={!!busy || !reason.reason} onClick={() => decide(option.id, option.label, undefined, true)}>{busy === option.id ? "Saving…" : buttonLabel(option)}</button>)}
+      </div>
+      {fromAgent && !fromMonitor && <form className="reply" onSubmit={(event) => { event.preventDefault(); if (reply.trim() && reason.reason) decide("reply", "Reply sent to the agent", reply.trim(), true) }}>
+        <input ref={replyRef} value={reply} onChange={(event) => setReply(event.target.value)} placeholder="Or tell the agent what to do instead" aria-label="Reply to the agent" />
+        <button type="submit" className="btn small" disabled={!reply.trim() || !reason.reason || !!busy}>Send to agent</button>
+      </form>}
+    </div>}
+
+    {/* What people decided on the same kind of proposal before, why, and whether it worked: next to the decision. */}
+    {proposes && <SimilarCases cardId={card.id} />}
+
 
     {fromMonitor && <p className="note">Built by the Monitor: a rule in code noticed it and wrote this card from the records. No model was used.</p>}
     {card.run && <p className="note run-line">

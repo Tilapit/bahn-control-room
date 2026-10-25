@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { clockZone } from "@/lib/time"
 
-async function send(reference: string, action: "take" | "hand_back" | "log", note = ""): Promise<string | null> {
+async function send(reference: string, action: "take" | "take_over" | "hand_back" | "log", note = ""): Promise<string | null> {
   const response = await fetch(`/api/orders/${encodeURIComponent(reference)}/takeover`, {
     method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, note }),
   })
@@ -13,14 +13,20 @@ async function send(reference: string, action: "take" | "hand_back" | "log", not
 }
 
 /** "I'll handle this": the order becomes the person's; agents and Monitor rules stop acting on it (enforced in code). */
-export function TakeOverButton({ reference, className = "btn small", hint = null }: { reference: string; className?: string; hint?: React.ReactNode }) {
+export function TakeOverButton({ reference, className = "btn small", hint = null, label = "I'll handle this", from = null }: {
+  reference: string; className?: string; hint?: React.ReactNode
+  /** "Take this" for an unclaimed order, "Take over" from a colleague. */
+  label?: string
+  /** The colleague who holds the order now: taking over ends their claim. */
+  from?: string | null
+}) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   return <>
     <button type="button" className={className} disabled={busy} title="Agents and Monitor rules stop acting on this order until you hand it back"
-      onClick={async () => { setBusy(true); setError(await send(reference, "take")); setBusy(false); router.refresh() }}>
-      {busy ? "Taking it…" : "I'll handle this"}{hint}
+      onClick={async () => { setBusy(true); setError(await send(reference, from ? "take_over" : "take")); setBusy(false); router.refresh() }}>
+      {busy ? "Taking it…" : label}{hint}
     </button>
     {error && <span className="note failed-note" role="alert">{error}</span>}
   </>

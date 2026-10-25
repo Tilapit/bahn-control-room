@@ -9,8 +9,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!file) return Response.json({ error: `There is no order ${reference}.` }, { status: 404 })
   const note = typeof body.note === "string" ? body.note.slice(0, 600) : ""
   const result = body.action === "take" ? await takeOver(file.order.id, "Ops")
+    : body.action === "take_over" ? await takeOver(file.order.id, "Ops", true)
     : body.action === "hand_back" ? await handBack(file.order.id, "Ops", note)
     : body.action === "log" ? await logAction(file.order.id, "Ops", note)
-    : { ok: false, message: "Say take, log or hand_back." }
+    : { ok: false, message: "Say take, take_over, log or hand_back." }
   return Response.json(result, { status: result.ok ? 200 : 409 })
 }

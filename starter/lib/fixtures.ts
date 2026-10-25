@@ -3,6 +3,7 @@
 // into a fresh database so the app shows real agent output without an API key.
 // Rows go through Postgres's own JSON conversion, so every column round-trips.
 
+import { seedShift } from "./shift"
 import { readFile, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { eq, sql } from "drizzle-orm"
@@ -74,5 +75,7 @@ export async function loadFixtures(file = FIXTURE_FILE): Promise<Record<string, 
   await db.execute(sql`delete from demo_settings where key in ('answers', 'autonomy_threshold', 'replay')`)
   // A notice the demo published (the Lille protest, scenario 7) leaves the feed again, or the Monitor would act on it unasked.
   for (const notice of SEED_DISRUPTIONS) await db.update(disruptions).set({ publishedAt: notice.publishedAt ?? null }).where(eq(disruptions.id, notice.id!))
+  // The fictional colleagues' claims, back-dated on the simulated clock (lib/shift.ts).
+  await seedShift()
   return counts
 }

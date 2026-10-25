@@ -10,6 +10,7 @@ import { CaseDetail, CaseListRow, type Decided } from "./card-row"
 import { useDecisionToast } from "./decision-toast"
 import { Icon } from "./icons"
 import { useTeamView, ViewSwitcher } from "./view-switcher"
+import { YOU } from "@/lib/people"
 
 /** Now: a person's safety, or something lost within 4 hours or already lost. Everything else waits under Later. */
 export const isNow = (item: QueueItem) => item.urgency.safety || item.urgency.timeRisk
@@ -28,11 +29,14 @@ function typing(event: KeyboardEvent): boolean {
  * A decision removes the case at once, the next one is selected, and the toast counts down the undo window.
  * Keyboard: J/K move, Enter opens, A approves, R replies, T takes over. Narrow screens show the list, then the case full width.
  */
-export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], initial = null, tail, title = "For you", hint, children }: {
+export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], initial = null, tail, hint, children, dateLine, onTrack }: {
   items: QueueItem[]; now: string; emptyLine: string; endLine?: string; yoursWithoutCard?: YoursWithoutCard[]
   /** The header line after the counts this view decides: "agents are handling 10 · nothing open on 966". */
   tail: string[]
-  title?: string
+  /** "Wednesday 21 October · 12:58": the demo clock's day and time, in Helsinki. */
+  dateLine: string
+  /** Orders with no card for a person: on track, or with an agent. */
+  onTrack: number
   /** The header line's hover text. */
   hint?: string
   /** Shown under the header (the autonomy suggestion). */
@@ -56,23 +60,29 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
   })
 
   const [view, setView] = useTeamView()
+  // Unclaimed: nobody holds it. Mine: you took it. All: everything in the view, whoever holds it.
+  const [tab, setTab] = useState<"unclaimed" | "mine" | "all">("all")
   const visible = items.filter((item) => !hidden.has(item.card.id))
-  // Orders a person took over come first, under Yours, whatever the view: they are this person's own.
-  const yours = visible.filter((item) => item.takenOver)
   // The view (market and desks) decides what is listed; what it leaves out is counted in one muted row, never hidden
-  // silently. A person's safety is listed in every view, with its country.
-  const listed = (item: QueueItem) => inView(item.team, view) || item.urgency.safety
-  const rest = visible.filter((item) => !item.takenOver && listed(item))
-  const outside = visible.filter((item) => !item.takenOver && !listed(item))
+  // silently. A person's safety is listed in every view, with its country. Your own orders are listed whatever the view.
+  const mine = (item: QueueItem) => item.takenOver?.by === YOU
+  const listed = (item: QueueItem) => inView(item.team, view) || item.urgency.safety || mine(item)
+  const inTab = (item: QueueItem) => tab === "all" || (tab === "mine" ? mine(item) : !item.takenOver)
+  const all = visible.filter(listed)
+  const rest = all.filter(inTab)
+  const outside = visible.filter((item) => !listed(item))
   const nowItems = rest.filter(isNow)
   const later = rest.filter((item) => !isNow(item))
   const outsideNow = outside.filter(isNow)
   const where = viewWords(view)
   const elsewhere = otherWords(view)
-  const ownNow = nowItems.filter((item) => inView(item.team, view)).length
-  const safetyElsewhere = nowItems.length - ownNow
+  // What needs you now: in your view, and not held by a colleague (the sidebar badge counts the same).
+  const ownNow = nowItems.filter((item) => inView(item.team, view) && (!item.takenOver || mine(item))).length
+  const withColleagues = nowItems.filter((item) => item.takenOver && !mine(item)).length
+  const safetyElsewhere = nowItems.filter((item) => !inView(item.team, view) && !mine(item)).length
   const line = [
     `${ownNow} need${ownNow === 1 ? "s" : ""} you now${where ? ` ${where}` : ""}`,
+    withColleagues ? `${withColleagues} with colleagues` : null,
     safetyElsewhere ? `+${safetyElsewhere} safety in ${groupWords(nowItems.filter((item) => !inView(item.team, view)), view).replace(/ \d+/g, "")}` : null,
     outsideNow.length ? `${outsideNow.length} more in ${elsewhere}` : null,
     `${later.length} can wait`,
@@ -80,7 +90,7 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
     ...(where ? [] : tail),
   ].filter(Boolean).join(" · ")
   // The rows J and K move through, in the order they are shown.
-  const order = [...yours, ...nowItems, ...(showLater ? later : [])]
+  const order = [...nowItems, ...(showLater ? later : [])]
   const selected = order.find((item) => item.card.id === selectedId) ?? visible.find((item) => item.card.id === selectedId) ?? order[0] ?? null
   // An alert's response time sorts a card but is no deadline; only real ones count for "nothing lost before".
   const firstLater = later.filter((item) => item.urgency.kind !== "alert_followup").map((item) => item.urgency.at).filter((at): at is string => !!at).sort()[0] ?? null
@@ -134,12 +144,20 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
     return () => window.removeEventListener("keydown", onKey)
   }, [order, selected, opened, select, activeId])
 
-  const head = <div className="page-head inbox-head">
+  const tabs = [
+    { key: "unclaimed" as const, label: "Unclaimed", n: all.filter((item) => !item.takenOver).length },
+    { key: "mine" as const, label: "Mine", n: all.filter(mine).length + yoursWithoutCard.length },
+    { key: "all" as const, label: "All", n: all.length },
+  ]
+  const head = <div className="fy-head">
     <div>
-      <h1>{title}</h1>
-      <p className="page-sub" title={hint}>{line}</p>
+      <p className="fy-date">{dateLine}</p>
+      <div className="fy-title"><h1>{all.length} order{all.length === 1 ? "" : "s"} need{all.length === 1 ? "s" : ""} you{where ? ` ${where}` : ""}</h1><ViewSwitcher /></div>
+      <p className="fy-sub" title={hint}>{where
+        ? `The other orders ${where} are on track. Agents will bring you anything new.`
+        : `The other ${onTrack.toLocaleString("en-GB")} orders are on track. Agents will bring you anything new.`}</p>
+      <p className="fy-counts">{line}</p>
     </div>
-    <ViewSwitcher />
   </div>
   // What the view leaves out of Now, by country (or desk), as one muted row: "3 more in other countries: Germany 2, Denmark 1".
   const outsideRow = outsideNow.length > 0 && <button type="button" className="inbox-outside" onClick={() => setView({ ...view, market: "Everyone", desks: [] })}>
@@ -153,35 +171,35 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
     {toast.view}
   </>
 
-  const row = (item: QueueItem) => <CaseListRow key={item.card.id} item={item} selected={selected?.card.id === item.card.id} onSelect={() => select(item.card.id, true)} />
+  const row = (item: QueueItem) => <CaseListRow key={item.card.id} item={item} now={now} selected={selected?.card.id === item.card.id} onSelect={() => select(item.card.id, true)} />
   return <>{head}{children}<div className="inbox" data-opened={opened}>
     <div className="inbox-list">
-      {(yours.length > 0 || yoursWithoutCard.length > 0) && <section aria-label="Yours">
-        <h2 className="queue-section">Yours <span className="faint">· agents are paused on these</span></h2>
-        <ul className="inbox-rows">
-          {yours.map(row)}
-          {yoursWithoutCard.map((item) => <li className="inbox-row" key={item.order.id}><Link href={`/orders/${item.order.reference}`}>
-            <span className="mark" aria-hidden="true" />
-            <span className="inbox-line1"><span className="inbox-title">{item.order.car} · {item.open[0] ?? "nothing open on it now"}</span></span>
-            <span className="inbox-line2"><span className="inbox-proposal">No card; the order is yours</span><span className="row-ref">{item.order.reference}</span></span>
-          </Link></li>)}
-        </ul>
-      </section>}
-      <section aria-label="Now">
-        <h2 className="queue-section">Now <span className="faint">· safety first, then what is due within 4 hours or already missed</span></h2>
-        {nowItems.length === 0 ? <p className="note queue-note">Nothing is at risk in the next 4 hours{where ? ` ${where}` : ""}.</p> : <ul className="inbox-rows">{nowItems.map(row)}</ul>}
+      <div className="fy-tabs" role="tablist" aria-label="Whose">
+        {tabs.map((item) => <button key={item.key} type="button" role="tab" aria-selected={tab === item.key} onClick={() => setTab(item.key)}>{item.label}<span className="num">{item.n}</span></button>)}
+      </div>
+      {tab !== "unclaimed" && yoursWithoutCard.length > 0 && <ul className="inbox-rows">
+        {yoursWithoutCard.map((item) => <li className="inbox-row" key={item.order.id}><Link href={`/orders/${item.order.reference}`}>
+          <span className="fy-card-top"><span className="tag desk">Yours</span><span className="row-ref">{item.order.reference}</span></span>
+          <span className="fy-card-title">{item.open[0] ? item.open[0].charAt(0).toUpperCase() + item.open[0].slice(1) : "Nothing open on it now"}</span>
+          <span className="fy-card-car">{item.order.car} · {item.order.route}</span>
+          <span className="claim you"><span className="avatar green" aria-hidden="true">Y</span>You have this</span>
+        </Link></li>)}
+      </ul>}
+      <section aria-label="Decide now">
+        <h2 className="fy-section">Decide now</h2>
+        {nowItems.length === 0 ? <p className="note queue-note">Nothing here is at risk in the next 4 hours.</p> : <ul className="inbox-rows">{nowItems.map(row)}</ul>}
         {outsideRow}
       </section>
       {later.length > 0 && <section aria-label="Later">
         <button type="button" className="later-toggle" aria-expanded={showLater} onClick={() => setShowLater((value) => !value)}>
-          <Icon name="chevron" size={14} className="row-chevron" />
           <b>Later · {later.length}</b>{outside.length - outsideNow.length > 0 && <span className="faint">+{outside.length - outsideNow.length} in {elsewhere}</span>}
           <span>{firstLater ? `nothing due before ${dayClockZone(firstLater, now, DESK)}` : "no deadline in the records"}</span>
+          <Icon name="chevron" size={14} className="row-chevron" />
         </button>
         {showLater && <ul className="inbox-rows">{later.map(row)}</ul>}
       </section>}
-      <p className="inbox-keys" aria-hidden="true"><kbd>J</kbd><kbd>K</kbd> move · <kbd>Enter</kbd> open, then <kbd>A</kbd> approve · <kbd>R</kbd> reject or reply · <kbd>T</kbd> I&apos;ll handle this</p>
-      {endLine && <p className="queue-end">{endLine}</p>}
+      <Link className="fy-ontrack" href="/orders">{onTrack.toLocaleString("en-GB")} orders on track, handled by agents<Icon name="arrow" size={14} /></Link>
+      <p className="inbox-keys" aria-hidden="true"><kbd>J</kbd><kbd>K</kbd> move · <kbd>Enter</kbd> open, then <kbd>A</kbd> approve · <kbd>R</kbd> reject or reply · <kbd>T</kbd> take this</p>
     </div>
     <div className="inbox-detail" ref={detailRef} tabIndex={-1} aria-label="Selected case">
       <button type="button" className="btn quiet inbox-back" onClick={() => setOpened(false)}><Icon name="chevron" size={14} className="back-chevron" />Back to the list</button>

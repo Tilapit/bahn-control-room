@@ -37,9 +37,12 @@ export async function agentBlockedOn(orderIds: (string | null | undefined)[]): P
 /** Runs that work on an order or wait for an answer: a takeover stops them where they are, conversation kept. */
 const ACTIVE = ["running", "waiting_driver", "waiting_site"]
 
-export async function takeOver(orderId: string, actor: string): Promise<{ ok: boolean; message: string }> {
-  if ((await openTakeovers([orderId])).length) return { ok: false, message: "This order is already taken over." }
+export async function takeOver(orderId: string, actor: string, transfer = false): Promise<{ ok: boolean; message: string }> {
+  const [held] = await openTakeovers([orderId])
+  if (held && (!transfer || held.takenBy === actor)) return { ok: false, message: "This order is already taken over." }
   const at = await clockNow()
+  // Taking over from a colleague: their claim ends here, in the records, before this one starts.
+  if (held) await db.update(takeovers).set({ handedBackAt: at, handedBackBy: actor, note: `${actor === "Ops" ? "You" : actor} took it over` }).where(eq(takeovers.id, held.id))
   const id = `tko_${randomUUID().slice(0, 12)}`
   await db.insert(takeovers).values({ id, orderId, takenAt: at, takenBy: actor })
   const paused = await db.update(agentRuns).set({ status: "paused", nextCheckAt: null, outcomeSummary: `Paused: ${actor} took the order over.` })

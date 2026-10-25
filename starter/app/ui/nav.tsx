@@ -6,13 +6,13 @@ import { inView, type Team, viewLabel } from "@/lib/teams"
 import { Icon } from "./icons"
 import { useTeamView } from "./view-switcher"
 
-const LINKS = [
-  { href: "/", label: "For you", icon: "inbox", match: (path: string) => path === "/" },
-  { href: "/agents", label: "Agents", icon: "bot", match: (path: string) => path.startsWith("/agents") },
-  { href: "/orders", label: "Orders", icon: "list", match: (path: string) => path.startsWith("/orders") },
-  { href: "/sources", label: "Sources", icon: "database", match: (path: string) => path.startsWith("/sources") },
-  { href: "/settings", label: "Settings", icon: "settings", match: (path: string) => path.startsWith("/settings") },
-]
+const match = {
+  forYou: (path: string) => path === "/",
+  orders: (path: string) => path.startsWith("/orders"),
+  agents: (path: string) => path.startsWith("/agents"),
+  sources: (path: string) => path.startsWith("/sources"),
+  settings: (path: string) => path.startsWith("/settings"),
+}
 
 /** The Demo controls link at the foot of the rail, marked while you are on it. */
 export function DemoLink() {
@@ -20,17 +20,23 @@ export function DemoLink() {
   return <Link className="rail-demo" href="/demo" aria-current={path.startsWith("/demo") ? "page" : undefined}>Demo controls</Link>
 }
 
-/** `nowTeams`: one entry per card that needs someone now; the badge counts those in the person's view. */
-export function Nav({ nowTeams }: { nowTeams: (Team & { safety?: boolean })[] }) {
+/**
+ * The rail: For you (what needs someone now, in the person's view) and Orders, then "Behind the scenes": Agents (how
+ * many are at work), Sources and Settings. `nowTeams`: one entry per card that needs someone now.
+ */
+export function Nav({ nowTeams, orders, working }: { nowTeams: (Team & { safety?: boolean })[]; orders: number; working: number }) {
   const path = usePathname()
   const [view] = useTeamView()
   // A person's safety needs someone now in every view, as on For you.
   const openCards = nowTeams.filter((team) => team.safety || inView(team, view)).length
+  const link = (href: string, label: string, icon: string, active: boolean, end?: React.ReactNode) =>
+    <Link href={href} className="nav-link" aria-current={active ? "page" : undefined}><Icon name={icon} /><span>{label}</span>{end}</Link>
   return <nav aria-label="Main">
-    {LINKS.map((link) => <Link key={link.href} href={link.href} className="nav-link" aria-current={link.match(path) ? "page" : undefined}>
-      <Icon name={link.icon} />
-      <span>{link.label}</span>
-      {link.href === "/" && openCards > 0 && <span className="count num" aria-label={`${openCards} need you now`} title={`${openCards} need you now: ${viewLabel(view)}`}>{openCards}</span>}
-    </Link>)}
+    {link("/", "For you", "inbox", match.forYou(path), openCards > 0 ? <span className="badge num" aria-label={`${openCards} need you now`} title={`${openCards} need you now: ${viewLabel(view)}`}>{openCards}</span> : null)}
+    {link("/orders", "Orders", "list", match.orders(path), <span className="count num">{orders.toLocaleString("en-GB")}</span>)}
+    <p className="rail-label">Behind the scenes</p>
+    {link("/agents", "Agents", "bot", match.agents(path), <span className="count">{working ? `${working} working` : "none working"}</span>)}
+    {link("/sources", "Sources", "database", match.sources(path))}
+    {link("/settings", "Settings", "settings", match.settings(path))}
   </nav>
 }

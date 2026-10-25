@@ -2215,3 +2215,70 @@ retaken.
 
 **Cleanup.** The three fork worktrees under `.claude/worktrees/` were removed after their commits were merged here.
 Their branches (`worktree-agent-…`) are kept.
+
+## Round 5 (hard stop 12:30): the redesign to the mocks, to-dos for the person's own calls
+
+`known-good-1110` is the fallback. The mocks (design/for-you.jpg, orders.jpg, agents.jpg, sources.jpg, settings.jpg,
+copied from the brief's images) were made without our data or rules: their structure and style were taken, never
+their content, numbers or BH- references. Orders, Agents, Sources and the to-dos were built in parallel by four forks
+in their own worktrees, while I built the theme, the rail and For you; each item is merged, tested and committed on
+its own below.
+
+### 1. For you, the rail and the theme, after the mock
+
+**Built.**
+- **Theme**, in tokens at the end of `globals.css`: warm off-white page (#f4f2ee), white panels with a soft border
+  and 12 px corners, a deep green accent (#1e5b45). Dark mode is kept with its own warm darks and a lighter green. Red
+  stays for safety only and amber for time risk only. The mock's red-orange count badge and "Decide now" label are
+  green and grey here, for that reason.
+- **Rail**: For you with the Now count (in your view; safety counts in every view), Orders with the order count,
+  then "Behind the scenes": Agents ("none working" in the recorded morning, the real count of running runs), Sources,
+  Settings. At the bottom: **On shift** (You plus two fictional colleagues, Anna L. and Mikko P.: initials, how many
+  orders each holds or "free", "away 35 min"), and **Agents running · 1,036 updates handled today without you**.
+  That is runs since midnight on the simulated clock that finished with no card. The demo clock and the fictional-data
+  note sit in the same box. There is no top bar any more: the search (⌘K) sits at the top right, as in the mock.
+- **Claims** (`lib/shift.ts`, `lib/people.ts`): a claim is a takeover in a person's name, so agents pause on it as
+  before. The recorded morning now seeds two fictional claims, back-dated on the simulated clock: Anna L. on CD-420702
+  (9 min ago), Mikko P. on CD-420071 (41 min ago, nothing since). A claim with no action by its holder for over 30
+  simulated minutes is shown as gone quiet. "Take over" ends the colleague's claim in the records before yours starts
+  (`takeOver(…, transfer)`).
+- **Header**: "Wednesday 21 October · 12:58", "24 orders need you", "The other 976 orders are on track. Agents will
+  bring you anything new." The market and desk view is a quiet dropdown next to the title, with the existing logic.
+  Under it one muted line: "5 need you now · 2 with colleagues · 17 can wait · agents are handling 10 · nothing open
+  on 966".
+- **List**: tabs Unclaimed / Mine / All. Decide now and Later (folded, with "nothing due before …"). Each card shows
+  its desk as the category tag (red only for a safety case), the reference, the time left ("missed 1 h 58 min ago"),
+  the problem in a few words, car · route, and the claim line: "You have this", "Anna L. is on it", "Unclaimed", or
+  amber "Mikko P. · no activity 41 min". At the bottom: "976 orders on track, handled by agents →" to Orders.
+- **Panel**:
+  - the desk tag, the reference (links to the order), the title and Due;
+  - the claim banner: "Nobody has this yet" with Take this (T), a colleague's claim with Take over, the amber
+    gone-quiet banner with Take over, or your own with the note box and Hand back;
+  - Car / Route / Driver / Customer;
+  - **The car's journey**, built by code from the case file (`lib/present/journey.ts`): order created, driver booked,
+    pickup, ferry when the route has one, on the road once collected, delivery. Each milestone is Confirmed, Problem or
+    Planned, and the problem point follows the urgency's kind and the headline;
+  - What happened, with the consequence sentence;
+  - the facts as whole sentences with their source chip on the right ("quotes, not booked" stays whole);
+  - **What the agent already did**: the run's own tool results, in order, as the run page words them, never written for
+    the card;
+  - **Agent suggests** ("A rule in code suggests" for a Monitor card);
+  - If you approve, the buttons, the reason chips, similar past cases.
+
+**Kept.** 8-second undo, reason chips, J/K/Enter/A/R/T (T is now Take this), learning, take over and hand back, the
+order page's card.
+
+**Checked.** `npm run typecheck`; `npm test` 66/66 and all 11 recorded eval groups. Screenshots at 1440×900: the first
+screen and the panel scrolled to the agent's steps, light and dark, looked at.
+
+**Wrong first, and changed.**
+- The client card imported the shift module, which loads the database; the browser bundle would have broken. The
+  rules without the database moved to `lib/people.ts`.
+- The muted line said "2 you took over" while Mine showed 0: those were the colleagues' claims. It also said "7 need
+  you now" while the badge said 5. Now both count only what is not held by a colleague, and the line says "2 with
+  colleagues".
+- The first pane rewrite replaced the old header together with the take-over bar and summary, and the script then
+  tried to remove them a second time and stopped. Done once.
+
+**Not done.** "Later today" is "Later": some cards are due tomorrow or later, and "today" would be wrong. The
+agent's steps show an ask_driver question in full; long questions are long.

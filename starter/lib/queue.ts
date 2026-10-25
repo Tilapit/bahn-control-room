@@ -9,6 +9,8 @@ import { agentRuns, agentSteps, cards, decisions, timelineEntries } from "./sche
 import type { CardFinding, CardGroupItem, CardOption, CardProposal, VerifierNote } from "./schema"
 import { liveSignals } from "./signals"
 import { openTakeovers } from "./takeover"
+import { journeyOf, type Milestone } from "./present/journey"
+import { lastActivity } from "./shift"
 import { orderRoutes, teamOf } from "./team-data"
 import type { Team } from "./teams"
 import { compareUrgency, type Urgency, urgency, withProposalDeadline } from "./urgency"
@@ -29,8 +31,8 @@ export type QueueCard = {
   verifierNotes: VerifierNote[] | null
   /** One cause, several orders: each order the card covers, with what the cause does to it. */
   group: CardGroupItem[] | null
-  /** The agent run that wrote the card: model, effort and cost, shown in one quiet line. */
-  run: { model: string | null; steps: number; tokens: number; costUsd: number; escalation: string | null } | null
+  /** The agent run that wrote the card: model, effort and cost, and what it did, step by step in plain words. */
+  run: { model: string | null; steps: number; tokens: number; costUsd: number; escalation: string | null; did: string[] } | null
 }
 
 export type QueueOrder = {
@@ -43,13 +45,14 @@ export type QueueOrder = {
   zone: string | null
   /** The pickup's and the delivery's own zones, for a proposed new time at either end. */
   zones: { pickup: string | null; delivery: string | null }
+  driver: string | null
 }
 
 /**
  * `takenOver`: Ops is handling the order themselves; agents are paused on it until it is handed back.
  * `team`: the customer's market, the countries the route touches and the card's desk, for the team views (lib/teams.ts).
  */
-export type QueueItem = { card: QueueCard; order: QueueOrder; urgency: Urgency; takenOver: { at: string; by: string } | null; team: Team }
+export type QueueItem = { card: QueueCard; order: QueueOrder; urgency: Urgency; takenOver: { at: string; by: string; lastActivityAt: string | null } | null; team: Team; journey: Milestone[] }
 
 /** Now: a person's safety, or something lost within 4 hours or already lost. Everything else waits under Later. */
 export const isNowItem = (item: Pick<QueueItem, "urgency">) => item.urgency.safety || item.urgency.timeRisk
@@ -87,6 +90,7 @@ export function orderView(file: CaseFile): QueueOrder {
     route: routeWords(from, order.route.via?.city ?? null, to),
     zone: (collected ? order.route.to?.zone : order.route.from?.zone) ?? null,
     zones: { pickup: order.route.from?.zone ?? null, delivery: order.route.to?.zone ?? null },
+    driver: order.driver?.name ?? null,
   }
 }
 
@@ -109,13 +113,24 @@ export function toQueueCard(row: typeof cards.$inferSelect, runs: Map<string, Ru
 async function runInfo(runIds: (string | null)[]): Promise<Map<string, RunInfo>> {
   const ids = [...new Set(runIds.filter((id): id is string => !!id))]
   if (!ids.length) return new Map()
-  const [runRows, stepRows] = await Promise.all([
+  const [runRows, stepRows, resultRows] = await Promise.all([
     db.select().from(agentRuns).where(inArray(agentRuns.id, ids)),
     db.select({ runId: agentSteps.runId, n: count() }).from(agentSteps).where(and(inArray(agentSteps.runId, ids), eq(agentSteps.type, "tool_call"), notInArray(agentSteps.tool, ["add_finding", "add_step", "add_affected_order"]))).groupBy(agentSteps.runId),
+    // What the agent did: the results of its own tool calls, in order, as the run page words them. Writing the card is not a step here.
+    db.select({ runId: agentSteps.runId, idx: agentSteps.idx, summary: agentSteps.summary }).from(agentSteps)
+      .where(and(inArray(agentSteps.runId, ids), eq(agentSteps.type, "tool_result"), notInArray(agentSteps.tool, ["add_finding", "add_step", "add_affected_order", "propose", "resolve"]))).orderBy(agentSteps.idx),
   ])
   const steps = new Map(stepRows.map((row) => [row.runId, row.n]))
+  const did = new Map<string, string[]>()
+  for (const row of resultRows) {
+    const text = (row.summary ?? "").replace(/^Read the case file of (CD-\d+)/, "Read the order's records ($1)").trim()
+    if (!text || /^(error|failed)/i.test(text)) continue
+    const list = did.get(row.runId) ?? []
+    if (!list.includes(text)) list.push(text)
+    did.set(row.runId, list)
+  }
   return new Map(runRows.map((run) => [run.id, {
-    model: run.model, steps: steps.get(run.id) ?? 0, costUsd: run.costUsd, escalation: run.escalation,
+    model: run.model, steps: steps.get(run.id) ?? 0, costUsd: run.costUsd, escalation: run.escalation, did: (did.get(run.id) ?? []).slice(0, 6),
     tokens: run.inputTokens + run.outputTokens + run.cacheReadTokens + run.cacheWriteTokens,
   }]))
 }
@@ -137,7 +152,8 @@ export async function getQueue(): Promise<{ now: string; items: QueueItem[]; cou
       .where(and(isNull(decisions.undoneAt), gte(decisions.decidedAt, new Date(at.getTime() - 24 * 3600_000)), sql`${decisions.actor} <> 'Agent, under your rule'`)),
     openTakeovers(),
   ])
-  const takenOver = new Map(taken.map((row) => [row.orderId, { at: row.takenAt.toISOString(), by: row.takenBy }]))
+  const activity = await lastActivity(taken)
+  const takenOver = new Map(taken.map((row) => [row.orderId, { at: row.takenAt.toISOString(), by: row.takenBy, lastActivityAt: activity.get(row.orderId) ?? null }]))
   // An agent that finished but looks again later is still handling the order, signal or not (Agents shows it as "Watching").
   const watching = new Set(ordersWithRun.filter((run) => run.status === "done" && run.nextCheckAt && run.nextCheckAt > at).map((run) => run.orderId))
   const decidedByYou = new Set(decidedRows.flatMap((row) => [row.orderId, ...(row.group ?? []).map((member) => member.order_id)]))
@@ -149,7 +165,8 @@ export async function getQueue(): Promise<{ now: string; items: QueueItem[]; cou
   for (const row of openCards) {
     const file = byOrder.get(row.orderId)
     if (!file) continue
-    items.push({ card: toQueueCard(row, runs), order: orderView(file), urgency: withProposalDeadline(urgency(file, at), primaryOption(row.options), at), takenOver: takenOver.get(row.orderId) ?? null, team: teamOf(undefined, row, file) })
+    const u = withProposalDeadline(urgency(file, at), primaryOption(row.options), at)
+    items.push({ card: toQueueCard(row, runs), order: orderView(file), urgency: u, takenOver: takenOver.get(row.orderId) ?? null, team: teamOf(undefined, row, file), journey: journeyOf(file, u, row.headline) })
   }
   items.sort((a, b) => compareUrgency(a.urgency, b.urgency))
   await withChannels(items)
@@ -226,7 +243,7 @@ async function withChannels(items: QueueItem[]): Promise<QueueItem[]> {
 /** The rail badge: the team of every card that needs someone now (not taken over), so the badge can follow a view. */
 export async function nowTeams(): Promise<(Team & { safety: boolean })[]> {
   const { items } = await getQueue()
-  return items.filter((item) => !item.takenOver && isNowItem(item)).map((item) => ({ ...item.team, safety: item.urgency.safety }))
+  return items.filter((item) => (!item.takenOver || item.takenOver.by === "Ops") && isNowItem(item)).map((item) => ({ ...item.team, safety: item.urgency.safety }))
 }
 
 /** Open cards on one order, as queue items, for the order page. */
@@ -234,8 +251,12 @@ export async function cardsForOrder(file: CaseFile, at: Date): Promise<QueueItem
   // A card for several orders shows on each of them.
   const rowsFound = (await db.select().from(cards).where(and(eq(cards.status, "open"), or(eq(cards.orderId, file.order.id), sql`${cards.group} @> ${JSON.stringify([{ order_id: file.order.id }])}::jsonb`))))
   const [runs, [taken]] = await Promise.all([runInfo(rowsFound.map((row) => row.runId)), openTakeovers([file.order.id])])
-  const takenOver = taken ? { at: taken.takenAt.toISOString(), by: taken.takenBy } : null
-  const items = rowsFound.map((row) => ({ card: toQueueCard(row, runs), order: orderView(file), urgency: withProposalDeadline(urgency(file, at), primaryOption(row.options), at), takenOver, team: teamOf(undefined, row, file) }))
+  const activity = taken ? await lastActivity([taken]) : new Map<string, string>()
+  const takenOver = taken ? { at: taken.takenAt.toISOString(), by: taken.takenBy, lastActivityAt: activity.get(taken.orderId) ?? null } : null
+  const items = rowsFound.map((row) => {
+    const u = withProposalDeadline(urgency(file, at), primaryOption(row.options), at)
+    return { card: toQueueCard(row, runs), order: orderView(file), urgency: u, takenOver, team: teamOf(undefined, row, file), journey: journeyOf(file, u, row.headline) }
+  })
   return withTeams(await withChannels(items), new Map([[file.order.id, file]]))
 }
 
