@@ -73,10 +73,13 @@ export function useDecisionToast(onUndone: (cardId: string) => void) {
     const seconds = toast.executesAt ? Math.max(0, Math.ceil((new Date(toast.executesAt).getTime() - Date.now()) / 1000)) : 0
     const word = toast.message.replace(/ in \d+ s$/, "")
     view = <div className={`toast${toast.phase === "failed" ? " failed" : ""}`} role="status" aria-live="polite">
-      {toast.reference && <b className="toast-ref">{toast.reference}</b>}
-      {toast.phase === "waiting"
-        ? <><span>{/ in \d+ s$/.test(toast.message) ? `${word} in ${seconds} s` : toast.message}</span><button type="button" onClick={undo}>Undo</button></>
-        : <span>{toast.doneText}</span>}
+      <div className="toast-body">
+        <div className="toast-line">{toast.reference && <b className="toast-ref">{toast.reference}</b>}{toast.car && <span className="toast-car">{toast.car}</span>}
+          <span>{toast.phase === "waiting" ? (/ in \d+ s$/.test(toast.message) ? `${word} in ${seconds} s` : toast.message) : toast.doneText}</span></div>
+        {toast.phase === "waiting" && toast.what && <div className="toast-what">{toast.what}.</div>}
+      </div>
+      {toast.phase === "waiting" ? <button type="button" onClick={undo}>Undo</button>
+        : toast.reference?.startsWith("CD-") ? <a className="toast-link" href={`/orders/${toast.reference}`}>Open order</a> : null}
     </div>
   }
   return { show, view, active: toast }

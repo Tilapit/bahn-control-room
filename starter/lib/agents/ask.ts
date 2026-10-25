@@ -6,7 +6,7 @@ import type Anthropic from "@anthropic-ai/sdk"
 import { entriesById, getCase } from "../case"
 import { now as clockNow } from "../clock"
 import { modelName, ROLE_MODEL, usageOf } from "../models"
-import { relative } from "../time"
+import { clock, relative } from "../time"
 import { anthropic, hasApiKey, prompt } from "./llm"
 import { Refs } from "./refs"
 import { addStep, addUsageToRun, addWallTime, createRun, updateRun } from "./runs"
@@ -32,7 +32,8 @@ const TOOLS = [...TOOL_DEFINITIONS.filter((tool) => READ_TOOLS.has(tool.name)).m
 
 /** One record the answer rests on, with its source and time ("Driver · 25 min ago"), like every fact shown to a person. */
 export type AskSource = { label: string; at: string; when: string; reference: string | null; entryId: string; summary: string }
-export type AskResult = { answer: string; sources: AskSource[]; model: string; costUsd: number; runId: string | null }
+/** `asOf`: "12:48", the demo clock in Helsinki time when the answer was written. */
+export type AskResult = { answer: string; sources: AskSource[]; model: string; costUsd: number; runId: string | null; asOf?: string }
 
 /** Does this read like a question for the agents rather than a search for an order? */
 export function isQuestion(text: string): boolean {
@@ -101,7 +102,7 @@ export async function ask(question: string): Promise<AskResult> {
   await addStep(runId, idx++, { at: await clockNow(), type: "message", tool: "answer", output: { text, sources: ids }, summary: `Answered: ${text}` })
   await addWallTime(runId, Date.now() - started)
   const finished = await updateRunAndRead(runId, text, question)
-  return { answer: text, sources, model: modelName(model), costUsd: finished, runId }
+  return { answer: text, sources, model: modelName(model), costUsd: finished, runId, asOf: clock(asOf, "Europe/Helsinki") }
 }
 
 async function updateRunAndRead(runId: string, text: string, question: string): Promise<number> {

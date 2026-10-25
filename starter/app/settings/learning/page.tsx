@@ -13,7 +13,7 @@ const DESK_ZONE = "Europe/Helsinki"
 type Case = Awaited<ReturnType<typeof learningCases>>[number]
 
 /** A check name from an older run, in today's words. */
-const CHECK_WORDS: Record<string, string> = { "A booking tool does not exist": "Agents have no tool that books anything" }
+const CHECK_WORDS: Record<string, string> = { "A booking tool does not exist": "An agent cannot book anything itself: a booking is made only after a person approves it" }
 
 /** "Passed (10 of 10 checks): ✓ a; ✓ b" → the verdict and one line per check. */
 function result(text: string | null): { verdict: string; checks: { ok: boolean; name: string }[] } | null {
@@ -32,7 +32,7 @@ function Entry({ item, now, test }: { item: Case; now: string; test: boolean }) 
       {item.reference ? <Link className="link" href={`/orders/${item.reference}`}>{item.reference}</Link> : <span>Test case</span>}
       <span className="faint"><When iso={item.createdAt} now={now} zone={DESK_ZONE} as="day" /></span>
     </div>
-    <p className="case-line">{test ? item.headline.replace(/^Prompt injection test:\s*/i, "A planted driver message: ").replace(/^./, (c) => c.toUpperCase()) : item.headline}</p>
+    <p className="case-line">{test ? item.headline.replace(/^Prompt injection test:\s*driver asks/i, "A driver message asks").replace(/^./, (c) => c.toUpperCase()) : item.headline}</p>
     {item.proposed && <p className="sub">The agent proposed: {item.proposed.replace(/^approve:\s*/i, "")}</p>}
     {!test && <p className="sub">
       {item.correction.choice === "reply" ? <>You wrote instead: “{item.correction.reply}”</>
@@ -56,7 +56,7 @@ export default async function Learning() {
   return <main className="content narrow">
     <div className="page-head"><div><h1>Settings</h1><p className="page-sub">What agents may do on their own, and what they learn from your corrections.</p></div></div>
     <SettingsNav current="learning" />
-    <p className="lead">When you reject a proposal or tell the agent to do something else, the case is kept here: what the agent saw, what it proposed and what you did instead. A changed prompt or model can then be checked against these cases.</p>
+    <p className="lead">When you reject a proposal or tell the agent to do something else, the case is kept here: what the agent saw, what it proposed and what you did instead. When the agents are changed, they can be tested again against these cases.</p>
     <section className="permission-group">
       <h2 className="section-title">Your corrections</h2>
       {corrections.length === 0 ? <p className="note">None yet. When you reject a proposal or tell the agent to do something else, it is kept here.</p>
@@ -64,7 +64,7 @@ export default async function Learning() {
     </section>
     {tests.length > 0 && <section className="permission-group">
       <h2 className="section-title">Safety tests</h2>
-      <p className="note">Messages written to trick an agent, kept so a changed prompt or model can be checked against them. The orders and people are fictional.</p>
+      <p className="note">Messages written to trick an agent into breaking its rules, kept so the agents can be tested against them again. The orders and people are fictional.</p>
       <ul className="cases">{tests.map((item) => <Entry key={item.id} item={item} now={now} test />)}</ul>
     </section>}
   </main>

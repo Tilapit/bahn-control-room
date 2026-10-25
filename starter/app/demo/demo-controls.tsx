@@ -124,7 +124,7 @@ export function DemoControls({ events, orders, defaultOrder, live }: { events: (
           <div className="phone-head">{state?.driver ?? "No driver"} · driver app</div>
           <div className="phone-thread" ref={threadRef}>
             {state?.thread.slice(-12).map((message) => <div key={message.id} className={`bubble${message.mine ? " mine" : ""}`}>
-              <div className="bubble-who">{message.mine ? "You" : message.who}{message.simulated && message.mine ? " · simulated" : ""} · {clockZone(message.at, DESK_ZONE)}</div>
+              <div className="bubble-who">{message.mine ? (message.simulated ? "Simulated driver" : "You, as the driver") : message.who} · {clockZone(message.at, DESK_ZONE)}</div>
               <div>{message.text}</div>
             </div>)}
             {state && !state.thread.length && <p className="note">No messages on this order yet.</p>}
@@ -140,7 +140,7 @@ export function DemoControls({ events, orders, defaultOrder, live }: { events: (
         <ul className="demo-runs">
           {state?.runs.map((run) => <li key={run.id}>
             <div className="demo-run-head"><b>{run.agent}</b> · {run.reference ?? "no order"} · <span className={run.status === "running" ? "working" : ""}>{STATUS[run.status] ?? run.status}</span></div>
-            {run.outcome && <div className="note">{run.outcome}</div>}
+            {run.outcome && <div className="note">{run.outcome.replace(/^./, (c) => c.toUpperCase())}</div>}
           </li>)}
           {state && !state.runs.length && <li className="note">No agent has run yet.</li>}
         </ul>

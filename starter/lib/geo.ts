@@ -14,7 +14,7 @@ export const CITIES: Record<string, { lat: number; lon: number; country: string 
   Aalborg: { lat: 57.05, lon: 9.92, country: "DK" },
   Stockholm: { lat: 59.33, lon: 18.07, country: "SE" }, Gothenburg: { lat: 57.71, lon: 11.97, country: "SE" }, "Malmö": { lat: 55.6, lon: 13.0, country: "SE" },
   Paris: { lat: 48.86, lon: 2.35, country: "FR" }, Lyon: { lat: 45.76, lon: 4.84, country: "FR" }, Marseille: { lat: 43.3, lon: 5.37, country: "FR" },
-  Lille: { lat: 50.63, lon: 3.06, country: "FR" },
+  Lille: { lat: 50.63, lon: 3.06, country: "FR" }, Bordeaux: { lat: 44.84, lon: -0.58, country: "FR" },
   Antwerp: { lat: 51.22, lon: 4.4, country: "BE" }, Rotterdam: { lat: 51.92, lon: 4.48, country: "NL" },
   Vienna: { lat: 48.21, lon: 16.37, country: "AT" }, Graz: { lat: 47.07, lon: 15.44, country: "AT" },
 }

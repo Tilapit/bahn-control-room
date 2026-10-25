@@ -24,7 +24,8 @@ export async function permissions(): Promise<{ rows: PermissionRow[]; changes: (
       const row = byAction.get(entry.action)
       return {
         action: entry.action, label: entry.label, level: (row?.level ?? entry.level) as PermissionRow["level"], defaultLevel: entry.level, reason: entry.reason,
-        locked: entry.customerContact ? "Always asks: it contacts a customer." : NEVER_AUTO.has(entry.action) ? "Always asks: it changes a date the customer was promised." : !entry.proposable ? entry.reason : null,
+        locked: entry.customerContact ? "Always asks: it contacts a customer." : entry.action === "call_contact" ? "Always asks: a person makes the call, so there is nothing to do on its own."
+          : NEVER_AUTO.has(entry.action) ? "Always asks: it changes a date the customer was promised." : !entry.proposable ? entry.reason : null,
         always: !entry.proposable,
         approvedUnchanged: row?.approvedUnchangedCount ?? 0, decided: row?.decidedCount ?? 0, limitEur: row?.autoLimitEur ?? null, costs: COSTS.has(entry.action),
       }

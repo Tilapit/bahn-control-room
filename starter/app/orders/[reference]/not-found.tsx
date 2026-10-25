@@ -10,7 +10,7 @@ export default function NotFound() {
     <nav className="crumbs" aria-label="Breadcrumb"><Link href="/orders">Orders</Link><span>/</span><span>{reference || "Not found"}</span></nav>
     <div className="empty">
       <h2>There is no order {reference ? <>“{reference}”</> : "with that reference"}.</h2>
-      <p>Check the reference, or <Link className="link" href={`/orders${reference ? `?q=${encodeURIComponent(reference.replace(/^CD-/i, ""))}` : ""}`}>search all orders</Link>.</p>
+      <p>Check the reference, or <Link className="link" href={`/orders${reference ? `?q=${encodeURIComponent(reference.replace(/^CD-/i, ""))}` : ""}`}>{reference ? `look for orders with “${reference.replace(/^CD-/i, "")}” in them` : "search all orders"}</Link>.</p>
     </div>
   </main>
 }

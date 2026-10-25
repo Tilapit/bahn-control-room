@@ -112,6 +112,9 @@ async function runStep(file: CaseFile, step: CardStep, input: { decisionId: stri
     case "book_hotel":
     case "book_driver_travel": {
       if (!lookup) return fail("the option is missing from the approved card")
+      // A proposal can wait on For you longer than its train: never book a departure that has gone.
+      const leaves = (lookup.details as { departureAt?: string } | undefined)?.departureAt
+      if (step.action === "book_driver_travel" && leaves && new Date(leaves).getTime() <= now.getTime()) return fail(`the ${lookup.label} has already left`)
       const ref = reference(step.action === "book_hotel" ? "HTL" : "TRV", `${input.orderId}|${lookup.label}`)
       const kind = step.action === "book_hotel" ? "Hotel" : String((lookup.details as { kind?: string }).kind ?? "Train").replace(/^./, (c) => c.toUpperCase())
       const summary = `${kind} booked for the driver: ${lookup.label}${lookup.price_cents ? `, ${money(lookup.price_cents, "EUR")}` : ""}, booking ${ref} (simulated)`

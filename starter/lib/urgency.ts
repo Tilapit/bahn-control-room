@@ -2,11 +2,13 @@
 // and each card says it as a sentence. Never a score.
 
 import type { CaseFile } from "./case"
+import { zoneOfCity } from "./geo"
+import type { CardOption } from "./schema"
 import { clockZone, dayClockZone, dayRange, duration, minutesUntil } from "./time"
 
 export type ConsequenceKind =
   | "ferry_cutoff" | "pickup_slot" | "pickup_running" | "pickup_missed" | "yard_release"
-  | "delivery_promise" | "promise_missed" | "driver_travel" | "planned_pickup" | "alert_followup" | "no_deadline"
+  | "delivery_promise" | "promise_missed" | "driver_travel" | "planned_pickup" | "alert_followup" | "no_deadline" | "offer_departs"
 
 export type Urgency = {
   /** The moment something is lost. Null when the records hold no deadline. */
@@ -99,7 +101,7 @@ export function urgency(file: CaseFile, now: Date): Urgency {
     const age = duration(-(minutesUntil(alert.at, now) ?? 0))
     // Sorted by the alert's response time, but the sentence does not invent a deadline.
     if (later(due)) return { ...finish({ at: due, kind: "alert_followup", sentence: `No deadline in the records; alert open for ${age}` }, now, safety), relative: "", timeRisk: false }
-    return { at: null, kind: "no_deadline", sentence: `No deadline in the records; open for ${age}`, relative: "", timeRisk: false, safety }
+    return { at: null, kind: "no_deadline", sentence: `No deadline in the records; alert open for ${age}`, relative: "", timeRisk: false, safety }
   }
   return { at: null, kind: "no_deadline", sentence: "No deadline in the records", relative: "", timeRisk: false, safety }
 }
@@ -119,6 +121,29 @@ function finish(candidate: Candidate, now: Date, safety: boolean): Urgency {
 
 function severityRank(severity: string): number {
   return { critical: 0, high: 1, medium: 2, low: 3 }[severity] ?? 4
+}
+
+/**
+ * A proposal can expire before the order's own deadline: the train it would book leaves, or check-in
+ * for the sailing it would book closes. Then that moment is what is lost first, and the card sorts by it.
+ */
+export function withProposalDeadline(u: Urgency, option: CardOption | null | undefined, now: Date): Urgency {
+  let first: { at: string; sentence: string } | null = null
+  for (const step of option?.steps ?? []) {
+    const lookup = step.params.lookup as { kind?: string; details?: { departureAt?: string; checkInCutoffAt?: string; from?: string; kind?: string } } | undefined
+    const details = lookup?.details
+    if (!details) continue
+    const travel = step.action === "book_driver_travel"
+    const ferry = step.action === "book_ferry" || step.action === "change_ferry_booking"
+    const time = travel ? details.departureAt : ferry ? details.checkInCutoffAt ?? details.departureAt : null
+    if (!time || new Date(time).getTime() <= now.getTime()) continue
+    const zone = travel ? zoneOfCity(details.from) ?? zoneOfCity((details as { to?: string }).to) : "Europe/Berlin"
+    const sentence = travel ? `The ${details.kind ?? "train"} this proposal books${details.from ? ` from ${details.from}` : ""} leaves at ${clockZone(time, zone)}`
+      : `Check-in for the sailing this proposal books closes at ${dayClockZone(time, now, zone)}`
+    if (!first || time < first.at) first = { at: new Date(time).toISOString(), sentence }
+  }
+  if (!first || (u.at && new Date(u.at).getTime() <= new Date(first.at).getTime())) return u
+  return finish({ at: first.at, kind: "offer_departs", sentence: first.sentence }, now, u.safety)
 }
 
 /** Queue order (SPEC 6): safety first, then the earliest consequence; no deadline last. */

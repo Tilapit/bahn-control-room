@@ -103,15 +103,15 @@ export function TopSearch() {
         </div>
         <p>{answer.answer}</p>
         {answer.sources.length > 0 && <ul className="ask-sources">
-          {answer.sources.map((source) => <li key={source.entryId}>
+          {answer.sources.map((source, _, all) => <li key={source.entryId}>
             <a className="chip" href={source.reference ? `/orders/${source.reference}#${source.entryId}` : "#"} onMouseDown={(event) => { event.preventDefault(); if (source.reference) { setOpen(false); router.push(`/orders/${source.reference}#${source.entryId}`) } }}>
-              {source.reference ? `${source.reference} · ` : ""}{source.label}{source.when ? ` · ${source.when}` : ""}
+              {source.reference && new Set(all.map((item) => item.reference)).size > 1 ? `${source.reference} · ` : ""}{source.label}{source.when ? ` · ${source.when}` : ""}
             </a>
             <span className="ask-source-text" title={source.summary}>{source.summary}</span>
           </li>)}
         </ul>}
         <p className="note ask-foot">
-          {answer.runId ? "Answered by an agent from the order records. It can only read; it changed nothing." : null}
+          {answer.runId ? `Answered at ${answer.asOf ? `${answer.asOf} Helsinki time` : "the demo clock's time"} by an agent that read the order records; it can only read and changed nothing. Asking again writes a new answer.` : null}
           {(() => {
             const reference = answer.sources.find((source) => source.reference)?.reference ?? answer.question.match(/CD-\d{6}/i)?.[0]?.toUpperCase()
             return reference ? <a className="ask-open" href={`/orders/${reference}`} onMouseDown={(event) => { event.preventDefault(); setOpen(false); router.push(`/orders/${reference}`) }}>Open {reference}</a> : null
@@ -127,6 +127,13 @@ export function TopSearch() {
         <span className="line2" style={{ display: "block" }}>{hit.customer} · {hit.route}</span>
         {hit.snippet && <span className="snippet" style={{ display: "block" }}>{hit.snippet.source} · {hit.snippet.when}: “<Marked text={hit.snippet.text} />”</span>}
       </a>)}
+      {/* The list shows the first 8; the Orders page shows every match. And a search can always become a question. */}
+      {hits && hits.length > 0 && !answer && <a className="search-hit search-more" href={`/orders?q=${encodeURIComponent(query.trim())}`} onMouseDown={(event) => { event.preventDefault(); setOpen(false); router.push(`/orders?q=${encodeURIComponent(query.trim())}`) }}>
+        <span className="line1">See all matching orders</span>
+      </a>}
+      {hits && hits.length > 0 && !question && !answer && <button type="button" className="search-hit ask-row" onMouseDown={(event) => { event.preventDefault(); void askAgents() }} disabled={asking}>
+        <span className="line1"><b>{asking ? "Asking the agents…" : `Ask the agents: “${query.trim()}”`}</b></span>
+      </button>}
     </div>}
   </div>
 }

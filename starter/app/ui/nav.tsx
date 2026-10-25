@@ -11,6 +11,12 @@ const LINKS = [
   { href: "/settings", label: "Settings", icon: "settings", match: (path: string) => path.startsWith("/settings") },
 ]
 
+/** The Demo controls link at the foot of the rail, marked while you are on it. */
+export function DemoLink() {
+  const path = usePathname()
+  return <Link className="rail-demo" href="/demo" aria-current={path.startsWith("/demo") ? "page" : undefined}>Demo controls</Link>
+}
+
 export function Nav({ openCards }: { openCards: number }) {
   const path = usePathname()
   return <nav aria-label="Main">

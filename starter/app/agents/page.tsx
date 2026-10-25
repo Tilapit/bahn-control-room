@@ -18,8 +18,63 @@ const FILTERS: { key: RunFilter; label: string }[] = [
 
 const EMPTY: Record<RunFilter, { title: string; text: string }> = {
   active: { title: "No agent is working right now.", text: "When a message, an alert or a monitor rule needs a look, an agent picks it up and shows here while it works." },
-  done: { title: "No finished runs yet.", text: "Runs that closed a case or put a card in front of you and were decided show here." },
+  done: { title: "No finished runs yet.", text: "Finished runs show here: an agent that settled an order on its own, and proposals you decided." },
   quiet: { title: "No quiet checks yet.", text: "Orders with nothing open are checked by code, without a model, and show here." },
+}
+
+type Row = Awaited<ReturnType<typeof agentsView>>["rows"][number]
+
+function RunRow({ row, now, label = true }: { row: Row; now: string; label?: boolean }) {
+  return <li>
+    <Link className="run-row" href={`/agents/${row.id}`}>
+      <span className={`run-state ${row.status}`}><span className="dot" aria-hidden="true" />{label ? row.statusLabel : ""}</span>
+      <span className="run-main">
+        <span className="run-top">
+          <span className="run-agent">{row.agent}</span>
+          {row.reference && <span className="run-order">{row.reference}{row.car ? ` · ${row.car}` : ""}</span>}
+          {row.safety && <span className="tag safety">Safety</span>}
+          {row.replay && <span className="replay-tag">Replay</span>}
+        </span>
+        <span className="run-sentence">{row.sentence}</span>
+        <span className="run-meta num">
+          {row.model === "Code" ? "Code, no model" : `${row.model} · ${tokenWords(row.tokens)} · ${dollars(row.costUsd)} model cost`}
+          {" · "}started <When iso={row.startedAt} now={now} zone={DESK_ZONE} />
+          {row.nextCheckAt && <> · next check <When iso={row.nextCheckAt} now={now} zone={DESK_ZONE} /></>}
+        </span>
+      </span>
+    </Link>
+  </li>
+}
+
+/**
+ * Active runs in three groups: the agents' own work, what waits for a person (also on For you), and
+ * what agents handle without anyone ("Watching", For you's "agents are handling"). Under a group heading
+ * a row needs no status of its own. Done puts the Classifier's message reading, many similar lines, in a fold.
+ */
+function RunGroups({ filter, rows, now }: { filter: RunFilter; rows: Row[]; now: string }) {
+  if (filter === "active") {
+    const groups = [
+      { key: "working", title: "Working now", note: "", rows: rows.filter((row) => row.status !== "waiting_person" && row.statusLabel !== "Watching"), label: true },
+      { key: "you", title: "Waiting for you", note: "each is a proposal in your For you list", rows: rows.filter((row) => row.status === "waiting_person"), label: false },
+      { key: "watching", title: "Watching", note: "agents are handling these without you and look again at the next check", rows: rows.filter((row) => row.statusLabel === "Watching"), label: false },
+    ].filter((item) => item.rows.length)
+    return <>{groups.map((item) => <section key={item.key}>
+      <p className="runs-group">{item.title} ({item.rows.length}){item.note ? `: ${item.note}` : ""}</p>
+      <ol className="runs">{item.rows.map((row) => <RunRow key={row.id} row={row} now={now} label={item.label} />)}</ol>
+    </section>)}</>
+  }
+  if (filter === "done") {
+    const reading = rows.filter((row) => row.agent === "Classifier")
+    const work = rows.filter((row) => row.agent !== "Classifier")
+    return <>
+      <ol className="runs">{work.map((row) => <RunRow key={row.id} row={row} now={now} />)}</ol>
+      {reading.length > 0 && <details className="runs-fold">
+        <summary className="runs-group">Messages read by the Classifier ({reading.length})</summary>
+        <ol className="runs">{reading.map((row) => <RunRow key={row.id} row={row} now={now} />)}</ol>
+      </details>}
+    </>
+  }
+  return <ol className="runs">{rows.map((row) => <RunRow key={row.id} row={row} now={now} />)}</ol>
 }
 
 export default async function Agents({ searchParams }: Props) {
@@ -33,7 +88,7 @@ export default async function Agents({ searchParams }: Props) {
       <div>
         <h1>Agents</h1>
         <p className="page-sub">
-          {nothingYet ? "What the agents are doing right now." : <>Today: <b>{today.runs} runs used a model</b>, {dollars(today.costUsd)} in model cost ({tokenWords(today.tokens)}); {today.codeRuns} more were checks by code. Times in Helsinki time.</>}
+          {nothingYet ? "What the agents are doing right now." : <>Today: <b>{today.runs} runs used a model</b>, {dollars(today.costUsd)} in model cost ({tokenWords(today.tokens)}); {today.codeRuns} more ran as code without a model{today.codeRuns > today.quietRuns ? ` (${today.quietRuns} quiet checks, ${today.codeRuns - today.quietRuns} by the Monitor's rules)` : ""}. Run times in Helsinki time.</>}
         </p>
         <p className="page-explain">The Classifier reads every message, the Investigator looks into an order with a problem, Driver support answers drivers,
           the Monitor&apos;s rules watch the feeds and the cars, and quiet checks look over orders with nothing open. Open a row to see every step.</p>
@@ -50,30 +105,8 @@ export default async function Agents({ searchParams }: Props) {
       </nav>
       {filter === "quiet" && rows.length > 0 && <p className="note runs-note">Checked by code only, no model: these orders have no open alert, task, incident, claim or unanswered message.</p>}
       {rows.length === 0 ? <div className="empty"><h2>{EMPTY[filter].title}</h2><p>{EMPTY[filter].text}</p></div>
-        : <ol className="runs">
-          {rows.map((row, index) => <li key={row.id}>
-            {/* Active runs in two groups: the agents' own work, then what waits for a person (also on For you). */}
-            {filter === "active" && (index === 0 || (rows[index - 1].status === "waiting_person") !== (row.status === "waiting_person"))
-              ? <p className="runs-group">{row.status === "waiting_person" ? `Waiting for you (${rows.filter((item) => item.status === "waiting_person").length}): each has a proposal on For you` : "Working now"}</p> : null}
-            <Link className="run-row" href={`/agents/${row.id}`}>
-              <span className={`run-state ${row.status}`}><span className="dot" aria-hidden="true" />{row.statusLabel}</span>
-              <span className="run-main">
-                <span className="run-top">
-                  <span className="run-agent">{row.agent}</span>
-                  {row.reference && <span className="run-order">{row.reference}{row.car ? ` · ${row.car}` : ""}</span>}
-                  {row.safety && <span className="tag safety">Safety</span>}
-                  {row.replay && <span className="replay-tag">Replay</span>}
-                </span>
-                <span className="run-sentence">{row.sentence}</span>
-                <span className="run-meta num">
-                  {row.model === "Code" ? "Code, no model" : `${row.model} · ${tokenWords(row.tokens)} · ${dollars(row.costUsd)} model cost`}
-                  {" · "}started <When iso={row.startedAt} now={now} zone={DESK_ZONE} />
-                  {row.nextCheckAt && <> · next check <When iso={row.nextCheckAt} now={now} zone={DESK_ZONE} /></>}
-                </span>
-              </span>
-            </Link>
-          </li>)}
-        </ol>}
+        : <RunGroups filter={filter} rows={rows} now={now} />}
+      {rows.length > 0 && filter === "active" && <p className="queue-end">Finished runs are under Done; the checks code makes on quiet orders are under Quiet checks.</p>}
     </>}
   </main>
 }

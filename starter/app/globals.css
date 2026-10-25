@@ -138,13 +138,14 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .search-box:focus-within { border-color: var(--line-2); background: var(--surface); }
 .search-box input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 14px; }
 .search-box input::placeholder { color: var(--text-3); }
+.search-box .clear { font-size: 12px; color: var(--text-2); }
 kbd {
   font: 500 11px/1 var(--font); color: var(--text-3); padding: 3px 5px; border-radius: 4px;
   border: 1px solid var(--line-2); background: var(--surface);
 }
 .search-results {
   position: absolute; top: 38px; left: 0; right: 0; z-index: 30;
-  background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-pop);
+  background: var(--raised); border-radius: var(--radius); box-shadow: var(--shadow-pop);
   padding: 6px; max-height: 70vh; overflow: auto;
 }
 .search-hit { display: block; padding: 8px 10px; border-radius: var(--radius-s); }
@@ -154,7 +155,7 @@ kbd {
 .search-hit .snippet { font-size: 13px; color: var(--text-3); margin-top: 2px; }
 .search-empty { padding: 10px; font-size: 13px; color: var(--text-3); }
 .ask-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.ask-source-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.search-more .line1 { color: var(--accent-text); font-weight: 500; }
 .ask-foot { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
 .ask-open { color: var(--accent-text); font-weight: 500; }
 .clock { margin-left: auto; display: flex; align-items: baseline; gap: 6px; font-size: 13px; color: var(--text-2); white-space: nowrap; }
@@ -267,7 +268,11 @@ time[title] { cursor: help; text-decoration: none; }
   background: var(--text); color: var(--surface); border-radius: 10px; font-size: 14px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
 }
-.toast-ref { font-weight: 600; font-variant-numeric: tabular-nums; }
+.toast-ref { font-weight: 600; font-variant-numeric: tabular-nums; margin-right: 8px; }
+.toast-car { margin-right: 8px; opacity: 0.75; }
+.toast-body { display: grid; gap: 2px; max-width: 520px; }
+.toast-what { font-size: 13px; opacity: 0.8; }
+.toast-link { font-weight: 600; text-decoration: underline; white-space: nowrap; }
 /* On a wide screen the toast sits in the empty space right of the list, not over it. */
 @media (min-width: 1280px) { .toast { left: auto; right: 32px; transform: none; } }
 .toast button { border: 0; background: none; color: inherit; font-weight: 600; cursor: pointer; padding: 4px 6px; border-radius: 4px; opacity: 0.85; }
@@ -286,11 +291,8 @@ time[title] { cursor: help; text-decoration: none; }
 .case-car { width: 148px; height: 84px; object-fit: contain; opacity: 0.95; }
 
 .case-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 40px; margin-top: 24px; align-items: start; }
-.case-side {
-  position: sticky; top: 76px; display: grid; gap: 26px;
-  /* Taller than the screen on busy orders: it scrolls on its own so nothing is out of reach. */
-  max-height: calc(100vh - 92px); overflow-y: auto; overscroll-behavior: contain; padding-right: 6px; scrollbar-width: thin;
-}
+/* The side column flows with the page: a sticky column that scrolls on its own looked cut off at the bottom. */
+.case-side { display: grid; gap: 26px; }
 .section-title { font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: baseline; }
 .section-title .count { text-transform: none; letter-spacing: 0; font-weight: 500; }
 
@@ -298,6 +300,9 @@ time[title] { cursor: help; text-decoration: none; }
 .time-row .label { font-size: 13px; color: var(--text-2); }
 .time-row .value { font-size: 15px; font-weight: 500; }
 .time-row .value.time { color: var(--amber); }
+.time-row .value.stale { color: var(--text-2); font-weight: 400; }
+.case-figure { margin: 0; text-align: center; }
+.case-figure figcaption { font-size: 11px; color: var(--text-3); }
 .time-row .sub { font-size: 13px; color: var(--text-3); }
 
 .facts { display: grid; gap: 12px; }
@@ -365,12 +370,18 @@ time[title] { cursor: help; text-decoration: none; }
 .list-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; padding: 11px 12px; border-radius: var(--radius-s); align-items: baseline; font-size: 14px; }
 .list-row:hover { background: var(--hover); }
 .list-row + .list-row { border-top: 1px solid var(--line); }
-.list-row .ref { font-size: 13px; color: var(--text-3); font-variant-numeric: tabular-nums; display: flex; gap: 10px; align-items: baseline; }
+.list-row .ref { font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; display: flex; gap: 10px; align-items: baseline; }
 .list-row .ref .mark { margin-top: 0; align-self: center; }
 .mark.none { box-shadow: none; }
 .list-row .car { font-weight: 500; }
 .list-row .sub { color: var(--text-2); }
 .list-row .snippet { grid-column: 2 / -1; font-size: 13px; color: var(--text-3); margin-top: -4px; }
+.list-problem { display: block; }
+.list-problem .who { font-size: 12px; font-weight: 600; color: var(--text-2); margin-right: 6px; }
+.list-problem .who.you { color: var(--accent-text); }
+.nowrap { white-space: nowrap; }
+.list-row .sub .when.time { color: var(--amber); }
+.list-row .sub .when.safety { color: var(--red); }
 .list-head { font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; padding-top: 8px; padding-bottom: 8px; }
 .list-head:hover { background: none; }
 .legend { display: inline-flex; align-items: center; gap: 6px; margin-left: 4px; }
@@ -378,8 +389,11 @@ time[title] { cursor: help; text-decoration: none; }
 .page-explain .legend { margin-left: 8px; }
 .queue-end { margin-top: 18px; font-size: 13px; color: var(--text-3); }
 .checks { margin: 4px 0 0; padding: 0; display: grid; gap: 2px; list-style: none; }
+.cases .checks li { border: 0; padding: 0; display: list-item; }
+.checks li.ok::first-letter { color: var(--green); }
 .checks li.failed { color: var(--red); }
-.runs-group { font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; padding: 14px 0 6px; }
+.runs-group { font-size: 13px; font-weight: 600; color: var(--text-2); padding: 14px 0 6px; }
+.runs-fold > summary { cursor: pointer; list-style: revert; }
 .legend .mark { margin: 0 0 0 6px; }
 mark { background: var(--accent-soft); color: inherit; border-radius: 2px; padding: 0 1px; }
 
@@ -448,6 +462,7 @@ mark { background: var(--accent-soft); color: inherit; border-radius: 2px; paddi
 .demo-runs { display: grid; gap: 10px; font-size: 14px; }
 .demo-run-head .working { color: var(--accent-text); }
 .rail-demo { display: block; margin-top: 8px; color: var(--text-2); text-decoration: underline; text-underline-offset: 2px; }
+.rail-demo[aria-current="page"] { color: var(--text); font-weight: 600; }
 .finding .chips { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 
 /* ---------- Agents (the aquarium) ---------- */

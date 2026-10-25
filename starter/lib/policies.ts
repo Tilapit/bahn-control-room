@@ -74,8 +74,8 @@ export async function levelFor(action: string, costEur?: number | null): Promise
   return level
 }
 
-/** Never automatic, whatever the table says: contact with a customer, and the date a customer was promised. */
-export const NEVER_AUTO = new Set(["message_customer", "call_customer", "change_delivery_time"])
+/** Never automatic, whatever the table says: contact with a customer, the date a customer was promised, and a call (a person makes it). */
+export const NEVER_AUTO = new Set(["message_customer", "call_customer", "change_delivery_time", "call_contact"])
 
 /** Change what an agent may do on its own. Logged with who and why; customer contact cannot become automatic. */
 export async function setPolicy(action: string, level: Level, options: { limitEur?: number | null; actor: string; reason: string; at: Date }): Promise<void> {

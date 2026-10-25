@@ -5,9 +5,11 @@
 
 import { readFile, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import { sql } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 import { db } from "./db"
 import { setDemoStart, setNow } from "./clock"
+import { SEED_DISRUPTIONS } from "./disruptions"
+import { disruptions } from "./schema"
 
 export const FIXTURE_FILE = join(process.cwd(), "..", "fixtures", "agent-runs.json")
 
@@ -61,5 +63,7 @@ export async function loadFixtures(file = FIXTURE_FILE): Promise<Record<string, 
   await setDemoStart(new Date(fixture.clock))
   // Demo switches go back to their defaults: drivers answer, autonomy after 5 approvals, no replay playing.
   await db.execute(sql`delete from demo_settings where key in ('answers', 'autonomy_threshold', 'replay')`)
+  // A notice the demo published (the Lille protest, scenario 7) leaves the feed again, or the Monitor would act on it unasked.
+  for (const notice of SEED_DISRUPTIONS) await db.update(disruptions).set({ publishedAt: notice.publishedAt ?? null }).where(eq(disruptions.id, notice.id!))
   return counts
 }

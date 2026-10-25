@@ -35,8 +35,9 @@ export default async function OrderPage({ params }: Props) {
   const { order } = file
   const view = orderView(file)
   const zone = view.zone
-  const u = urgency(file, at)
   const card = items[0] ?? null
+  // With a card, its own deadline (a proposed train that leaves first) is the one the header names.
+  const u = card ? card.urgency : urgency(file, at)
   const issue = card ? card.card.headline.replace(`${order.car.label}: `, "") : liveSignals(file)[0] ?? null
   const status = statusLine(file, u, at, issue)
   const href = (entryId: string | null) => entryId ? `#${entryId}` : null
@@ -52,12 +53,12 @@ export default async function OrderPage({ params }: Props) {
         </p>
         <div className="case-meta">
           <span><Icon name="route" />{placeName(order.route.from)} → {order.route.via ? `${placeName(order.route.via)} → ` : ""}{placeName(order.route.to)}{order.route.distanceKm ? ` · ${order.route.distanceKm.toLocaleString("en-GB")} km` : ""}{order.route.ferry ? " with ferry" : ""}</span>
-          <span><Icon name="driver" />{order.driver ? `${order.driver.name}, ${order.driver.state === "driving" ? "driving" : order.driver.state === "finished" ? "finished" : order.driver.state === "cancelled" ? "cancelled the gig" : "driver, booked"}` : "No driver booked"}</span>
+          <span><Icon name="driver" />{order.driver ? `${order.driver.name}, ${order.driver.state === "driving" ? "on the gig" : order.driver.state === "finished" ? "finished" : order.driver.state === "cancelled" ? "cancelled the gig" : "driver, booked"}` : "No driver booked"}</span>
           <span><Icon name="building" />{order.customer.name}</span>
           {(order.car.registration || order.tradeIn) && <span><Icon name="car" />{[order.car.registration, order.tradeIn ? `with trade-in ${order.tradeIn.label}` : null].filter(Boolean).join(" · ")}</span>}
         </div>
       </div>
-      {order.car.image && <img className="case-car" src={order.car.image} alt={`Illustration of a ${order.car.label}`} title="Model illustration, not a photo of this car" />}
+      {order.car.image && <figure className="case-figure"><img className="case-car" src={order.car.image} alt={`Illustration of a ${order.car.label}`} title="Model illustration, not a photo of this car" /><figcaption>Model illustration</figcaption></figure>}
     </header>
 
     <div className="case-grid">
@@ -75,11 +76,12 @@ export default async function OrderPage({ params }: Props) {
               const risk = (time.key === "ferry_cutoff" || time.key === u.kind) && u.timeRisk
               return <div className="time-row" key={`${time.key}-${time.start}`}>
                 <div className="label">{time.label}{time.place ? ` · ${time.place}` : ""}</div>
-                <div className={`value${risk ? " time" : ""}`}>{range(time.start, time.end, time.zone)}</div>
+                {/* A stale estimate is shown, but not as firmly as a promise or a booking. */}
+                <div className={`value${risk ? " time" : ""}${time.note?.startsWith("Stale") ? " stale" : ""}`}>{range(time.start, time.end, time.zone)}</div>
                 <div className="sub">
                   {time.note && <>{time.note} · </>}
                   {/* The source's time in the same zone as the key time above it, so one event never shows two clocks. */}
-                  <SourceChip label={time.source.chip} at={time.source.at} now={now} zone={time.zone ?? zone} href={href(time.source.entryId)} />
+                  <SourceChip label={time.source.chip} at={time.source.at} now={now} zone={time.zone ?? zone} href={href(time.source.entryId)} named={!!time.zone && time.zone !== zone} />
                 </div>
               </div>
             })}

@@ -17,7 +17,7 @@ const KIND_LABEL = { thought: "Reasoning", action: null, reply: "Reply", card: "
 
 /** "Backfill. Open signals…": the morning catch-up, in words. */
 function triggerWords(trigger: string): string {
-  return trigger.replace(/^Backfill\.\s*/, "The morning catch-up: an agent looked at every order with something open. ")
+  return trigger.replace(/^Backfill\.\s*/, "Catch-up when the demo day started: an agent looked at every order with something open. ")
 }
 
 /** Why the run moved to Opus, in code's words; the verifier's own note is behind a disclosure. */
@@ -34,13 +34,23 @@ function seconds(ms: number): string {
   return total < 120 ? `${total} s` : `${Math.floor(total / 60)} min ${String(total % 60).padStart(2, "0")} s`
 }
 
-/** The first sentence or so of a long reasoning summary; the rest opens on request. */
-function lead(text: string): { head: string; rest: string } {
-  const flat = text.replace(/\s+/g, " ").trim()
-  if (flat.length <= 220) return { head: flat, rest: "" }
-  const cut = flat.slice(0, 220).lastIndexOf(". ")
-  const at = cut > 80 ? cut + 1 : 220
-  return { head: flat.slice(0, at).trim(), rest: flat.slice(at).trim() }
+type Step = NonNullable<Awaited<ReturnType<typeof runTrace>>>["steps"][number]
+
+/** Reasoning steps folded into the step that follows them (the last one keeps any that come after it). */
+function withReasoning(steps: Step[]): { step: Step; reasoning: string[] }[] {
+  const out: { step: Step; reasoning: string[] }[] = []
+  let pending: string[] = []
+  for (const step of steps) {
+    if (step.kind === "thought") {
+      const flat = step.text.replace(/\s+/g, " ").trim()
+      if (flat) pending.push(/[.!?…)]$/.test(flat) ? flat : `${flat}…`)
+      continue
+    }
+    out.push({ step, reasoning: pending })
+    pending = []
+  }
+  if (pending.length && out.length) out[out.length - 1].reasoning.push(...pending)
+  return out
 }
 
 export default async function RunPage({ params }: Props) {
@@ -90,19 +100,16 @@ export default async function RunPage({ params }: Props) {
     <section className="run-section">
       <h2 className="section-title">What it did<span className="count">times in {zoneCity ?? "local"} time</span></h2>
       {steps.length === 0 ? <p className="muted">No steps yet.</p> : <ol className="trace">
-        {steps.map((step) => {
-          const text = step.kind === "thought" ? lead(step.text) : null
-          return <li key={step.idx} className={`trace-step ${step.kind}${step.error ? " error" : ""}`}>
-            <span className="entry-time"><When iso={step.at} now={now} zone={zone} as="clock" /></span>
-            <div>
-              {(step.error || (KIND_LABEL[step.kind] && step.kind !== "thought")) && <span className="trace-kind">{step.error ? "Sent back" : KIND_LABEL[step.kind]}</span>}
-              {/* The model's own reasoning is raw working notes: one click away, not part of the plain-words trace. */}
-              {text ? <details className="more reasoning"><summary>Show the agent&apos;s reasoning</summary><p>{`${text.head} ${text.rest}`.trim()}{/[.!?…)]$/.test(step.text.trim()) ? "" : "…"}</p></details>
-                : <p className="trace-text">{step.text}</p>}
-              {step.details != null && <details className="more"><summary>Show details</summary><pre className="raw">{JSON.stringify(step.details, null, 2)}</pre></details>}
-            </div>
-          </li>
-        })}
+        {/* The model's own reasoning is raw working notes: it rides with the step it led to, one click away. */}
+        {withReasoning(steps).map(({ step, reasoning }) => <li key={step.idx} className={`trace-step ${step.kind}${step.error ? " error" : ""}`}>
+          <span className="entry-time"><When iso={step.at} now={now} zone={zone} as="clock" /></span>
+          <div>
+            {(step.error || KIND_LABEL[step.kind]) && <span className="trace-kind">{step.error ? "Sent back" : step.kind === "reply" && /^Moved to Opus/.test(step.text) ? "Handed to Opus" : KIND_LABEL[step.kind]}</span>}
+            <p className="trace-text">{step.text}</p>
+            {reasoning.length > 0 && <details className="more reasoning"><summary>Show the agent&apos;s reasoning</summary>{reasoning.map((text, index) => <p key={index}>{text}</p>)}</details>}
+            {step.details != null && <details className="more"><summary>Show details</summary><pre className="raw">{JSON.stringify(step.details, null, 2)}</pre></details>}
+          </div>
+        </li>)}
       </ol>}
     </section>
 

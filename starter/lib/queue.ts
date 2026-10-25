@@ -1,14 +1,14 @@
 // The For you queue: open cards, each with its order and the consequence that
 // sorts it. Urgency is computed now, against the simulated clock, not stored.
 
-import { and, count, eq, inArray, notInArray, or, sql } from "drizzle-orm"
+import { and, count, eq, gte, inArray, isNull, notInArray, or, sql } from "drizzle-orm"
 import { type CaseFile, getCases } from "./case"
 import { now as clockNow } from "./clock"
 import { db } from "./db"
 import { agentRuns, agentSteps, cards, decisions } from "./schema"
 import type { CardFinding, CardGroupItem, CardOption, CardProposal, VerifierNote } from "./schema"
 import { liveSignals } from "./signals"
-import { compareUrgency, type Urgency, urgency } from "./urgency"
+import { compareUrgency, type Urgency, urgency, withProposalDeadline } from "./urgency"
 
 const HANDLING_AGENTS = ["Investigator", "Driver support"]
 
@@ -50,6 +50,8 @@ export type QueueCounts = {
   handling: number
   /** Orders with a live signal that no agent has looked at yet. */
   unattended: number
+  /** Orders with a live signal whose card a person decided today: the next step is theirs or the Executor's, not an agent's. */
+  decided: number
   /** Orders with nothing open. */
   quiet: number
   total: number
@@ -78,6 +80,11 @@ export function orderView(file: CaseFile): QueueOrder {
 
 type RunInfo = NonNullable<QueueCard["run"]>
 
+/** The option a card leads with: its first one that is not a rejection or an answer. */
+function primaryOption(options: CardOption[]): CardOption | null {
+  return options.find((option) => option.kind !== "reject" && option.kind !== "answer") ?? null
+}
+
 export function toQueueCard(row: typeof cards.$inferSelect, runs: Map<string, RunInfo> = new Map()): QueueCard {
   return {
     id: row.id, kind: row.kind, origin: row.origin, runId: row.runId, headline: row.headline, whatHappened: row.whatHappened,
@@ -103,12 +110,14 @@ async function runInfo(runIds: (string | null)[]): Promise<Map<string, RunInfo>>
 
 export async function getQueue(): Promise<{ now: string; items: QueueItem[]; counts: QueueCounts }> {
   const at = await clockNow()
-  const [openCards, files, ordersWithRun, ruleRows] = await Promise.all([
+  const [openCards, files, ordersWithRun, ruleRows, decidedRows] = await Promise.all([
     db.select().from(cards).where(eq(cards.status, "open")),
     getCases(),
     // Only agents that work a case count as handling it: not the Classifier reading messages, not a quiet check.
-    db.selectDistinct({ orderId: agentRuns.orderId }).from(agentRuns).where(inArray(agentRuns.agent, HANDLING_AGENTS)),
+    db.selectDistinct({ orderId: agentRuns.orderId, nextCheckAt: agentRuns.nextCheckAt, status: agentRuns.status }).from(agentRuns).where(inArray(agentRuns.agent, HANDLING_AGENTS)),
     db.select({ n: count() }).from(decisions).where(eq(decisions.actor, "Agent, under your rule")),
+    db.select({ orderId: cards.orderId, group: cards.group }).from(decisions).innerJoin(cards, eq(cards.id, decisions.cardId))
+      .where(and(isNull(decisions.undoneAt), gte(decisions.decidedAt, new Date(at.getTime() - 24 * 3600_000)), sql`${decisions.actor} <> 'Agent, under your rule'`)),
   ])
   const byOrder = new Map(files.map((file) => [file.order.id, file]))
   const runs = await runInfo(openCards.map((row) => row.runId))
@@ -116,24 +125,30 @@ export async function getQueue(): Promise<{ now: string; items: QueueItem[]; cou
   for (const row of openCards) {
     const file = byOrder.get(row.orderId)
     if (!file) continue
-    items.push({ card: toQueueCard(row, runs), order: orderView(file), urgency: urgency(file, at) })
+    items.push({ card: toQueueCard(row, runs), order: orderView(file), urgency: withProposalDeadline(urgency(file, at), primaryOption(row.options), at) })
   }
   items.sort((a, b) => compareUrgency(a.urgency, b.urgency))
 
   const withCard = new Set(items.flatMap((item) => [item.order.id, ...(item.card.group ?? []).map((member) => member.order_id)]))
   const withRun = new Set(ordersWithRun.map((run) => run.orderId))
+  // An agent that finished but looks again later is still handling the order, signal or not (Agents shows it as "Watching").
+  const watching = new Set(ordersWithRun.filter((run) => run.status === "done" && run.nextCheckAt && run.nextCheckAt > at).map((run) => run.orderId))
+  const decidedByYou = new Set(decidedRows.flatMap((row) => [row.orderId, ...(row.group ?? []).map((member) => member.order_id)]))
   let handling = 0
   let unattended = 0
+  let decided = 0
   for (const file of files) {
-    if (withCard.has(file.order.id) || !liveSignals(file).length) continue
-    if (withRun.has(file.order.id)) handling += 1
+    if (withCard.has(file.order.id) || (!liveSignals(file).length && !watching.has(file.order.id))) continue
+    // An order whose card a person just decided is not "handled by agents": the call or the booking is theirs now.
+    if (decidedByYou.has(file.order.id)) decided += 1
+    else if (withRun.has(file.order.id)) handling += 1
     else unattended += 1
   }
   const needYou = withCard.size
   return {
     now: at.toISOString(),
     items,
-    counts: { needYou, handling, unattended, quiet: files.length - needYou - handling - unattended, total: files.length, byRule: ruleRows[0]?.n ?? 0 },
+    counts: { needYou, handling, unattended, decided, quiet: files.length - needYou - handling - unattended - decided, total: files.length, byRule: ruleRows[0]?.n ?? 0 },
   }
 }
 
@@ -148,5 +163,5 @@ export async function cardsForOrder(file: CaseFile, at: Date): Promise<QueueItem
   // A card for several orders shows on each of them.
   const rowsFound = (await db.select().from(cards).where(and(eq(cards.status, "open"), or(eq(cards.orderId, file.order.id), sql`${cards.group} @> ${JSON.stringify([{ order_id: file.order.id }])}::jsonb`))))
   const runs = await runInfo(rowsFound.map((row) => row.runId))
-  return rowsFound.map((row) => ({ card: toQueueCard(row, runs), order: orderView(file), urgency: urgency(file, at) }))
+  return rowsFound.map((row) => ({ card: toQueueCard(row, runs), order: orderView(file), urgency: withProposalDeadline(urgency(file, at), primaryOption(row.options), at) }))
 }

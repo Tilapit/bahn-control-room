@@ -941,3 +941,307 @@ plain sentence, and `--resume` finished the 9 when credit returned. Nothing was 
   code check on card text (quotes exempt) and on the Narrator's sentence.
 - The prompt-injection test failed its first run on a bug in the test itself (it read the agent quoting the request
   as a promise). The agent had done the right thing both times.
+
+## After phase 8, task 1: two independent UX reviews
+
+**How the reviews were run.** `scripts/screens.ts` got `--slices N` (screen-sized views of a
+long page, scrolled, so text stays readable) and two actions: `+ask` (types "Why is CD-420603 at
+risk?" and presses Enter) and `+approve` (presses the first Approve, takes the picture inside the
+8-second undo window, then presses Undo, so nothing is carried out). 19 screens, light and dark,
+92 images, renamed `01-light-1.png` … so the file names say nothing about the code. Each reviewer
+was a fresh subagent with no access to the code, SPEC.md or this log: only the images, the brief
+word for word ("You are an operations coordinator at a car delivery company…"), and one line per
+screen on how it was reached ("02: 01 after clicking the first item"). The database was reloaded
+from the recording before and after, so the screenshots show the recorded morning.
+
+**What went wrong first.** The first reviewer opened all 92 images, ran out of context, lost its
+notes when older images were dropped, re-read every image about 24 times and was stopped by an
+API error after 34 minutes with nothing written down. The second attempt, same brief, was told to
+work one screen at a time and write `notes/NN.md` before opening the next screen, and to build its
+report from the notes files. That one finished. Lesson for any long visual review: notes on disk
+per unit of work, never in the agent's memory.
+
+### Review 1: what the reviewer found (main points)
+
+1. **What does Approve do?** "A person calls the customer…" under a button "Approve: call
+   customer…": does the app dial, or do I? The toast "Handing you the call in 7 s" was the first
+   place that said it. The proposal line was cut off with "…" exactly where it said what it does
+   *not* do ("books nothing…", "cancels no trav…"). One button ("Approve: Frankfurt hotel, Fri 09:00
+   train, pickup moved…") hid that it also cancels a train and a hotel.
+2. **Time zones.** "Driver's train from Aalborg leaves in 37 min, at 12:25" under a clock that
+   says 12:48 Helsinki: 12:25 was Danish time and nothing said so. The same time was repeated in
+   one line ("closes in 2 h 12 min, at 14:00 · in 2 h 12 min").
+3. **Quiet checks looked late.** "Nothing open … delivery promised today 10:00 in Tampere" at
+   12:48 with 124 km to go read as a car three hours late. The promise was a 10:00–16:00 window;
+   the sentence printed only its start. (The reviewer called this the biggest problem on the page,
+   and it was a real bug in the sentence, not in the data.)
+4. **Search.** "Hamburg ferry" found nothing while three Hamburg ferry orders were on screen:
+   the search index held only identity fields and message text, not bookings, alerts or quotes.
+   Search snippets and Ask sources had no time.
+5. **Orders.** No column headers; CD-420405 said "Nothing open" while it had a card on For you
+   (the list counted live signals only, not open cards); a filtered list lost the urgency order.
+6. **Raw internal ids in the timeline**: "- travel:train:helsinki-pori:2026-10-25T17:00:00.000Z:
+   …", "- shop:kellerbrook-recovery: …". The tool meant to strip them used `/^- [^:]+: /`, which
+   stops at the first colon of an id that holds colons, so it never matched.
+7. **Developer words on screen**: tokens and dollars on every card, "the verifier", "Backfill.",
+   "Put a card together … 3 not accepted by the checks", the model's raw reasoning with handles
+   like "E4", "Prompt injection test, run by npm run eval:injection" on Settings, "Needs your
+   approval: it a person makes the call" (a broken sentence).
+8. **Agents page**: "Active 24" were the same 24 items as For you, all "Waiting for you", sorted by
+   start time with the safety case 16th; "88 agent runs" did not match the tab counts; "Done" on
+   runs whose problem was not done.
+9. **Visual**: the top bar was see-through, so scrolled text ghosted next to the search box on
+   every page; the hover box stopped above the buttons; an opened row had no frame or chevron; boxes
+   inside the red "Needs you" box; amber (time risk) also used for "Quote, not booked" and "Stated,
+   not confirmed"; dark mode Approve buttons were bright light blue with dark text.
+10. **Settings and Learning**: an empty divider row, "Not decided on a card yet" on 14 rows, a
+    developer's test shown as if it were the user's correction, a check list as one run-on line.
+11. **Not found**: did not repeat the reference; a red "1 Issue" badge over the menu.
+
+### Review 1: what I changed
+
+- **Every card says who does what, built by code from its steps** (`lib/present/steps.ts`): the
+  cut-off "Agent proposes: …" line under a card is now "If you approve: you call Marvellin
+  Motorhandel, the driver gets a message and the agent checks again in 45 min." It is complete,
+  never clamped to one line, and lists every step, so the rail-strike card now says "cancelled: the
+  Thu 22 Oct 15:45 CEST Frankfurt to Cologne train and the Cologne hotel, … the pickup moves to Fri
+  23 Oct 12:00–14:00 CEST …" before anyone presses Approve. "you call" is literally what the
+  Executor does: it hands the call to the person who approved. Each option, not only the first, has
+  its own line, and every approve button starts with "Approve:" (option 2 on CD-420603 did not). A
+  question card says "Agent asks you:" and its buttons start with "Answer:". The approval reason is
+  one sentence built from the stored reason ("it books or changes a booking, adds a cost and changes
+  a date" instead of "it changes a booking and is a booking and a cost and changes a date"), and the
+  policy reason that produced "it a person makes the call" now reads "it hands the call to a person".
+  The call box says there are no phone numbers in this demo's records (true: the dataset has none),
+  instead of leaving the reader to look for one.
+- **Times** (`lib/urgency.ts`, `lib/time.ts`): every clock time in a deadline line carries its zone
+  ("leaves at 12:25 CEST"), as SPEC section 10 already asked, and the distance from now is said once
+  ("· in 37 min"), not twice. Orders and the order header add the same "in …" now. Quiet checks and
+  promises print a window as a window ("today 10:00–16:00 EEST"), never only its start; the 68
+  recorded quiet checks were rewritten with the new sentence (`npm run quiet:lines`, code only,
+  then `fixtures:export`; the only fixture diff is those 68 sentences and the export time). Chips
+  under a key time use that key time's zone, so "Picked up Tue 20 Oct 16:00 CEST" no longer sits over
+  "Driver · yesterday 17:00". Section headings say the zone ("What we know · times CEST", "times in
+  Hamburg time (CEST)"); the top bar reads "Demo clock Wed 21 Oct 12:48 Helsinki time". New look-ups
+  show a train in its own country's time (`zoneOfCity`); the recorded Helsinki–Pori quotes keep their
+  CET labels (true, just in German time).
+- **Search** covers every record on an order, not only messages (`lib/timeline/build.ts`), so
+  "Hamburg ferry" finds CD-420603 and CD-420299 first. A snippet comes from the newest record that
+  holds every searched word, cut at word boundaries, with the words marked and its source and age
+  ("Quote, not booked · 16 min ago: …"). An empty result offers "Ask the agents" (Enter), and says
+  what search looks at. Ask sources carry their time; the answer has Close and "Open CD-420603".
+- **Orders**: column headers and a dot legend; an order with an open card counts as open (the
+  CD-420405 bug); a filtered list keeps the urgency order; quiet rows say what is next ("Nothing open.
+  On the road to Tampere; … delivery promised today 10:00–16:00 EEST"); "Oulu → Espoo → Espoo"
+  became "Oulu → Espoo" and one-city orders say "Within Helsinki"; "2,391 km"; "Charlotte Benvik,
+  driving" / "driver, booked".
+- **Timeline**: internal ids in older look-up records are hidden when shown, and the regex that was
+  meant to strip them at write time is fixed (`/^- \S+: /`). The pills add up to All (an "Other"
+  pill for system, order record and document entries). A badge is not repeated when it equals the
+  source label ("Quote, not booked  Quote, not booked"). Messages played by the demo (scenario
+  messages, the simulated driver and site) carry "Simulated in the demo". Statements cut at 240
+  characters mid-word get "…", and the Classifier now cuts at a word.
+- **Wording and developer words**: the card's run line is "See what the agent did: 5 steps with
+  Opus, the larger model (moved up from Sonnet), model cost $0.16" (no tokens); "A second agent
+  checked all 6 facts against their sources: they match. It also noted 3 things …" with the remarks
+  as a list, instead of "Checked by the verifier: 7 of 7 …" followed by italic "Verifier:" lines;
+  "Agreed" became "Agreed and stated · 0 of 4 confirmed"; run pages say "The morning catch-up: …"
+  instead of "Backfill.", "Drafted a proposal: 7 facts, 5 actions; the checks sent 1 back" instead of
+  "Put a card together … not accepted by the checks", "Sent back" in grey instead of amber "Not
+  accepted", and the model's raw reasoning (with handles like E4) is behind "Show the agent's
+  reasoning". The narrator prompt now says "proposal", never "card"; the recorded narrations keep
+  their words (see rejected). Settings: no empty row, "No decisions on this yet", a warning when an
+  agent may book with no cost limit, and one sentence saying a driver message inside a proposal waits
+  for that proposal. Learning: "Your corrections" (empty, with an empty state) and "Safety tests",
+  the injection test in plain words, its 10 checks as a list, no npm command on screen.
+- **For you**: counts say "24 orders need you · agents are handling 8 more without you · 68 have
+  nothing open"; one grey sentence says what a card is and that nothing happens before a button and
+  the 8-second undo; a dot legend; "That is everything that needs you. …" at the end of the list; the
+  order number is larger and darker; capitals after the car name are consistent; "Other choices…" /
+  "Reject or reply…" are real buttons (the old "1 more choice" was usually just Reject); the toast
+  names the order ("CD-420322 · Handing you the call in 7 s · Undo"), ends with where the call script
+  is, and sits in the free space right of the list on a wide screen.
+- **Agents**: one header that adds up ("87 runs used a model, $4.59 in model cost (3.5M tokens); 69
+  more were checks by code"), a sentence on what each agent does, Active split into "Working now"
+  and "Waiting for you (24): each has a proposal on For you" with the safety run first and a Safety
+  tag, a finished run with a next check says "Watching", a quiet check says "Checked", equal start
+  times keep one order, and a run without a narration says "Put a proposal to a person: …".
+- **Visual**: the top bar is solid (no text behind the search box any more), a row's hover covers
+  the whole row, an open row is tinted with a turned chevron, the call script and messages are a
+  quoted block with a left rule instead of a box inside the red box, amber is back to time risk only
+  (quotes, statements, signals and "Sent back" are grey, as SPEC's chip style says), the dark theme
+  uses a deeper blue with white text for Approve and lighter grey text, and the dark safety frame is
+  redder. Demo page: one clock wording, phone times with their zone, no gap above the run list, the
+  order picker as wide as the phone, one line on Replay versus Play live. Not found: "There is no
+  order “CD-999999”." with a breadcrumb back to Orders.
+- **Mock data**: a Frankfurt hotel was "4 km from the ferry terminal" (only Hamburg has one now);
+  "may not run: rail strike in germany (Rail operator notice)" and "Disruption notice from Rail
+  operator notice: …" read properly for new runs; Monitor quotes are curly.
+
+### Review 1: what I did not change, and why
+
+- **Phone numbers, owners, "take it", a call that stays on my list until done, filters by status,
+  one zone for every time, moving the demo controls out of the menu.** These are new features or
+  contradict SPEC (key times "in their own place's zone with the zone name"; the demo controls are the
+  way a judge plays the scenarios). The dataset has no phone numbers; inventing them would put
+  made-up contact data on screen, so the call box says so instead.
+- **Agent-written text in the recorded morning**: "delivery today missed" (it will be missed),
+  "sailing free", "the owner", names without roles in a proposal, "Records give driver …", the
+  verifier's wrong remark that no Cologne hotel was booked (it was; the card did not cite it, and the
+  verifier only sees cited records), narrations with "card", "case file" and "verifier". Rewriting
+  recorded model output by hand would make the recording dishonest, and re-running 30 Investigator
+  runs to change wording costs about $5 and changes the measured numbers. The narrator prompt now
+  forbids those words for new runs; the card's own labels and the code-built lines around them were
+  fixed.
+- **Driver messages without approval.** By design and by the policies table: asking a driver and
+  telling them what was decided is automatic; a customer never is. Settings now says so, and the
+  timeline's Driver pill shows everything a driver was told.
+- **Two near-identical "Tuesday keys" items, two proposals on CD-420299, a stage that says "Driver
+  booked, waiting for pickup" next to a missed slot, "trade-in".** Two different orders in the data;
+  the dataset's own earlier proposal stays in the timeline as history; the stage is the booking's
+  state and the line next to it says the slot was missed; "trade-in" is the business's word.
+- **"Failed approvals surface only in the logs."** The examples were the dataset's history. When
+  this app's Executor fails, the toast says what failed and the agent is told and proposes again.
+- **Two different Ask answers in light and dark**: two separate live runs; the facts agree, the
+  wording differs. **Counts that changed between screenshots** (88 → 89 runs): the Ask question
+  between the two themes added a run. **Undo of 8 seconds**: SPEC section 8.
+- **"1 Issue" on the not-found page**: a React dev-mode warning (a negative timestamp in its
+  performance track when a server page calls `notFound()`); it does not exist in a production build,
+  and the second review's screenshots were taken from `next build && next start` to check that.
+- **Headlines that start with the car, no sort or filter on For you, the empty right third.** The
+  list is sorted by what is lost first (SPEC 6) and kept at a reading width; the order number is now
+  easier to read instead.
+
+### Review 2: a second fresh reviewer, on the new screenshots
+
+Same brief, same rules, a new agent that had seen nothing before. Screenshots this time came from a
+production build (`next build && next start`), so no dev-only overlay could appear; 109 images.
+It started by saying the expanded card "is the first place I trust the app: every fact has a source
+and a time", and that the Ask answer is "good, direct … every claim has a source and age". What it
+still found:
+
+1. **A wrong order on For you.** CD-420154 sat low and grey ("pickup tomorrow 10:00") while the
+   proposal on it books a train that leaves in 1 h 12 min. The queue sorted by the order's own
+   deadline and ignored the proposal's. (Real, and nobody had noticed.)
+2. **A car with GPS silent for 7 h 30 min, due today, listed as "Nothing open"** (CD-420806), and
+   CD-421013 with no GPS since pickup. Cause: the Monitor's silent-car rule was added in phase 8,
+   25 minutes after the morning was recorded, so it had never looked at the recording.
+3. **The agents' own work was in the wrong place.** The 8 orders For you calls "agents are handling"
+   were rows called "Watching" inside the Done tab, between about 57 near-identical Classifier
+   lines; and "69 more were checks by code" did not match "Quiet checks 68".
+4. **Search still missed CD-420154 for "Hamburg ferry"** and listed orders without showing why they
+   matched (a word limit on the full-text step cut the right order off before ranking).
+5. **After Approve** the toast named only the order, the approved call counted as "agents are
+   handling", and "Needs your approval: it contacts a customer" when *you* make the call.
+6. **Orders** never said what the problem is or who is on it, countdowns broke over two lines, and
+   "Ready to offer to drivers" vs "Looking for a driver" was unclear.
+7. Smaller: "If you approve: cancelled: … night., the driver's …", "checks again in 170 min", an
+   email "you can read first" (when approving sends it), "in 4 d" for 4 d 22 h, the run page's empty
+   "Show the agent's reasoning" rows and a "Reply" label on a hand-over note, a side column on the
+   order page that looked cut off at the bottom, a stale ETA shown as firmly as a promise, the Lille
+   notice (see below).
+
+### Review 2: what I changed
+
+- **A proposal's own deadline sorts the card** (`withProposalDeadline` in `lib/urgency.ts`): when the
+  train an option books leaves, or check-in for the sailing it books closes, before the order's own
+  deadline, that moment is what is lost first: "The train this proposal books from Bordeaux leaves at
+  13:00 CEST · in 1 h 8 min", amber, fifth on For you instead of fourteenth. The order page and the
+  Orders list use the same. The Executor now refuses to book a train that has already left ("Not
+  carried out: the train … has already left"), because a card can wait longer than its train.
+- **The Monitor's silent-car rule ran on the recording.** I first ran all Monitor rules, saw the
+  disruption rule start the Lille protest (scenario 7) and stopped it: the Lille notice was still
+  published from an earlier live play, and `fixtures:load` never reset the feed. Fixed in
+  `loadFixtures` (seeded notices go back to their seed state, so "Back to the start" cannot leave
+  scenario 7 armed), reloaded, and ran only the silent-car and no-reply rules. Two hits, as the
+  reviewer saw: CD-420806 (no GPS for 7 h 36 min) and CD-421013 (no GPS since pickup). Each started
+  the Investigator, which asked the driver (simulated) and closed without a card: the phones had died
+  overnight and the cars are close to their destinations; both look again at their next check.
+  Cost $0.015 and $0.019. The simulated replies moved the demo clock four minutes, so the recording
+  now starts at 12:52 instead of 12:48.
+- **"Agents are handling" is one set of orders everywhere.** An agent run that finished but looks
+  again later ("Watching") counts as handling on For you, sits in Agents → Active as its own group
+  ("Watching (10): agents are handling these without you …"), and shows "Agent on it" on Orders. Done
+  now holds only finished work, with the Classifier's 55 message-reading lines in one fold. The
+  header says what the code runs are ("71 more ran as code without a model (68 quiet checks, 3 by the Monitor's rules)"; the 71 add up with the tabs again). A run without a
+  narration reads "Wrote a proposal for a person: … ."
+- **After Approve**: the toast names order and car, says in one line what is about to happen (the
+  same words as the card's "If you approve"), and offers "Open order" when done. An order whose card a
+  person decided in the last day is counted as "you decided N in the last day", not as handled by
+  agents. "Needs your approval" is built from the option's steps: "it emails a customer, makes a
+  booking and adds a cost", and "you call the customer" when the person makes the call.
+- **Search** ranks orders with one record holding every word first (newest first), then the rest by
+  text rank, and drops orders that only hold the words scattered and show none of them; a ferry
+  re-check is named after the line that was checked ("Vela Coast Lines (checked by the agent)"), not
+  "Quote, not booked", and a proposal is "Agent's proposal". The list ends with "See all matching
+  orders" and "Ask the agents: “…”". Ask sources no longer repeat the order number when there is one
+  order, are shown in full, and the answer says when it was written.
+- **Orders**: each open row says who is on it ("Needs you", "Agent on it") and what the problem is,
+  then the deadline with a coloured countdown that does not break over two lines; quiet rows say only
+  what is next. Stages read "Not offered to drivers yet" and "Offered to drivers, not taken yet"
+  instead of "Ready to offer to drivers" and "Looking for a driver" (the recorded quiet checks were
+  rewritten again). A Clear link on the filter.
+- **Order page**: a key time's source chip names its zone when it differs from the page ("order form
+  · Mon 19 Oct 14:13 EEST"), which fixes a clash I had introduced in round 1 (the same record at 14:13
+  in one panel and 13:13 in another). The side column flows with the page instead of scrolling on its
+  own (it looked cut off). A stale ETA is grey, not as firm as a promise. "Charlotte Benvik, on the
+  gig". The car picture says "Model illustration".
+- **Run page**: the model's reasoning is folded into the step it led to, so there are no rows with
+  only a "Show the agent's reasoning"; the hand-over note is "Handed to Opus", not "Reply"; "Catch-up
+  when the demo day started" instead of "The morning catch-up" at 12:32.
+- **Settings**: calling a seller or another contact can never become automatic (`NEVER_AUTO` in
+  `lib/policies.ts`): a person makes the call, so "Agent does it" meant nothing. Fixed rules say
+  "Always asks you" instead of looking like a menu; a row shows no counter until there is one.
+- **Wording**: "If you approve: … are cancelled", "checks again in 2 h 50 min" (not "170 min"), "an
+  email goes to Calverin Car Centre (its text is in the card)", a ferry is booked "if it still has
+  space" (the Executor re-checks), "€140.91" kept exact, "Approve: move ferry …", "in 4 d 22 h" not "in
+  4 d", the legend has the grey ring ("later"), "Not confirmed by the check", Learning without
+  "planted" or a claim that every change is re-tested, and a sold-out sailing shows no price.
+
+### Review 2: what I did not change, and why
+
+- **The same requests as round 1, again**: owners and "take it", phone numbers, filters and grouping
+  on For you, one time zone for everything, the demo controls out of the menu, Settings options the
+  product does not have (cancel a ferry booking, approve a fuel claim). Same reasons as above.
+- **The checker's remarks are shown instead of the card being held back.** The verifier sends a card
+  back when a fact does not match its source; remarks about what a card leaves out do not block it,
+  because a person can judge them, and holding a ferry card back over wording would cost the ferry.
+  The remarks are now framed as "to know before you approve", and the option the reviewer worried
+  about says it books "if it still has space". The verifier's one wrong remark (the Cologne hotel was
+  booked; the card did not cite it) stays in the recording as it was made.
+- **Agent wording in recorded cards and narrations** ("Driver denies today's Düsseldorf pickup on
+  file", "the owner", "the proposed card was sent back by checks", "filed 0 facts … each marked as
+  stated"): recorded model output, see round 1. New narrations use the new prompt.
+- **"Nadia Alderfield. site desk"** (both reviewers): the page says "Nadia Alderfield, site desk";
+  checked in the rendered HTML. A comma at screenshot size.
+- **Two prices for the Sat 14:00 sailing (€387 and €499)**: quotes are per car in the mock ferry
+  line, so two cars get two prices; the new If-you-approve line shows each card's own price.
+- **"Driver says not fit" is amber, not Safety**: the driver has not started driving; safety is kept
+  for a car or a person in danger now (a red warning light), so red keeps meaning one thing.
+- **A safety card's countdown is the delivery promise**: the line says what is lost next (SPEC 6);
+  the red Safety mark and the sort order already say "first".
+- **Pickups tomorrow with no driver, listed as "Nothing open"** (CD-420412, CD-421011, …): the records
+  hold no alert, task or claim for them; the marketplace is still offering the gigs. A rule for "no
+  driver the day before" would be a new Monitor rule, not a fix.
+- **Approve and Reject stacked on the order page**: long labels in a narrower column wrap.
+
+### How it was checked, and what went wrong on my side
+
+- `npm run typecheck`, `npm run smoke` (For you, all 100 order pages, search) and `next build` pass.
+  The final pages were screenshotted from a production build in light and dark and looked at
+  (For you, toast, Agents, Orders, an order page, Settings, Learning, search).
+- Search checks by hand: "Hamburg ferry" → CD-420603, CD-420299, CD-420154 first, each with the record
+  that holds both words; "Kasper" → the driver's three orders; "CD-420322" → that order first;
+  "Bentley Hamburg" → orders with a Bentley and Hamburg on the route; "zzzz" → nothing, with "Ask the
+  agents" offered.
+- **Mistakes I made.** (1) In round 1 I put key-time chips in the key time's zone to stop one clash
+  and created another (the same record at 14:13 and 13:13 in two panels); the second reviewer caught
+  it and the chip now names its zone. (2) My first Monitor run started scenario 7 on the recording
+  (see above); stopped within a minute and the recording reloaded. (3) After many in-place file
+  writes the dev server stopped picking up changes, so a few of my own spot-check screenshots showed
+  old code (a chip without its zone). I noticed because the HTML did not match the file, restarted
+  the server, and did the final check on a production build. (4) The first reviewer run was lost to
+  context overflow (above).
+- Every change to the recording is in `fixtures/agent-runs.json` and can be seen in its diff: the 68
+  quiet-check sentences (twice: window wording, then stage words), and the two Monitor-started runs
+  with their steps, timeline entries and demo events. Nothing an agent wrote was edited by hand.

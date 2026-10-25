@@ -76,7 +76,7 @@ export function duration(minutes: number): string {
   if (hours < 24) return rest ? `${hours} h ${rest} min` : `${hours} h`
   const days = Math.floor(hours / 24)
   const leftover = hours % 24
-  return leftover && days < 3 ? `${days} d ${leftover} h` : `${days} d`
+  return leftover && days < 7 ? `${days} d ${leftover} h` : `${days} d`
 }
 
 /** "in 2 h 10 min" / "3 h ago" / "now", against the simulated clock. */

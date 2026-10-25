@@ -254,9 +254,9 @@ function toItem(entry: EntryRow): TimelineItem {
 // ---------------------------------------------------------------------------
 
 const STAGE_LABEL: Record<StageKey, string> = {
-  intake: "New order, being prepared",
-  ready: "Ready to offer to drivers",
-  finding_driver: "Looking for a driver",
+  intake: "New order, still being prepared",
+  ready: "Not offered to drivers yet",
+  finding_driver: "Offered to drivers, not taken yet",
   driver_booked: "Driver booked, waiting for pickup",
   moving: "On the road",
   at_transfer: "At the transfer yard",
@@ -748,26 +748,18 @@ export async function search(query: string, limit = 20): Promise<SearchHit[]> {
   if (!tokens.length) return []
   const tsquery = tokens.map((token) => `${token}:*`).join(" & ")
   const like = `%${query.trim()}%`
-  const result = await db.execute<{ order_id: string; reference: string }>(sql`
-    select d.order_id, d.reference
-    from ${searchDocuments} d, to_tsquery('simple', ${tsquery}) q
-    where d.tsv @@ q or d.reference ilike ${like} or d.content ilike ${like}
-    order by (d.reference ilike ${like}) desc, ts_rank(d.tsv, q) desc, d.reference
-    limit ${limit * 3}
-  `)
-  const found = [...result]
-  if (!found.length) return []
-  const ids = found.map((hit) => hit.order_id)
-  const [orderRows, itemRows, customerRows, addressRows, entryRows, at] = await Promise.all([
-    db.select().from(orders).where(inArray(orders.id, ids)),
-    db.select({ orderId: orderItems.orderId, role: orderItems.role, make: vehicles.make, model: vehicles.model }).from(orderItems)
-      .innerJoin(vehicles, eq(orderItems.vehicleId, vehicles.id)).where(inArray(orderItems.orderId, ids)),
-    db.select().from(customers),
-    db.select().from(addresses),
-    // Records that hold every searched word, newest first: the passage shown under a hit, with its source and time.
+  const [docRows, entryRows, at] = await Promise.all([
+    db.execute<{ order_id: string; reference: string }>(sql`
+      select d.order_id, d.reference
+      from ${searchDocuments} d, to_tsquery('simple', ${tsquery}) q
+      where d.tsv @@ q or d.reference ilike ${like} or d.content ilike ${like}
+      order by (d.reference ilike ${like}) desc, ts_rank(d.tsv, q) desc, d.reference
+      limit ${limit * 3}
+    `),
+    // Records that hold every searched word, newest first: their orders lead the results, and the record is the passage shown.
     db.select().from(timelineEntries)
-      .where(and(inArray(timelineEntries.orderId, ids), ...tokens.map((token) => sql`(${timelineEntries.summary} || ' ' || coalesce(${timelineEntries.body}, '')) ilike ${`%${token}%`}`)))
-      .orderBy(desc(timelineEntries.occurredAt)).limit(500),
+      .where(and(isNotNull(timelineEntries.orderId), ...tokens.map((token) => sql`(${timelineEntries.summary} || ' ' || coalesce(${timelineEntries.body}, '')) ilike ${`%${token}%`}`)))
+      .orderBy(desc(timelineEntries.occurredAt)).limit(400),
     clockNow(),
   ])
   const passages = new Map<string, NonNullable<SearchHit["snippet"]>>()
@@ -775,25 +767,40 @@ export async function search(query: string, limit = 20): Promise<SearchHit[]> {
     if (!entry.orderId || passages.has(entry.orderId)) continue
     const has = (text: string | null) => !!text && tokens.every((token) => text.toLowerCase().includes(token))
     const text = has(entry.body) ? entry.body! : has(entry.summary) ? entry.summary : `${entry.summary} ${entry.body ?? ""}`
-    passages.set(entry.orderId, { text: passage(text, tokens), source: chipLabel(entry), when: relative(entry.occurredAt, at), entryId: entry.id })
+    // A ferry re-check lists booked and quoted sailings together: name who was checked, not "Quote, not booked".
+    const source = entry.kind === "proposal" ? "Agent's proposal" : entry.source === "quote" && entry.authorLabel ? entry.authorLabel : chipLabel(entry)
+    passages.set(entry.orderId, { text: passage(text, tokens), source, when: relative(entry.occurredAt, at), entryId: entry.id })
   }
-  // An order where one record holds every word ("Hamburg ferry" in one booking) comes before one that only has the words somewhere.
-  const hits = [...found].sort((a, b) => Number(passages.has(b.order_id)) - Number(passages.has(a.order_id))).slice(0, limit)
+  const docs = [...docRows]
+  const exact = docs.filter((row) => row.reference.toLowerCase().includes(query.trim().toLowerCase())).map((row) => row.order_id)
+  // An exact reference first, then orders where one record holds every word (newest record first), then the rest by text rank.
+  const candidates = [...new Set([...exact, ...passages.keys(), ...docs.map((row) => row.order_id)])].slice(0, limit * 3)
+  if (!candidates.length) return []
+  const references = new Map(docs.map((row) => [row.order_id, row.reference]))
+  const [orderRows, itemRows, customerRows, addressRows] = await Promise.all([
+    db.select().from(orders).where(inArray(orders.id, candidates)),
+    db.select({ orderId: orderItems.orderId, role: orderItems.role, make: vehicles.make, model: vehicles.model }).from(orderItems)
+      .innerJoin(vehicles, eq(orderItems.vehicleId, vehicles.id)).where(inArray(orderItems.orderId, candidates)),
+    db.select().from(customers),
+    db.select().from(addresses),
+  ])
   const orderMap = new Map(orderRows.map((order) => [order.id, order]))
   const customerMap = new Map(customerRows.map((row) => [row.id, row.name]))
   const addressMap = new Map(addressRows.map((row) => [row.id, row.city]))
-  return hits.map((hit) => {
-    const order = orderMap.get(hit.order_id) as OrderRow
-    const item = itemRows.find((row) => row.orderId === hit.order_id && row.role === "PRIMARY") ?? itemRows.find((row) => row.orderId === hit.order_id)
-    const snippet = passages.get(hit.order_id) ?? null
+  const hits: SearchHit[] = candidates.filter((id) => orderMap.has(id)).map((id) => {
+    const order = orderMap.get(id) as OrderRow
+    const item = itemRows.find((row) => row.orderId === id && row.role === "PRIMARY") ?? itemRows.find((row) => row.orderId === id)
     return {
-      orderId: hit.order_id, reference: hit.reference,
+      orderId: id, reference: references.get(id) ?? order.reference,
       car: item ? `${item.make} ${item.model}` : "Car not identified yet",
       customer: customerMap.get(order.customerId) ?? "",
       route: `${addressMap.get(order.pickupAddressId) ?? "?"} → ${addressMap.get(order.deliveryAddressId) ?? "?"}`,
-      snippet,
+      snippet: passages.get(id) ?? null,
     }
   })
+  // When some orders hold the words in one record, an order that only has them scattered, and shows none of them, is noise.
+  const shown = (hit: SearchHit) => hit.snippet || tokens.some((token) => `${hit.reference} ${hit.car} ${hit.customer} ${hit.route}`.toLowerCase().includes(token))
+  return (passages.size ? hits.filter(shown) : hits).slice(0, limit)
 }
 
 /** Timeline entries by id, for checking what a card cites. */

@@ -21,7 +21,8 @@ export function PermissionLevel({ action, label, level, limitEur, costs, locked 
     setSaving(false)
     router.refresh()
   }
-  if (locked) return <span className="muted">{WORDS[level]}</span>
+  // A fixed rule reads differently from a choice: no menu, and "always".
+  if (locked) return <span className="muted">{level === "approval" ? "Always asks you" : WORDS[level]}</span>
   return <span className="permission-control">
     <select aria-label={`What the agent may do: ${label}`} className="demo-select" value={value} disabled={saving} onChange={(event) => { const next = event.target.value as keyof typeof WORDS; setValue(next); void save(next) }}>
       {(Object.keys(WORDS) as (keyof typeof WORDS)[]).map((key) => <option key={key} value={key}>{WORDS[key]}</option>)}

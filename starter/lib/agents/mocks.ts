@@ -62,7 +62,8 @@ export type FerryOption = {
 
 export function describeFerry(option: FerryOption): string {
   const fromZone = zoneOfTerminal(option.from)
-  const price = option.priceCents != null ? `, ${money(option.priceCents, "EUR")}` : ""
+  // A sold-out sailing has no price to pay: showing one reads like an offer.
+  const price = option.priceCents != null && option.state !== "sold out" ? `, ${money(option.priceCents, "EUR")}` : ""
   const state = option.state === "quote" ? "quote, not booked" : option.state
   const fromCity = cityOfTerminal(option.from)
   const toCity = cityOfTerminal(option.to)

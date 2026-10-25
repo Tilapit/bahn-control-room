@@ -10,7 +10,7 @@ import { Icon } from "./icons"
 import { SourceChip } from "./when"
 
 /** A decision in its undo window. `reference` names the order, so two quick approvals never share one anonymous toast. */
-export type Decided = { decisionId: string; cardId: string; message: string; executesAt?: string | null; reference?: string }
+export type Decided = { decisionId: string; cardId: string; message: string; executesAt?: string | null; reference?: string; car?: string; what?: string | null }
 
 const orderHref = (reference: string) => `/orders/${reference}`
 const entryHref = (reference: string, entryId: string) => `/orders/${reference}#${entryId}`
@@ -21,17 +21,25 @@ function modelWords(model: string | null): string {
   return model.includes("opus") ? "Opus, the larger model" : model.includes("sonnet") ? "Sonnet" : model.includes("haiku") ? "Haiku, the small model" : "a model"
 }
 
-/** "it changes a booking and is a booking and a cost and changes a date" → "it books or changes a booking, adds a cost and changes a date". */
-function approvalWords(reason: string): string {
+const list = (parts: string[]) => parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`
+
+/**
+ * Why a person must approve, from the option's own steps: "it books a booking and adds a cost, and you make a call".
+ * A call is made by the person who approves, so it is "you", never "it". The stored reason is the fallback.
+ */
+function approvalWords(option: CardOption | null, reason: string): string {
+  const actions = new Set((option?.steps ?? []).map((step) => step.action))
+  const has = (...names: string[]) => names.some((name) => actions.has(name))
   const parts = [
-    /contacts a customer/.test(reason) ? "contacts a customer" : null,
-    /booking/.test(reason) ? "books or changes a booking" : null,
-    /cost/.test(reason) ? "adds a cost" : null,
-    /promised/.test(reason) ? "changes a date the customer was promised" : /date/.test(reason) ? "changes a date" : null,
-    /call/.test(reason) ? "hands a call to you" : null,
+    has("message_customer") ? "emails a customer" : null,
+    has("book_ferry", "book_hotel", "book_driver_travel", "book_tow") ? "makes a booking" : null,
+    has("change_ferry_booking", "cancel_driver_travel", "switch_driver", "republish_offer") ? "changes a booking" : null,
+    has("raise_fee", "approve_repair_cost") || has("book_ferry", "book_hotel", "book_driver_travel", "book_tow") ? "adds a cost" : null,
+    has("change_delivery_time") ? "changes the date the customer was promised" : has("change_pickup_time") ? "changes a date" : null,
   ].filter((part): part is string => !!part)
-  if (!parts.length) return reason
-  return `it ${parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`}`
+  const call = has("call_customer") ? "you call the customer" : has("call_contact") ? "you make a call" : null
+  if (!parts.length && !call) return reason.replace(/^it a person makes the call/, "it hands the call to a person")
+  return [parts.length ? `it ${list(parts)}` : null, call].filter(Boolean).join(parts.length && call ? ", and " : "")
 }
 
 /** "BMW M4: car not at…" and "Volvo V60: Delivered…" read the same way: a capital after the car. */
@@ -42,7 +50,9 @@ function headlineWords(headline: string): string {
 /** A button names what it does: an answer to the agent's question says so, and every other approval starts with "Approve:". */
 function buttonLabel(option: CardOption): string {
   if (/^(approve|reject|answer)\b/i.test(option.label)) return option.label
-  return option.kind === "answer" ? `Answer: ${option.label}` : option.kind === "reject" ? option.label : `Approve: ${option.label}`
+  // "Move ferry …" reads "Approve: move ferry …"; an acronym ("CMR …") keeps its capitals.
+  const rest = /^\p{Lu}\p{Ll}/u.test(option.label) ? option.label.charAt(0).toLowerCase() + option.label.slice(1) : option.label
+  return option.kind === "answer" ? `Answer: ${rest}` : option.kind === "reject" ? option.label : `Approve: ${rest}`
 }
 
 /** What a person must read before approving: the exact words that go to a customer or a driver. */
@@ -108,7 +118,12 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
       })
       const result = await response.json() as { decisionId?: string; message?: string; executesAt?: string | null; error?: string }
       if (!response.ok || !result.decisionId) throw new Error(result.error ?? "The decision was not saved.")
-      onDecided({ decisionId: result.decisionId, cardId: card.id, message: result.message ?? `${label}.`, executesAt: result.executesAt ?? null, reference: card.group ? `${card.group.length} orders` : order.reference })
+      const chosen = card.options.find((option) => option.id === optionId)
+      onDecided({
+        decisionId: result.decisionId, cardId: card.id, message: result.message ?? `${label}.`, executesAt: result.executesAt ?? null,
+        reference: card.group ? `${card.group.length} orders` : order.reference, car: card.group ? undefined : order.car,
+        what: chosen && chosen.kind !== "reject" ? optionWords(chosen, order.zones)?.replace(/ \(its text is in the card\)/, "") ?? null : null,
+      })
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The decision was not saved.")
       setBusy(null)
@@ -163,7 +178,7 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
           {card.findings.map((finding, index) => {
             const note = failing.find((candidate) => candidate.finding === index)
             return <li className="finding" key={`${finding.source_entry_id}-${index}`}>
-              <span className="finding-text">{finding.text}{note && <span className="finding-note">Not confirmed by the verifier: {note.note}</span>}</span>
+              <span className="finding-text">{finding.text}{note && <span className="finding-note">Not confirmed by the check: {note.note}</span>}</span>
               <span className="chips">
                 <SourceChip label={`${finding.reference ? `${finding.reference} · ` : ""}${finding.source_label}`} at={finding.at} now={now} zone={order.zone} href={entryHref(finding.reference ?? order.reference, finding.source_entry_id)} />
                 {finding.also && <SourceChip label={finding.also.source_label} at={finding.also.at} now={now} zone={order.zone} href={entryHref(finding.reference ?? order.reference, finding.also.source_entry_id)} />}
@@ -175,8 +190,8 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
           const wrongFacts = failing.filter((note) => note.finding != null).length
           const remarks = failing.filter((note) => note.finding == null)
           return <div className="note verifier">
-            <p>{wrongFacts === 0 ? `A second agent checked all ${checked} facts against their sources: they match.` : `A second agent checked the facts against their sources: ${checked - wrongFacts} of ${checked} match.`}
-              {remarks.length > 0 ? ` It also noted ${remarks.length === 1 ? "one thing" : `${remarks.length} things`} the card leaves out or words loosely:` : ""}</p>
+            <p>{wrongFacts === 0 ? `Each fact was checked against its source: all ${checked} match.` : `Each fact was checked against its source: ${checked - wrongFacts} of ${checked} match.`}
+              {remarks.length > 0 ? ` The check also found ${remarks.length === 1 ? "one thing" : `${remarks.length} things`} to know before you approve:` : ""}</p>
             {remarks.length > 0 && <ul className="verifier-remarks">{remarks.map((note, index) => <li key={index}>{note.note}</li>)}</ul>}
           </div>
         })()}
@@ -187,7 +202,7 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
           <OptionDetail option={primary} customer={customer} zones={order.zones} />
           {(card.proposal?.cost_eur || card.proposal?.requires_approval_reason) && <p className="note">
             {card.proposal?.cost_eur ? `New cost about €${Math.round(card.proposal.cost_eur)}. ` : ""}
-            {card.proposal?.requires_approval_reason ? `Needs your approval: ${approvalWords(card.proposal.requires_approval_reason)}.` : ""}
+            {card.proposal?.requires_approval_reason ? `Needs your approval: ${approvalWords(primary, card.proposal.requires_approval_reason)}.` : ""}
           </p>}
         </div>
         {others.map((option) => <div className="other-option" key={option.id}>
@@ -228,8 +243,9 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
         <input value={reply} onChange={(event) => setReply(event.target.value)} placeholder="Or tell the agent what to do instead" aria-label="Reply to the agent" />
         <button type="submit" className="btn small" disabled={!reply.trim() || !!busy}>Send to agent</button>
       </form>
+      {/* Model and cost stay one hover away here; the Agents pages show them in full. */}
       {card.run && <p className="note run-line">
-        <Link className="run-link" href={`/agents/${card.runId}`}>See what the agent did</Link>: {card.run.steps} steps with {modelWords(card.run.model)}{card.run.escalation ? <span title={card.run.escalation}> (moved up from Sonnet)</span> : null}, model cost ${card.run.costUsd.toFixed(2)}
+        <Link className="run-link" href={`/agents/${card.runId}`} title={`${card.run.steps} steps with ${modelWords(card.run.model)}${card.run.escalation ? " (moved up from Sonnet)" : ""}, model cost $${card.run.costUsd.toFixed(2)}`}>See every step the agent took ({card.run.steps})</Link>
       </p>}
     </div>}
   </article>

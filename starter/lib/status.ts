@@ -21,7 +21,7 @@ function stagePhrase(file: CaseFile, now: Date): string {
     }
     case "driver_booked": return `${order.driver?.name ?? "A driver"} is booked to collect it in ${from}`
     case "finding_driver": return `Offered to drivers; nobody has taken the gig yet`
-    case "ready": return "Ready to offer to drivers"
+    case "ready": return "Not offered to drivers yet"
     default: return "New order, still being prepared"
   }
 }

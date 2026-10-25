@@ -10,6 +10,7 @@ export const metadata: Metadata = { title: "For you" }
 
 function countsLine(counts: QueueCounts): string {
   const parts = [`${counts.needYou} order${counts.needYou === 1 ? " needs" : "s need"} you`]
+  if (counts.decided) parts.push(`you decided ${counts.decided} in the last day`)
   if (counts.handling) parts.push(`agents are handling ${counts.handling} more without you`)
   if (counts.unattended) parts.push(`${counts.unattended} more have open items no agent has looked at yet`)
   parts.push(`${counts.quiet} have nothing open`)
@@ -22,6 +23,7 @@ export default async function ForYou() {
   await sweepDecisions()
   const [{ now, items, counts }, suggestion] = await Promise.all([getQueue(), autonomySuggestion()])
   const others = [
+    counts.decided ? `You decided ${counts.decided} in the last day.` : null,
     counts.handling ? `Agents are handling ${counts.handling} orders.` : null,
     counts.unattended ? `${counts.unattended} more have open items that no agent has looked at yet.` : null,
     `Nothing is open on ${counts.quiet} of ${counts.total} orders.`,
@@ -33,7 +35,7 @@ export default async function ForYou() {
         <p className="page-sub">{countsLine(counts)}</p>
         <p className="page-explain">Each card is something an agent could not settle on its own, most urgent first, with what it proposes.
           Nothing happens until you press a button, and you can undo for 8 seconds.
-          <span className="legend"><span className="mark safety" />safety <span className="mark time" />lost within 4 hours or already missed</span></p>
+          <span className="legend"><span className="mark safety" />safety <span className="mark time" />lost within 4 hours or already missed <span className="mark" />later</span></p>
       </div>
     </div>
     {suggestion && <AutonomySuggestion suggestion={suggestion} />}

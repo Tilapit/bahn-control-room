@@ -80,12 +80,15 @@ export async function agentsView(filter: RunFilter) {
     for (const step of steps) if (step.summary && !CARD_TOOLS.has(step.tool ?? "")) latest.set(step.runId, step.summary)
   }
   const quiet = (run: typeof runs[number]) => run.agent === QUIET_AGENT
-  const active = (run: typeof runs[number]) => !quiet(run) && ACTIVE.includes(run.status)
+  // A finished run that will look again is still the agents' work: it is what For you counts as "agents are handling".
+  const watching = (run: typeof runs[number]) => !quiet(run) && run.status === "done" && !!run.nextCheckAt && run.nextCheckAt > at
+  const active = (run: typeof runs[number]) => !quiet(run) && (ACTIVE.includes(run.status) || watching(run))
+  const group = (run: typeof runs[number]) => watching(run) ? ACTIVE.length : ACTIVE.indexOf(run.status)
   const counts = { active: runs.filter(active).length, done: runs.filter((run) => !quiet(run) && !active(run)).length, quiet: runs.filter(quiet).length }
   const shown = runs
     .filter((run) => filter === "quiet" ? quiet(run) : filter === "active" ? active(run) : !quiet(run) && !active(run))
     // Working first, then waiting on someone, a safety stop before the rest; newest first inside each, then by order so equal times keep one order.
-    .sort((a, b) => ACTIVE.indexOf(a.status) - ACTIVE.indexOf(b.status) || Number(safetyRuns.has(b.id)) - Number(safetyRuns.has(a.id))
+    .sort((a, b) => group(a) - group(b) || Number(safetyRuns.has(b.id)) - Number(safetyRuns.has(a.id))
       || b.startedAt.getTime() - a.startedAt.getTime() || (a.orderId ?? "").localeCompare(b.orderId ?? ""))
   const todayAll = runs.filter((run) => dayKey(run.startedAt) === dayKey(at))
   const today = todayAll.filter((run) => run.model)
@@ -94,9 +97,9 @@ export async function agentsView(filter: RunFilter) {
     return {
       // A finished run that looks again later is watching, not done; a quiet check only checked.
       id: run.id, agent: run.agent, status: run.status,
-      statusLabel: quiet(run) ? "Checked" : run.status === "done" && run.nextCheckAt && run.nextCheckAt > at ? "Watching" : RUN_STATUS[run.status] ?? run.status,
+      statusLabel: quiet(run) ? "Checked" : watching(run) ? "Watching" : RUN_STATUS[run.status] ?? run.status,
       sentence: run.status === "running" ? `${latest.get(run.id) ?? "Reading the order's records"}…`
-        : run.narration ?? (run.status === "waiting_person" && run.outcomeSummary ? `Put a proposal to a person: ${run.outcomeSummary}` : run.outcomeSummary ?? run.trigger),
+        : run.narration ?? (run.status === "waiting_person" && run.outcomeSummary ? `Wrote a proposal for a person: ${run.outcomeSummary.replace(/\.?$/, ".")}` : run.outcomeSummary ?? run.trigger),
       reference: order?.reference ?? null, car: order?.make ? `${order.make} ${order.model}` : null,
       startedAt: run.startedAt.toISOString(), nextCheckAt: run.nextCheckAt?.toISOString() ?? null,
       model: modelLine(run), tokens: tokensOf(run), costUsd: run.costUsd, replay: run.replay, safety: safetyRuns.has(run.id),
@@ -104,7 +107,10 @@ export async function agentsView(filter: RunFilter) {
   })
   return {
     now: at.toISOString(), rows, counts,
-    today: { runs: today.length, codeRuns: todayAll.length - today.length, tokens: today.reduce((sum, run) => sum + tokensOf(run), 0), costUsd: today.reduce((sum, run) => sum + run.costUsd, 0) },
+    today: {
+      runs: today.length, codeRuns: todayAll.length - today.length, quietRuns: todayAll.filter(quiet).length,
+      tokens: today.reduce((sum, run) => sum + tokensOf(run), 0), costUsd: today.reduce((sum, run) => sum + run.costUsd, 0),
+    },
   }
 }
 
