@@ -61,7 +61,7 @@ describe("policies", () => {
     // A new tool has to be added here on purpose.
     assert.deepEqual([...tools].sort(), [
       "add_affected_order", "add_finding", "add_step", "ask_driver", "ask_site", "check_disruptions", "escalate", "ferry_booking_status", "ferry_options",
-      "find_backup_drivers", "find_repair_shops", "get_case", "hotel_options", "propose", "resolve", "search", "timeline", "travel_options",
+      "find_backup_drivers", "find_repair_shops", "find_similar_decisions", "get_case", "hotel_options", "propose", "resolve", "search", "timeline", "travel_options",
     ])
     // What the agent can do directly: read, ask a driver or site, look up, and put a card together (or close).
     const shipped = new Map(ACTIONS.map((entry) => [entry.action, entry.level]))

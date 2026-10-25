@@ -196,6 +196,18 @@ export const TOOL_DEFINITIONS: Anthropic.Beta.BetaTool[] = [
     },
   },
   {
+    name: "find_similar_decisions",
+    description: "Past decisions people made on the same kind of action in a similar situation: up to 3, each with what was proposed, whether it was approved unchanged, changed or rejected and why, and whether it worked. Call it once before you propose a booking, a cost or a change, so you do not repeat what people rejected before. Free.",
+    input_schema: {
+      type: "object",
+      properties: {
+        action: { type: "string", description: "The action you are about to propose, as in add_step: book_ferry, change_ferry_booking, switch_driver, message_customer, …" },
+        situation: { type: "string", description: "The order's problem in a few words, such as 'ferry sold out' or 'red warning light'." },
+      },
+      required: ["action"],
+    },
+  },
+  {
     name: "escalate",
     description: "Hand the investigation to the senior model when two sources disagree about something that decides the case, a person's safety is in question, or the proposal would cost more than €500. Everything you did so far is kept.",
     input_schema: { type: "object", properties: { reason: { type: "string", description: "One sentence, such as: the driver says they are at the terminal but GPS shows 1,772 km to go." } }, required: ["reason"] },
@@ -441,6 +453,22 @@ const EXECUTORS: Record<string, Executor> = {
       lines.push(`- ${noticeLine(notice)} ${ctx.refs.cite(entryId)}\n  Orders code matched to it: ${matches.length ? matches.map((match) => `${match.file.order.reference} (${match.effect})`).join("; ") : "none"}`)
     }
     return { content: `Disruption feed, checked ${at(now, "UTC")}. Each notice is what its source reports; no driver has confirmed it unless a message says so.\n${lines.join("\n")}`, summary: `Checked the disruption feed${region ? ` for ${text(input.region)}` : ""}: ${notices.map((notice) => notice.title).join("; ")}` }
+  },
+
+  async find_similar_decisions(ctx, input) {
+    const { findSimilar, similarText } = await import("../learning")
+    const { situationOf } = await import("../outcomes")
+    const action = text(input.action)
+    if (!action) return error("Say which action you are about to propose.", "Looked for similar past decisions without an action")
+    const file = ctx.file ?? await getCase(ctx.orderId)
+    // What the order's problem is: the agent's words, or else the open alerts, tasks and incidents.
+    const open = file ? [...file.open.alerts.map((item) => item.label), ...file.open.tasks.map((item) => item.label), ...file.open.incidents.map((item) => item.label)].join(" ") : ""
+    const situation = situationOf(text(input.situation) || open)
+    const cases = await findSimilar({ action, situation, excludeOrderId: ctx.orderId })
+    return {
+      content: `Past decisions on "${action}" (${situation.replace(/_/g, " ")}), closest first. They are other orders' decisions: let them shape your proposal, and do not cite them as findings on this order.\n${similarText(cases)}`,
+      output: cases, summary: cases.length ? `Looked up ${cases.length} similar past decision${cases.length === 1 ? "" : "s"}` : "Looked up similar past decisions: none yet",
+    }
   },
 
   async escalate(ctx, input) {

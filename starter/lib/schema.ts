@@ -325,6 +325,24 @@ export const pastDecisions = pgTable("past_decisions", {
   outcomeCheckedAt: timestamp("outcome_checked_at", { withTimezone: true }),
 }, (table) => [index("past_decisions_action_idx").on(table.action)])
 
+/**
+ * Playbook rules (lib/learning.ts): drafted by code when 3+ rejections share a reason for one action type, worded by
+ * Haiku, approved by a person only after the recorded evals pass. Approved rules are added to the Investigator's prompt.
+ */
+export const playbookRules = pgTable("playbook_rules", {
+  id: text("id").primaryKey(), // `${action}:${reason}`
+  action: text("action").notNull(),
+  reason: text("reason").notNull(),
+  basedOn: jsonb("based_on").$type<string[]>().notNull(), // past_decisions ids
+  text: text("text").notNull(),
+  wordedBy: text("worded_by").notNull(), // Haiku | code
+  status: text("status").notNull(), // suggested | approved | dismissed
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  evalPassed: boolean("eval_passed"),
+  evalResult: text("eval_result"),
+})
+
 /** What the Executor did for one approved option, step by step. */
 export type ExecutedEffect = {
   ok: boolean

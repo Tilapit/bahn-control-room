@@ -9,6 +9,7 @@ import { optionWords, stepList, type StepZones } from "@/lib/present/steps"
 import type { CardOption, CardStep } from "@/lib/schema"
 import { clock, long, relative, zoneShort } from "@/lib/time"
 import { DecisionReason, EMPTY_REASON, type ReasonValue } from "./decision-reason"
+import { SimilarCases } from "./similar-cases"
 import { Icon } from "./icons"
 import { TakenOverBar, TakeOverButton } from "./takeover"
 import { CrossBorder, useTeamView } from "./view-switcher"
@@ -275,6 +276,9 @@ export function CaseDetail({ item, now, onOrderPage = false, keys = false, onDec
         <button type="submit" className="btn small" disabled={!reply.trim() || !reason.reason || !!busy}>Send to agent</button>
       </form>}
     </div>}
+
+    {/* What people decided on the same kind of proposal before, why, and whether it worked: next to the decision. */}
+    {fromAgent && <SimilarCases cardId={card.id} />}
 
     {card.findings.length > 0 && <section>
       <h3>What we know{timesIn && <span className="h3-note">times {timesIn}</span>}</h3>

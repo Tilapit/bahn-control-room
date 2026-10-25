@@ -1974,3 +1974,72 @@ reject and reply, with both disabled until a chip is picked. The table counts ab
 **Wrong first (mine).** Merging hit a conflict in `app/layout.tsx`: item 2 and item 3 each added a stylesheet import
 on the same line. Both are kept. R still puts the cursor in the reply box; the reasons sit above it and Send stays
 disabled until one is picked, which the placeholder does not say yet.
+
+**Item 3, the fork's own account of its first attempt** (its report arrived after the commit above):
+- 17 `alert.resolve` reviews looked like a pattern, but 16 were scale mode's copies of CD-420020; synthetic orders are
+  now excluded from the seed.
+- Any later alert counted as Partly, so CD-420194's ferry rebooking was marked Partly because of a later invoice
+  question. Only an alert about the same situation counts now.
+- The backup-driver proposal was read as a ferry case because its note mentions check-in. The specific patterns now
+  come first, and the summary is read before the note.
+- The chips component first imported a module that loads the database, which a client component cannot do; the
+  pure rules moved to `lib/reasons.ts`.
+- It first typed a forced `drizzle-kit push`, which would have auto-approved drops on the shared database. It never
+  ran (macOS has no `timeout`). It then applied hand-written additive SQL; a normal push afterwards reported no
+  changes.
+- Live outcome rule, and its limits: an Executor failure means Didn't work; a new alert about the same kind of
+  problem means Partly; otherwise Worked. A missed pickup or delivery promise does not yet count as Didn't work. For
+  a rejection, Worked only means the problem did not come back.
+
+### 4. Learning without fine-tuning
+
+Built by the same fork, then the pane part was wired in by me.
+
+**Built.**
+- **`find_similar_decisions`**: a free read tool under the "read" policy (`lib/agents/tools.ts`), with one line in
+  the Investigator prompt's look-up step. It returns up to 3 past decisions on the same action type, each with the
+  decision, reason and outcome, as compact text with references. Ranking is a simple feature match in
+  `lib/learning.ts`: same situation +4, same customer country +1, cost within 30% +1, has an outcome +0.5. Cases
+  from the same order are left out.
+- **The pane** shows the same cases, under the buttons and above What we know: "Similar past cases" with a link to
+  each order, its day, what was proposed, the verdict and reason in the person's words, and the outcome
+  (`app/ui/similar-cases.tsx`, fetched per card). On CD-420299's ferry card these are the three earlier rejections of
+  "Book the next sailing from the earlier quote: rejected: wrong facts".
+- **Playbook rules.** When 3 or more rejections or changes share a reason for one action type, code drafts a
+  suggestion; Haiku words it, with code wording when there is no API key (`playbook_rules`, new table). Settings →
+  Learning shows it as "Approve: test, then add to the agent's rules" / Dismiss. Approve first runs
+  `scripts/evals.ts --recorded`, the recorded fixtures with no live calls, and shows pass or fail. Only on a pass is the
+  rule approved and added to the Investigator's system prompt, as a second cached block so the main prompt's cache
+  stays valid.
+- **Settings → Learning** also shows approved-unchanged counts per kind of action (here vs the dataset's own reviews
+  and the demo history), why proposals were rejected or changed (Wrong facts 6, Customer must decide 1), and the
+  outcomes (Worked 4, Partly 0, Didn't work 1, 8 not checked yet or nothing carried out), each with its record.
+- **The autonomy suggestion** now uses the same `rateOf` (at least 90% approved unchanged) instead of its own check.
+  It gives the same result at the counts the demo reaches: 5/5, 9/10, 8/9, 10/11 and 14/15 were checked by hand.
+
+**What is made up.** The dataset's 10 reviews never reach 3 rejections with one reason on one action type. So
+three rejected "Book the next sailing from the earlier quote" decisions, reason Wrong facts, are seeded on delivered
+orders CD-420004, CD-420111 and CD-420164 (Fri 16 to Sun 18 Oct). They are marked origin `seeded` and shown as "demo
+history" wherever they appear. They are the only made-up rows. Haiku worded their rule: "Before booking a ferry,
+confirm current sailing space with the ferry line, since earlier quotes or availability lists may be outdated."
+
+**Checked.** `tests/learning.test.ts` and the updated `tests/policies.test.ts` (it lists every tool on purpose; the
+new one is added): 19 tests pass. The fork approved the rule once through the API: "All 11 groups passed" in about
+2 s, and `playbookPrompt()` then returned the rule. It then set the rule back to suggested so the demo shows the
+Approve button. Screenshots: Settings → Learning, full page; CD-420299 selected on For you (`/?case=CD-420299`)
+with the similar cases under the buttons. `npm run typecheck` passes.
+
+**Wrong in the first attempt, and changed.**
+- The fork dated the demo history from Mon 19 Oct in 26-hour steps, which put one rejection at 15:30 on the snapshot
+  day, after the demo clock. It saw this in its screenshot and moved the three to Fri 16 to Sun 18 Oct.
+- Outcome words were first green, amber and red. They are neutral now: red is only for safety, amber only for time
+  risk.
+- In the pane, a rejected past case said "outcome not checked", while Learning says "nothing was carried out" for
+  the same row. The pane now says the same as Learning, and "outcome not checked yet" only when something was
+  carried out and is not yet due.
+- Scenario 2's footage replies "call the seller first". The API now refuses that without a reason, so the script
+  picks "Customer must decide" first.
+
+**Not done, and limits.** The recorded evals check the policy layer and the recorded cards, not how an approved rule
+changes a new run; that needs `--live` (about $1.50), which was not run. No recorded run calls the new tool, and none
+was recorded again. Playbook rules are not in the fixtures; `learning:seed` drafts them again on a fresh clone.

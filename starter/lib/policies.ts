@@ -23,7 +23,7 @@ export type PolicyAction = {
 }
 
 export const ACTIONS: PolicyAction[] = [
-  { action: "read", level: "auto", label: "Read the order, its timeline and search", reason: "Reading changes nothing.", proposable: false },
+  { action: "read", level: "auto", label: "Read the order, its timeline, search and past decisions", reason: "Reading changes nothing.", proposable: false },
   { action: "ask_driver", level: "auto", label: "Ask the driver a question", reason: "Asking changes nothing.", proposable: false },
   { action: "ask_site", level: "auto", label: "Ask the pickup or delivery site a question", reason: "Asking changes nothing.", proposable: false },
   { action: "look_up", level: "auto", label: "Look up ferries, trains, hotels, repair shops and drivers", reason: "Looking up changes nothing.", proposable: false },

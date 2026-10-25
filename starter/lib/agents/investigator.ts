@@ -230,6 +230,7 @@ async function loop(runId: string, orderId: string, reference: string, startMode
       }
     }
 
+    const rules = await (await import("../learning")).playbookPrompt().catch(() => null)
     let response: Anthropic.Beta.BetaMessage
     try {
       response = await anthropic().beta.messages.create({
@@ -238,7 +239,9 @@ async function loop(runId: string, orderId: string, reference: string, startMode
         // A refusal is re-run on a fallback model chosen by the API, inside the same call.
         betas: ["server-side-fallback-2026-07-01"],
         fallbacks: "default",
-        system: [{ type: "text", text: prompt("investigator"), cache_control: { type: "ephemeral" } }],
+        // Approved playbook rules ride in their own cached block after the prompt, so the prompt's cache stays valid.
+        system: [{ type: "text", text: prompt("investigator"), cache_control: { type: "ephemeral" } },
+          ...(rules ? [{ type: "text" as const, text: rules, cache_control: { type: "ephemeral" as const } }] : [])],
         tools: TOOL_DEFINITIONS,
         messages: state.messages,
         // Caches the growing conversation; the marker on the system prompt caches tools + system.

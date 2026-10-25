@@ -161,6 +161,8 @@ export async function finalizeDecision(decisionId: string): Promise<{ done: bool
   // Reject, reply and answer: the agent's proposal was not taken as written. That is a lesson worth keeping.
   for (const action of primaryActions) await countDecision(action, false)
   await recordPastDecision(decisionId)
+  // Three rejections with one reason for one kind of action: code drafts a playbook rule for a person to approve.
+  void import("./learning").then((learning) => learning.refreshPlaybookSuggestions()).catch((error) => console.error("playbook", error))
   if (kind === "reject" || kind === "reply") {
     const file = await getCase(card.orderId)
     await db.insert(evalCases).values({

@@ -15,3 +15,21 @@
   border: 1px solid var(--line-2); border-radius: var(--radius-s); background: var(--surface); color: var(--text);
 }
 .reason:disabled .reason-chip { cursor: default; opacity: 0.6; }
+
+/* Similar past cases, in the detail pane. */
+.similar { margin-top: 16px; }
+.similar h3 { font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 8px; }
+.similar ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 14px; }
+.similar-line { display: block; color: var(--text-2); }
+
+/* Outcome words stay neutral: red is only for safety and amber only for time risk (CLAUDE.md). */
+.outcome { font-weight: 600; color: var(--text); }
+
+/* Settings → Learning */
+.learning-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.learning-table th { text-align: left; font-weight: 500; color: var(--text-3); font-size: 13px; padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); }
+.learning-table td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+.learning-reasons { display: flex; flex-wrap: wrap; gap: 16px; font-size: 14px; }
+.learning-reasons b { font-weight: 500; }
+.playbook-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 4px; }
+.playbook-actions .note { flex-basis: 100%; margin: 0; }

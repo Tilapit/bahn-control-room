@@ -6,6 +6,7 @@
 import { and, eq, isNotNull, isNull } from "drizzle-orm"
 import { now as clockNow } from "./clock"
 import { db } from "./db"
+import { rateOf } from "./learning"
 import { describe, NEVER_AUTO, PROPOSABLE, setPolicy } from "./policies"
 import { cards, decisions, demoSettings, policies } from "./schema"
 
@@ -63,7 +64,8 @@ export async function autonomySuggestion(): Promise<Suggestion | null> {
     .filter((row) => row.level === "approval" && PROPOSABLE.includes(row.action) && !NEVER_AUTO.has(row.action) && !describe(row.action)?.customerContact && PLURAL[row.action])
     // Trust is earned: enough approvals as proposed, and nearly every decision on it was one.
     .filter((row) => row.approvedUnchangedCount >= threshold && row.approvedUnchangedCount >= row.suggestionDismissedAt + threshold)
-    .filter((row) => row.decidedCount - row.approvedUnchangedCount <= Math.floor(row.decidedCount * 0.1))
+    // The acceptance rate Settings → Learning shows (lib/learning.ts): at least 90% approved unchanged.
+    .filter((row) => (rateOf(row.approvedUnchangedCount, row.decidedCount) ?? 0) >= 0.9)
     .sort((a, b) => b.approvedUnchangedCount - a.approvedUnchangedCount)
   const row = candidates[0]
   if (!row) return null
