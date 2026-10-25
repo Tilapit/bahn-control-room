@@ -128,7 +128,7 @@ export default async function Orders({ searchParams }: Props) {
           <span role="cell" className="ot-status" title={isOpen && u.relative ? `${status}. ${u.sentence}, ${u.relative}` : status}>
             <span className="ot-text">{status}</span>{isOpen && u.relative && <span className={`when ${tone}`}>{u.relative}</span>}
           </span>
-          <span role="cell" className={`ot-who ${holder}`}>{WHO[holder]}</span>
+          <span role="cell" className={`ot-who ${holder}`} title={takenOver.has(file.order.id) ? "You took this order over" : holder === "you" ? "A proposal or an open item waits for a person" : holder === "agent" ? "An agent works on it or looks again later" : "Nothing is open on it"}>{takenOver.has(file.order.id) ? "You, taken over" : WHO[holder]}</span>
           {snippet && <span className="ot-snippet">{snippet.source} · {snippet.when}: “<Marked text={snippet.text} />”</span>}
         </Link>
       })}

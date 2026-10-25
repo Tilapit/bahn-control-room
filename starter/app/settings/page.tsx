@@ -40,7 +40,7 @@ export default async function Settings() {
   return <main className="content narrow">
     <div className="page-head"><div><h1>Settings</h1><p className="page-sub">What agents may do on their own, and what they learn from your corrections.</p></div></div>
     <SettingsNav current="permissions" />
-    <p className="lead">The app checks this list before every action an agent takes; agents cannot change it. Reading, asking a driver or a site and looking things up need no approval. Anything that books, costs money, changes a date or contacts a customer asks you first, unless you let the agent do it here.</p>
+    <p className="lead">The app checks this list before every action an agent takes; agents cannot change it. Reading, asking a driver or a site and looking things up need no approval. Anything that books, costs money or changes a date asks you first, unless you let the agent do it here. Contacting a customer, the date a customer was promised and a phone call always ask you.</p>
     <section className="permission-group">
       <h2 className="section-title">Agents do these on their own</h2>
       <p className="note">They note on the order what they did. A driver message that is part of a proposal waits for your decision on that proposal.</p>

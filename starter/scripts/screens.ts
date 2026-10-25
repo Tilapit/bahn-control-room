@@ -1,4 +1,4 @@
-// npm run screens -- [--dark] [--both] [--slices 6] [--base http://localhost:3001] [--out ../screens] [shot ...]
+// npm run screens -- [--dark] [--both] [--slices 6] [--height 900] [--base http://localhost:3001] [--out ../screens] [shot ...]
 // Takes full-page screenshots of the running app with Playwright.
 // A shot is a path ("/orders/CD-420322"), optionally named ("for-you=/"),
 // optionally followed by an action: "+expand" opens the first card, "+search" types a search,
@@ -22,7 +22,7 @@ const DEFAULT_SHOTS = [
   "order-CD-420299=/orders/CD-420299",
   "order-CD-420603=/orders/CD-420603",
   "order-CD-420123=/orders/CD-420123",
-  "run=/agents/run_fcb33edc",
+  "run=/agents/run_cb4623d2",
   "how-it-works=/settings/how-it-works", "orders-filter=/orders?q=Hamburg",
   "settings=/settings",
   "learning=/settings/learning",
@@ -41,7 +41,7 @@ async function main() {
   const base = option(args, "--base", process.env.APP_URL ?? "http://localhost:3001")
   const out = resolve(option(args, "--out", join(process.cwd(), "..", "screens")))
   const slices = Number(option(args, "--slices", "0")) || 0
-  const values = new Set([option(args, "--base", ""), option(args, "--out", ""), option(args, "--slices", "")])
+  const values = new Set([option(args, "--base", ""), option(args, "--out", ""), option(args, "--slices", ""), option(args, "--height", "")])
   const shots = args.filter((arg) => !arg.startsWith("--") && !values.has(arg))
   const themes: ("light" | "dark")[] = args.includes("--both") ? ["light", "dark"] : args.includes("--dark") ? ["dark"] : ["light"]
   await mkdir(out, { recursive: true })
@@ -49,7 +49,7 @@ async function main() {
   const browser = await chromium.launch()
   try {
     for (const theme of themes) {
-      const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, colorScheme: theme, deviceScaleFactor: 1 })
+      const context = await browser.newContext({ viewport: { width: 1440, height: Number(option(args, "--height", "960")) || 960 }, colorScheme: theme, deviceScaleFactor: 1 })
       const page = await context.newPage()
       const errors: string[] = []
       page.on("pageerror", (error) => errors.push(error.message))

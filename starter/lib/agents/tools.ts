@@ -293,7 +293,7 @@ const EXECUTORS: Record<string, Executor> = {
   async get_case(ctx, input) {
     const file = await caseOf(ctx, text(input.order) || null)
     if (!file) return error(`No order ${text(input.order)}.`, "Looked for an order that does not exist")
-    return { content: caseText(file, ctx.refs), summary: `Read the case file of ${file.order.reference}` }
+    return { content: caseText(file, ctx.refs), summary: `Read the order's records (${file.order.reference})` }
   },
 
   async timeline(ctx, input) {

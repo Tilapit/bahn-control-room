@@ -95,7 +95,7 @@ export async function runDriverSupport(orderRef: string, messageEntryId: string,
       if (use.name === "get_case") {
         const fresh = await getCase(file.order.id)
         results.push({ type: "tool_result", tool_use_id: use.id, content: fresh ? caseText(fresh, refs) : "Order not found." })
-        await addStep(runId, idx++, { at, type: "tool_result", tool: use.name, summary: `Read the case file of ${file.order.reference}` })
+        await addStep(runId, idx++, { at, type: "tool_result", tool: use.name, summary: `Read the order's records (${file.order.reference})` })
       } else if (use.name === "reply_driver") {
         const text = String(input.text ?? "").trim()
         if (await levelFor("reply_driver") !== "auto") {

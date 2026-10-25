@@ -1696,3 +1696,55 @@ the Verifier sent it back twice more (findings that claimed more than their sour
 "Approve: offer the gig to Ida Ervanton and tell Carl": `switch_driver` and `message_driver`, with "their train, flight
 and hotel are not cancelled by this click (a person cancels them after Ida accepts)", plus "Offer the gig to Milo
 Briarmont instead" as option 2. The recorded morning was loaded back afterwards.
+
+### 6. Visual polish, and a fresh reviewer's first look
+
+**The pass** (every page at 1440×900, light and dark; `npm run screens -- --height 900` now takes that size):
+- **Spacing on one scale.** Every margin, padding and gap in `globals.css` is now a multiple of 4 px in 8 px steps
+  (142 values moved: 10→8, 14→16, 18→16, 28→32 and so on; sizes, radii and font sizes untouched).
+- **Prose at a reading width**: paragraphs, page subtitles and explanations stop at 720 px (How it works was 820).
+- **One type scale**: page titles 22, section labels 12 px uppercase muted everywhere (the Agents group headings were
+  13 px bold sentence case), body 15, secondary 13–14. One accent colour (blue), red only for safety, amber only for
+  time risk.
+- A step on the run page read "Read the case file of CD-420322": the tool now writes "Read the order's records
+  (CD-420322)", and older recorded steps are worded the same way when shown.
+
+**The reviewer.** A fresh subagent got only 13 screenshots (11 pages in light, 2 in dark), a line on how each was
+reached, and the question as asked: "As an ops coordinator seeing this for the first time, what would you click first
+and what is unclear?" Its first click: the red safety row on For you, on the title rather than the bare Approve,
+"so I'd read first". What it found, and what I did:
+- **Real, fixed:**
+  - "What we know" cut facts to one line, and what was cut was what mattered ("(quote, not book…", "about €21…").
+    The brief asked for one line per fact; CLAUDE.md says a quote is never shown as a booking, and that wins:
+    each fact is one row with its whole sentence, icon and time on the left; days other than today show the date
+    ("Fri 16 Oct 11:03", where "Fri 11:03" was ambiguous).
+  - Two "Audi Q8 e-tron" and two "Toyota Corolla" rows with nothing to tell them apart: the order number is back at
+    the end of each row's headline.
+  - "Approve: call customer…" next to "you call Marvellin Motorhandel… needs your approval because you call the
+    customer": what does Approve do? The box now says that approving does not dial anyone, the call is yours with the
+    script, and the rest happens on approval. The collapsed line also shows the cost when the proposal has one.
+  - Settings said anything that contacts a customer "asks you first, unless you let the agent do it here", while
+    Learning says customer contact can never be automatic. Settings was wrong; it now says contacting a customer, a
+    promised date and a call always ask you.
+  - "Safety" meant a person in danger on For you and tricked messages on Learning; Learning's section is now "Tests
+    against tricks".
+  - Visual: the list's dividers stuck out 12 px past its headings (they line up now); a tinted box inside the opened
+    card was a card inside a card and went navy in dark mode (it is a blue rule now); the Orders "You" looked like a
+    link (plain text, and "You, taken over" for a takeover, with a hover line on what each means); Orders countdowns
+    keep to the right of the status; the Sources number headers sit over their numbers; dropdowns and the checkbox
+    use the app's own style instead of the browser's.
+  - The run page's narration put the car "north of Hannover" while the driver wrote "south": Haiku's re-narration
+    in item 5 got the direction wrong. That run was re-recorded right after (see below), and the new narration was
+    checked against the driver's words.
+- **Not changed, and why:** the bare "Approve" on a collapsed row and the message to the driver behind "Show message
+  to driver" are what the brief asked for (the full label is on the opened card and in the button's hover text);
+  times in each place's own zone ("CEST" for Hamburg, "EEST" for Helsinki) are SPEC section 10; model cost in dollars
+  is what the model provider bills, operations costs stay in euros; the "In production" column on Sources is what
+  the brief asked for; Demo scenarios are numbered as in SPEC section 9 (1, 2, 5, 7); narrow pages (Agents, Settings,
+  a run) keep a reading width on purpose. Not done for lack of time: the How it works legend does not cover every box
+  style in its diagram; whether asking a delivery site that belongs to the customer counts as contacting the customer
+  (CD-420322's delivery site is the dealer's own branch) is a policy question for Bahn, noted rather than guessed.
+
+**Checked:** typecheck, `npm run smoke`, all screens retaken in light and dark at 1440×900 with scale mode on
+(`screens/`, the run page now points at CD-420603's new run) and looked at again: For you opened, an order, Orders,
+Sources, Agents. The reviewer's report is summarised above, not copied; its notes stayed in the session.

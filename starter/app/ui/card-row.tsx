@@ -63,7 +63,7 @@ function shortHeadline(car: string, headline: string, group: number | null): str
 /** "11:14" today, "Mon 15:37" on another day: the left column of What we know, in the order's zone. */
 function factTime(at: string, now: string, zone: string | null): string {
   const day = (value: string) => new Intl.DateTimeFormat("en-GB", { timeZone: zone ?? "UTC", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value))
-  return day(at) === day(now) ? clock(at, zone) : `${new Intl.DateTimeFormat("en-GB", { timeZone: zone ?? "UTC", weekday: "short" }).format(new Date(at))} ${clock(at, zone)}`
+  return day(at) === day(now) ? clock(at, zone) : `${new Intl.DateTimeFormat("en-GB", { timeZone: zone ?? "UTC", weekday: "short", day: "numeric", month: "short" }).format(new Date(at)).replace(",", "")} ${clock(at, zone)}`
 }
 
 /** The first sentence of what happened: the card's one-line summary. */
@@ -113,7 +113,6 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
   const [error, setError] = useState<string | null>(null)
   const [reply, setReply] = useState("")
   const [answering, setAnswering] = useState(false)
-  const [fullFact, setFullFact] = useState<number | null>(null)
   const { card, order, urgency } = item
   const customer = order.customer
   const tone = urgency.safety ? "safety" : urgency.timeRisk ? "time" : ""
@@ -152,8 +151,9 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
   }
 
   // The collapsed line: what the primary button does, in the agent's own button words without "Approve:".
+  const cost = card.proposal?.cost_eur ? ` · new cost about €${Math.round(card.proposal.cost_eur)}` : ""
   const action = question ? "Agent asks you a question"
-    : primary ? primary.label.replace(/^approve:\s*/i, "")
+    : primary ? `${primary.label.replace(/^approve:\s*/i, "")}${cost}`
     : card.proposal?.effect_text ? `Next step noted: ${card.proposal.effect_text}` : "Built from an alert; no agent has worked on it yet"
   const timesIn = order.zone ? zoneShort(now, order.zone) : null
   const short = shortHeadline(order.car, card.headline, card.group?.length ?? null)
@@ -163,7 +163,7 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
     {!onOrderPage && <div className="row-line">
       <button type="button" className="row-head" aria-expanded={open} onClick={() => setOpen((value) => !value)} title={card.headline}>
         <span className={`mark ${tone}`} aria-hidden="true" />
-        <span className="row-title"><span className="row-title-text">{short}</span>{urgency.safety && <span className="tag safety">Safety</span>}{item.takenOver && <span className="tag yours">Yours</span>}</span>
+        <span className="row-title"><span className="row-title-text">{short}</span>{urgency.safety && <span className="tag safety">Safety</span>}{item.takenOver && <span className="tag yours">Yours</span>}<span className="row-ref">{card.group ? "" : order.reference}</span></span>
         <span className="row-when" title={urgency.sentence}>
           {urgency.relative && <span className={`when ${tone}`}>{urgency.relative}</span>}
           <span className="row-sentence">{urgency.sentence}</span>
@@ -195,6 +195,7 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
         {!question && (card.proposal?.cost_eur || card.proposal?.requires_approval_reason) && <p className="note">
           {card.proposal?.cost_eur ? `New cost about €${Math.round(card.proposal.cost_eur)}. ` : ""}
           {card.proposal?.requires_approval_reason ? `Needs your approval because ${approvalWords(primary, card.proposal.requires_approval_reason)}.` : ""}
+          {steps.some((step) => step.action === "call_customer" || step.action === "call_contact") ? " Approving does not dial anyone: the call is yours, with the script below; the rest happens when you approve." : ""}
         </p>}
         {steps.map((step, index) => <Words key={index} step={step} customer={customer} />)}
       </div>}
@@ -238,14 +239,14 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
             const note = failing.find((candidate) => candidate.finding === index)
             const kind = sourceKind(finding.channel)
             const reference = finding.reference ?? order.reference
-            return <li key={`${finding.source_entry_id}-${index}`} data-full={fullFact === index}>
+            return <li key={`${finding.source_entry_id}-${index}`}>
               <Link className="fact-src" href={entryHref(reference, finding.source_entry_id)} title={`${finding.reference ? `${finding.reference} · ` : ""}${finding.source_label} · ${long(finding.at, order.zone)} (${relative(finding.at, now)})`}>
                 <Icon name={kind.icon} size={13} /><time dateTime={finding.at}>{factTime(finding.at, now, order.zone)}</time>
               </Link>
-              <button type="button" className="fact-text" onClick={() => setFullFact((value) => value === index ? null : index)} title={fullFact === index ? undefined : `${finding.text} (${finding.source_label})`}>
+              <span className="fact-text">
                 {finding.text}
                 {note && <span className="finding-note">Not confirmed by the check: {note.note}</span>}
-              </button>
+              </span>
             </li>
           })}
         </ul>

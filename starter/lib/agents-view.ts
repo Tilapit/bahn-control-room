@@ -130,6 +130,8 @@ function plainStep(text: string): string {
     .replace(/^Card sent back by the verifier/, "Draft sent back by the second check")
     .replace(/^Card held back: a finding or step in the same turn failed/, "Draft held back: one of its facts or actions was not accepted")
     .replace(/^Verifier found conflicting sources; handed to the senior model/, "The second check found records that disagree; handed to Opus, the larger model")
+    // Recorded before the step said it in ops words.
+    .replace(/^Read the case file of (CD-\d+)/, "Read the order's records ($1)")
 }
 
 /** Card-building calls read as one action: "Drafted a proposal". */

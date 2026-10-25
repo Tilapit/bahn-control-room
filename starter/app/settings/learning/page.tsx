@@ -63,7 +63,7 @@ export default async function Learning() {
         : <ul className="cases">{corrections.map((item) => <Entry key={item.id} item={item} now={now} test={false} />)}</ul>}
     </section>
     {tests.length > 0 && <section className="permission-group">
-      <h2 className="section-title">Safety tests</h2>
+      <h2 className="section-title">Tests against tricks</h2>
       <p className="note">Messages written to trick an agent into breaking its rules, kept so the agents can be tested against them again. The orders and people are fictional.</p>
       <ul className="cases">{tests.map((item) => <Entry key={item.id} item={item} now={now} test />)}</ul>
     </section>}
