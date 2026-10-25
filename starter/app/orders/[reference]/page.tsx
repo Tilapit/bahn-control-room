@@ -70,7 +70,13 @@ export default async function OrderPage({ params }: Props) {
       <div>
         {card && <OrderCard item={card} now={now} />}
         {!card && <OpenItems file={file} now={now} zone={zone} />}
-        <Timeline entries={entries} now={now} zone={zone} place={(order.pickedUpAt || order.stage.key === "delivered" ? order.route.to?.city : order.route.from?.city) ?? null} zoneName={zone ? zoneShort(now, zone) : null} />
+        {/* One place for everything any channel said about this order: what was agreed pinned first, then every record. */}
+        <section className="everything" aria-label="Everything we know">
+          <h2 className="everything-title">Everything we know</h2>
+          <p className="everything-sub">Driver chat, support, internal notes, email, calls, GPS, bookings, alerts and the agents, on one timeline. Each record keeps its source and time.</p>
+          <Agreed facts={file.facts} now={now} zone={zone} stage={order.stage.key} />
+          <Timeline entries={entries} now={now} zone={zone} place={(order.pickedUpAt || order.stage.key === "delivered" ? order.route.to?.city : order.route.from?.city) ?? null} zoneName={zone ? zoneShort(now, zone) : null} />
+        </section>
       </div>
 
       <aside className="case-side">
@@ -93,8 +99,6 @@ export default async function OrderPage({ params }: Props) {
             {file.keyTimes.length === 0 && <p className="note">No slot, promise or booking times recorded yet.</p>}
           </div>
         </section>
-
-        <Agreed facts={file.facts} now={now} zone={zone} stage={order.stage.key} />
 
         <section aria-label="Route and travel">
           <div className="section-title"><span>Route and travel</span></div>

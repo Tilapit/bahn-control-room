@@ -16,6 +16,18 @@ const PATHS: Record<string, string> = {
   ferry: "M2.3 10.4 8 12.5l5.7-2.1-1.1 3H3.4l-1.1-3Z M4.3 9.6V5.8h7.4v3.8 M8 5.8V3.4",
   clock: "M8 14A6 6 0 1 0 8 2a6 6 0 0 0 0 12Z M8 4.8V8l2.2 1.4",
   check: "M3 8.4l3.2 3.1L13 4.8",
+  // Sources: one small mark per channel, the same everywhere a record is shown.
+  chat: "M2.5 3.5h11v7.5H7l-3 2.5V11H2.5z",
+  hash: "M6 2.5 4.8 13.5 M11.2 2.5 10 13.5 M2.8 6h11 M2.2 10h11",
+  mail: "M2 4h12v8.5H2z M2.3 4.4 8 8.8l5.7-4.4",
+  phone: "M5.2 2.5 3 3.1c-.6 4.9 4.9 10.4 9.8 9.8l.6-2.2-2.6-1.3-1.3 1.3C8 9.9 6.1 8 5.3 6.5l1.3-1.3z",
+  pin: "M8 14s4.5-4.2 4.5-7.5a4.5 4.5 0 0 0-9 0C3.5 9.8 8 14 8 14Z M8 8.2a1.7 1.7 0 1 0 0-3.4 1.7 1.7 0 0 0 0 3.4Z",
+  ticket: "M2 4.5h12v2.2a1.4 1.4 0 0 0 0 2.6v2.2H2V9.3a1.4 1.4 0 0 0 0-2.6z M10 4.5v7",
+  tag: "M2.5 2.5h5.3l5.7 5.7-5.3 5.3-5.7-5.7z M5.3 5.3h.1",
+  bell: "M4 11V7.5a4 4 0 0 1 8 0V11l1 1.3H3z M6.6 13.8h2.8",
+  person: "M6 7.5A2.4 2.4 0 1 0 6 2.7a2.4 2.4 0 0 0 0 4.8Z M1.8 13c.4-2.4 2.1-3.6 4.2-3.6s3.8 1.2 4.2 3.6 M10.8 7.2a2 2 0 1 0 0-4 M11.6 9.6c1.4.3 2.4 1.4 2.7 3.2",
+  doc: "M4 2h5.5L12 4.5V14H4z M9.5 2v2.5H12 M6 8h4 M6 10.5h4",
+  database: "M8 5.5c3 0 5.5-.9 5.5-2s-2.5-2-5.5-2-5.5.9-5.5 2 2.5 2 5.5 2Z M2.5 3.5v9c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-9 M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2",
 }
 
 export function Icon({ name, size = 16, className, ...rest }: { name: string; size?: number } & SVGProps<SVGSVGElement>) {

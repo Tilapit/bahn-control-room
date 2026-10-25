@@ -1548,3 +1548,32 @@ Ervanton can cover Thursday pickup". Its option was "send gig offer to Ida, canc
 the same pattern the live eval caught in task 4 (cancelling the current driver's travel in the click that only
 offers the gig). That is the earlier request's code check, still queued; noted here because the hand-back path
 reaches it too.
+
+### 3. The context store, made visible: Sources, and "Everything we know"
+
+**Sources** (`/sources`, a new item in the left rail). One row per source: Driver chat, Support chat (Intercom),
+Internal notes (Slack), Email, Calls, GPS, Bookings, Quotes, Alerts, Agents, People, and the order records
+themselves, each with its icon, how many records, on how many orders, the latest one (relative to the demo clock,
+the date on hover), and "In production": the system that would feed it (Intercom webhook, Slack Events API, the
+GPS provider feed from the driver app, the shared support mailbox, call transcription from the phone system, the
+ferry, rail and hotel booking APIs…). Above the table, one line on what the Classifier extracted: with the
+recorded morning, 53 facts and 44 agreements across 41 orders, each marked as said, not confirmed. Clicking a
+source lists its latest 50 records, each linking to its order and straight to the record on that order's
+timeline. The numbers are one `group by` over `timeline_entries`, so they hold at 1,000 orders (0.23 s).
+
+**The source list is one module** (`lib/sources.ts`): label, icon and production system per source. The Sources
+page and the timeline use it, so a channel has the same name and the same small monochrome icon everywhere
+(driver, chat bubble for support, # for Slack, envelope, phone, pin for GPS, ticket for bookings, tag for quotes,
+bell for alerts, the agent mark, people, a page for order records).
+
+**"Everything we know" on the order page.** The main column now has one section with that title, under the card:
+a line on what is in it, then what was agreed or stated, pinned on top in a tinted box (moved from the side
+column, so it is not shown twice), then the whole timeline with its filter chips, each record with its source icon.
+The side column keeps key times and route and travel.
+
+**What went wrong first.** The first Sources screenshot showed chevrons instead of most icons: the dev server had not
+recompiled `icons.tsx` yet, and an unknown icon name falls back to the chevron. Checked the served HTML, took the
+pictures again. Driver chat and People had the same icon; People has its own now.
+
+**Checked:** typecheck; `/sources`, `/sources?source=driver`, `/sources?source=internal` and order pages render;
+screenshots `sources-*`, `sources-driver-*`, `order-everything-*` in light and dark, looked at.

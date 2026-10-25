@@ -646,3 +646,34 @@ a.filter { text-decoration: none; }
 .row .takeover-bar { margin: 0 0 4px 20px; }
 .case-actions { margin-top: 14px; display: flex; align-items: center; gap: 12px; font-size: 13px; }
 .case-head .takeover-bar { margin-top: 14px; }
+
+/* ---------- Sources ---------- */
+
+.src-table { font-size: 14px; margin-top: 8px; }
+.src-row { display: grid; grid-template-columns: minmax(0, 1.4fr) 90px 80px 110px minmax(0, 2.2fr); gap: 16px; padding: 10px 12px; border-radius: var(--radius-s); align-items: baseline; color: inherit; text-decoration: none; }
+.src-row + .src-row { border-top: 1px solid var(--line); }
+.src-row:hover, .src-row[aria-current="true"] { background: var(--hover); }
+.src-head { font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; padding-top: 8px; padding-bottom: 8px; }
+.src-head:hover { background: none; }
+.src-name { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; }
+.src-name .icon, .section-label .icon { color: var(--text-3); }
+.src-row .num { font-variant-numeric: tabular-nums; text-align: right; }
+.src-latest { margin-top: 32px; }
+.section-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.src-entries { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+.src-entries li { display: grid; grid-template-columns: 88px 96px minmax(0, 1fr); gap: 12px; padding: 8px 12px; border-top: 1px solid var(--line); align-items: baseline; }
+.src-when { font-size: 13px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.src-ref { font-size: 13px; color: var(--accent-text); font-variant-numeric: tabular-nums; }
+.src-text { min-width: 0; max-width: 720px; }
+.src-text b { font-weight: 600; margin-right: 4px; }
+
+/* ---------- Everything we know (order page) ---------- */
+
+.everything { margin-top: 8px; }
+.everything-title { font-size: 17px; font-weight: 650; letter-spacing: -0.01em; }
+.everything-sub { margin: 4px 0 16px; font-size: 14px; color: var(--text-2); max-width: 720px; }
+.everything > section[aria-label="Agreed and stated"] { margin-bottom: 24px; padding: 12px 14px; border-radius: var(--radius-s); background: var(--bg); }
+.everything > section[aria-label="Agreed and stated"] .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px 24px; }
+.everything > section[aria-label="Agreed and stated"] details { grid-column: 1 / -1; }
+.entry-src { display: inline-flex; align-items: center; gap: 4px; }
+.entry-src .icon { color: var(--text-3); flex: none; }

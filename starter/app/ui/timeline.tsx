@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react"
 import type { TimelineItem } from "@/lib/case"
+import { sourceKind } from "@/lib/sources"
 import { SOURCE_FILTERS } from "@/lib/timeline/sources"
+import { Icon } from "./icons"
 import { clock, duration, long, minutesUntil, relative } from "@/lib/time"
 
 type Group = { key: string; label: string; runs: Run[] }
@@ -116,7 +118,7 @@ function Entry({ entry, now, zone }: { entry: TimelineItem; now: string; zone: s
     <div>
       <div className="entry-head">
         <span className="entry-who">{who}</span>
-        <span className="entry-src">{entry.sourceLabel}{entry.language && entry.language !== "en" ? ` · written in ${new Intl.DisplayNames(["en"], { type: "language" }).of(entry.language)}` : ""}</span>
+        <span className="entry-src"><Icon name={sourceKind(entry.source).icon} size={13} />{entry.sourceLabel}{entry.language && entry.language !== "en" ? ` · written in ${new Intl.DisplayNames(["en"], { type: "language" }).of(entry.language)}` : ""}</span>
         {badges(entry).filter((badge) => badge.text !== entry.sourceLabel).map((badge) => <span key={badge.text} className={`entry-badge ${badge.tone}`}>{badge.text}</span>)}
       </div>
       <p className="entry-summary">{text}</p>
