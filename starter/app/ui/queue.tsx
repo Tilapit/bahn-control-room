@@ -226,7 +226,6 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
         {showLater && <ul className="inbox-rows">{later.map(row)}</ul>}
       </section>}
       <Link className="fy-ontrack" href="/orders">{onTrack.toLocaleString("en-GB")} orders on track, handled by agents<Icon name="arrow" size={14} /></Link>
-      <p className="inbox-keys" aria-hidden="true"><kbd>J</kbd><kbd>K</kbd> move · <kbd>Enter</kbd> open, then <kbd>A</kbd> approve · <kbd>R</kbd> reject or reply · <kbd>T</kbd> take this</p>
     </div>
     <div className="inbox-detail" ref={detailRef} tabIndex={-1} aria-label="Selected case">
       <button type="button" className="btn quiet inbox-back" onClick={() => setOpened(false)}><Icon name="chevron" size={14} className="back-chevron" />Back to the list</button>
@@ -235,10 +234,12 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
         : selected
         ? <CaseDetail key={selected.card.id} item={selected} now={now} keys onDecided={decided} />
         : <div className="empty"><h2>Nothing needs you now.</h2><p>{later.length ? `${later.length} more can wait under Later.` : emptyLine}</p></div>}
+      <p className="inbox-keys pane-keys" aria-hidden="true"><kbd>J</kbd><kbd>K</kbd> move · <kbd>Enter</kbd> open, then <kbd>A</kbd> approve · <kbd>R</kbd> reject or reply · <kbd>T</kbd> take this</p>
     </div>
     {toast.view}
   </div></>
 }
+
 
 /** "other countries", "other desks": what a view leaves out, in the header and the muted row. */
 function otherWords(view: TeamView): string {

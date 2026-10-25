@@ -1149,3 +1149,24 @@ html[data-theme] .inbox-detail { background-color: var(--surface); }
 .rail-note-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
 .rail-note-row .theme-toggle { margin-top: 0; }
 .rail { min-width: 0; overflow: hidden; }
+
+/* ---------- Wide screens ---------- */
+
+/* For you uses the whole width: the list stays 360 px, the case pane takes the rest. */
+.content.inbox-page { max-width: none; }
+.inbox { grid-template-columns: 360px minmax(0, 1fr); }
+/* Inside the pane, prose stays at a reading width; the journey, the car row and the facts use the full width. */
+.case-detail > *:not(.journey):not(.cd-crd):not(.cd-facts):not(.cd-head):not(.claim-banner) { max-width: 760px; }
+.case-detail .cd-facts .facts-compact { max-width: none; }
+.case-detail .cd-facts .fact-text { max-width: none; }
+.pane-keys { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--line); }
+/* Every other page: one centred column up to 1280 px. */
+.content.narrow, .content.wide { max-width: 1280px; margin-left: auto; margin-right: auto; }
+/* The search sits in the page header, at the content's right edge. */
+.main:not(:has(.inbox-page)) .topbar { max-width: 1280px; width: 100%; margin: 0 auto; }
+.main:has(.inbox-page) .topbar { right: 24px; }
+/* The rail never wraps: "Agents 10", names on one line, status on the right. */
+.nav-link > span:not(.count):not(.badge) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.shift-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shift-status { white-space: nowrap; text-align: right; }
+.claim-banner p { max-width: none; }

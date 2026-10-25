@@ -2478,3 +2478,25 @@ the shot list and the traces it rewrote were set back, and the recorded morning 
 **Checked.** Screenshots at 1440×900 of For you, Orders, Agents, Sources and Settings, light and dark, looked at, and
 every screen in `screens/` retaken. Sources was missing from the screenshot script's list, so its picture had been
 from an older round; it is in the list now. `npm run typecheck`; `npm test` 73/73 and all 11 recorded eval groups.
+
+### Wide screens (CSS, plus moving one hint line)
+
+At 2000 px the layout sat on the left with about 500 px empty on the right, and the case pane stopped at 1475 px.
+- For you has no maximum width any more. The list stays 360 px and the case pane takes the rest. Inside the pane,
+  prose (what happened, the agent's steps, Agent suggests, If you approve, the buttons) stops at 760 px. The journey,
+  the Car / Route / Driver / Customer row and the facts use the full width, facts on the left and source chips on the
+  right edge.
+- Orders, Agents, Sources and Settings are one centred column up to 1280 px. The search sits in the header row at
+  the content's right edge (on For you, at the pane's right edge).
+- Rail: Agents shows its count only ("10", with "10 agent runs watching orders" on hover). On shift names stay on one
+  line with the status on the right.
+- The keyboard hints moved out of the list to one muted line at the foot of the case pane.
+- **Found in the screenshots and fixed:** at 2000 px "Take this" floated mid-banner, because a global paragraph cap
+  (720 px) stopped the banner text from stretching.
+- **Checked:** For you, Orders, Agents, Sources and Settings at 1440×900 and 2000×1300, looked at; typecheck; `npm test`
+  73/73 and all 11 recorded eval groups. My first 2000 px run came out 1440 wide (my shell loop passed both sizes as
+  one argument), so it was taken again.
+- **Also seen:** the screenshots showed a Bentley approval made at 12:28:51 real time, with its to-do under Mine. No
+  script of mine was running then; the shared dev server suggests someone was using the app in a browser. To check, I
+  took all the screenshots again on a reloaded recorded morning and counted decisions afterwards: 0. So the
+  screenshots do not approve anything. The reload removed that approval and its to-do.
