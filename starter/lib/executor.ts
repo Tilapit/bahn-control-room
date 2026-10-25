@@ -133,8 +133,11 @@ async function runStep(file: CaseFile, step: CardStep, input: { decisionId: stri
       return { step: { action: step.action, ok: true, summary, entryId }, booking: { kind, summary, departureAt: details.departureAt ?? details.checkIn ?? null, cutoffAt: null, zone, entryId, reference: ref, priceCents: lookup.price_cents } }
     }
     case "cancel_driver_travel": {
+      // A step that names the reservation: its entry id carries it, so the order shows that booking as cancelled.
+      const reservation = text(step.params.reservation_id)
+      if (reservation && !file.plan.bookings.some((booking) => booking.id === reservation && booking.state === "booked")) return fail("that booking is not held for the driver any more")
       const summary = `Cancelled for the driver: ${text(step.params.text) || text(step.params.what) || "booked travel"} (simulated; refund terms not known)`
-      return { step: { action: step.action, ok: true, summary, entryId: await entry({ source: "booking", channel: "executor_cancel", kind: "event", status: "superseded", summary }) } }
+      return { step: { action: step.action, ok: true, summary, entryId: await entry({ ...(reservation ? { id: `executor_cancel:${input.decisionId}:${reservation}` } : {}), source: "booking", channel: "executor_cancel", kind: "event", status: "superseded", summary }) } }
     }
     case "switch_driver": {
       const name = text(step.params.name) || lookup?.label || "the backup driver"

@@ -2043,3 +2043,56 @@ with the similar cases under the buttons. `npm run typecheck` passes.
 **Not done, and limits.** The recorded evals check the policy layer and the recorded cards, not how an approved rule
 changes a new run; that needs `--live` (about $1.50), which was not run. No recorded run calls the new tool, and none
 was recorded again. Playbook rules are not in the fixtures; `learning:seed` drafts them again on a fresh clone.
+
+### 5. Small fixes: the backup driver accepts; hand-back reads what came in meanwhile
+
+Built by a fork in its own worktree; merged cleanly on top of items 1–4.
+
+**Built.**
+- **Backup driver accepts** (Demo page, new block "Scenario 4: backup driver (CD-420449)"). The button records the
+  backup's yes in the driver app: a fictional demo event plus a timeline entry, "Ida Ervanton accepted the gig in
+  the driver app; Carl Birkelane no longer holds it." The case file works out who holds the gig in code
+  (`gigHolder` in `lib/policies.ts`). A yes after the offer went out answers that offer: the backup becomes the
+  order's driver, and Carl shows as having handed the gig over. A yes from someone else, or from before the offer,
+  changes nothing. With the offer answered, last round's precondition lets the cancellation through. Cancelling a
+  booking needs approval in the policies table, and the approved offer card had said the travel is "not cancelled by
+  this click (a person cancels them after Ida accepts)". So code puts a card on For you: "Approve: cancel Carl's
+  train, flight and hotel". After the 8-second window the Executor cancels each booking that has not departed yet.
+  Each step names its reservation, and the order now shows those bookings as "Cancelled"; before, a cancelled booking
+  still read "Booked". Until an offer is approved the button is disabled and says "Approve the offer on For you
+  first: until a card has offered the gig to a backup driver, nobody can accept it."
+- **Hand-back reads the messages from the takeover** (`lib/takeover.ts`). When a person hands an order back, the
+  Classifier first reads the inbound messages received during the takeover that it has not read yet, oldest first
+  (the Router had held them back). Code picks them by received time (`missedDuringTakeover`, pure). The agent
+  then continues with a line saying how many came in. If no run is waiting, each message is routed as if it had
+  just arrived. Without an API key it only says what was not read.
+
+**Checked.** `tests/backup.test.ts` (5 tests): the cancellation is refused before the yes and allowed after it, and
+a hand-back picks exactly the messages received during the takeover. After merging everything:
+`npx tsx --test tests/*.test.ts` gives 66 of 66, and `npm test`'s recorded evals all 11 groups pass. The fork ran
+one end-to-end check on CD-420449 against the database, snapshotting and restoring it:
+- the approved offer opened the handover to Ida;
+- cancelling was then refused: "…until Ida Ervanton accepts the gig, and nobody has yet";
+- the yes made Ida the driver and closed the offer, and the code card appeared;
+- approving it ended with three "Cancelled for the driver: Carl Birkelane's train / flight / hotel …" entries and the
+  bookings marked cancelled.
+
+A read-only check of the hand-back query on three orders found one unread message each: the simulated driver's
+replies, which go straight into the waiting run and never through the Classifier. A takeover window would pick
+those up. I took a screenshot of the Demo page after the merge (the block, its button disabled, the explanation).
+
+**Wrong first.**
+- The fork's first version had the Executor cancel at once when a person's rule made `cancel_driver_travel`
+  automatic. The existing test that only two places may run the Executor (a person's decision after the undo
+  window, and an agent's rule) failed on it. The card now always asks, which is the safe side.
+- The query first skipped messages with no received time. It now falls back to the time they were written, the same
+  as the pure function.
+- The fork's cleanup after its end-to-end check deleted every decision that was not in its snapshot, about 3 seconds
+  of risk on a database other agents were using. Nothing else was deciding in that window, as far as I can tell (my
+  own keyboard check ran minutes earlier and undid its approval), but it was a real risk and should not have been
+  done that way.
+
+**Not done.** The acceptance is a demo button only; real driver-app acceptances are not modelled. A gig
+republished to all drivers cannot be "accepted" from the demo, because only a named backup can be. Travel that has
+already departed is left alone rather than shown as cancellable. The hand-back path was not run live with a model,
+so as not to start agent runs on the shared database while others were working.

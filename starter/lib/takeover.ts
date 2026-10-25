@@ -4,11 +4,11 @@
 // order's card still go through: approving one is the person acting, and the Executor carries it out as usual.
 
 import { randomUUID } from "node:crypto"
-import { and, desc, eq, inArray, isNull } from "drizzle-orm"
+import { and, desc, eq, gte, inArray, isNull, or, sql } from "drizzle-orm"
 import { now as clockNow } from "./clock"
 import { db } from "./db"
 import { writeEntry } from "./agents/entries"
-import { agentRuns, takeovers } from "./schema"
+import { agentRuns, agentSteps, takeovers, timelineEntries } from "./schema"
 
 export type Takeover = typeof takeovers.$inferSelect
 
@@ -77,21 +77,70 @@ export async function handBack(orderId: string, actor: string, note: string): Pr
     orderId, at, source: "person", channel: "takeover", authorType: "operator", authorLabel: actor, kind: "event", status: "done",
     summary: `${actor} handed the order back to the agents${text ? `: “${text}”` : ", without a note"}`, evidence: { table: "takeovers", id: open.id },
   })
+  const missed = await messagesFromTakeover(orderId, open.takenAt, at)
   const { hasApiKey } = await import("./agents/llm")
-  if (!hasApiKey()) return { ok: true, message: "Handed back. Agents are not running live here (no API key), so none continued." }
+  if (!hasApiKey()) return { ok: true, message: `Handed back. Agents are not running live here (no API key), so none continued${missed.length ? ` and the Classifier did not read the ${missed.length === 1 ? "message" : `${missed.length} messages`} that came in meanwhile` : ""}.` }
   const minutes = Math.round((at.getTime() - open.takenAt.getTime()) / 60_000)
-  const content = `${actor} took this order over and handled it themselves for ${minutes} minutes; no agent acted meanwhile. ${text ? `What they did, in their words: "${text}".` : "They left no note."} Read the order again with get_case (anything that came in meanwhile is on it), then propose or resolve.`
-  void continueAgent(orderId, content).catch((error) => console.error("hand back", error))
-  return { ok: true, message: "Handed back. The agent continues with your note." }
+  const came = missed.length ? ` ${missed.length === 1 ? "One message" : `${missed.length} messages`} came in meanwhile; the Classifier has read ${missed.length === 1 ? "it" : "them"} now and ${missed.length === 1 ? "it is" : "they are"} on the order.` : ""
+  const content = `${actor} took this order over and handled it themselves for ${minutes} minutes; no agent acted meanwhile.${came} ${text ? `What they did, in their words: "${text}".` : "They left no note."} Read the order again with get_case (anything that came in meanwhile is on it), then propose or resolve.`
+  void continueAgent(orderId, content, missed).catch((error) => console.error("hand back", error))
+  return { ok: true, message: `Handed back. ${missed.length ? `The Classifier reads the ${missed.length === 1 ? "message" : `${missed.length} messages`} that came in meanwhile, then the agent continues` : "The agent continues"} with your note.` }
 }
 
-async function continueAgent(orderId: string, content: string): Promise<void> {
+/** What the hand-back reads of a timeline entry. */
+export type HandBackCandidate = { id: string; orderId: string | null; kind: string; authorType: string | null; occurredAt: Date; receivedAt: Date | null }
+
+/** Ops, agents and code write outbound; everything else (a driver, a site, a customer) is a message that came in. */
+const OUTBOUND = new Set(["operator", "agent", "system"])
+
+/**
+ * The messages that came in on this order while it was taken over, oldest first: inbound, received in the window,
+ * and not read by the Classifier yet (the Router held them back, lib/ingest.ts). Code decides, no model.
+ */
+export function missedDuringTakeover(entries: HandBackCandidate[], window: { orderId: string; takenAt: Date; handedBackAt: Date }, classified: Set<string>): string[] {
+  const when = (entry: HandBackCandidate) => (entry.receivedAt ?? entry.occurredAt).getTime()
+  return entries
+    .filter((entry) => entry.orderId === window.orderId && entry.kind === "message" && !OUTBOUND.has(entry.authorType ?? "") && !classified.has(entry.id))
+    .filter((entry) => when(entry) >= window.takenAt.getTime() && when(entry) <= window.handedBackAt.getTime())
+    .sort((a, b) => when(a) - when(b))
+    .map((entry) => entry.id)
+}
+
+export async function messagesFromTakeover(orderId: string, takenAt: Date, handedBackAt: Date): Promise<string[]> {
+  const entries = await db.select({ id: timelineEntries.id, orderId: timelineEntries.orderId, kind: timelineEntries.kind, authorType: timelineEntries.authorType, occurredAt: timelineEntries.occurredAt, receivedAt: timelineEntries.receivedAt })
+    .from(timelineEntries).where(and(eq(timelineEntries.orderId, orderId), eq(timelineEntries.kind, "message"),
+      or(gte(timelineEntries.receivedAt, takenAt), and(isNull(timelineEntries.receivedAt), gte(timelineEntries.occurredAt, takenAt)))))
+  if (!entries.length) return []
+  const read = await db.select({ entryId: sql<string>`${agentSteps.input}->>'entryId'` }).from(agentSteps)
+    .where(and(eq(agentSteps.tool, "classify"), inArray(sql`${agentSteps.input}->>'entryId'`, entries.map((entry) => entry.id))))
+  return missedDuringTakeover(entries, { orderId, takenAt, handedBackAt }, new Set(read.map((row) => row.entryId)))
+}
+
+async function continueAgent(orderId: string, content: string, missed: string[] = []): Promise<void> {
+  // The Classifier first reads what came in meanwhile, oldest first, so its facts are on the order before an agent looks.
+  const read: { id: string; result: Awaited<ReturnType<typeof import("./agents/classifier").classifyEntry>> }[] = []
+  if (missed.length) {
+    const { classifyEntry } = await import("./agents/classifier")
+    for (const id of missed) {
+      read.push({ id, result: await classifyEntry(id, { trigger: "Came in while a person had the order; read after the hand-back" }).catch((error) => { console.error("hand back classify", error); return null }) })
+    }
+  }
   const { continueAfterHandBack, startInvestigation } = await import("./agents/investigator")
   const [run] = await db.select().from(agentRuns)
     .where(and(eq(agentRuns.orderId, orderId), eq(agentRuns.agent, "Investigator"), inArray(agentRuns.status, ["paused", "waiting_driver", "waiting_site", "waiting_person"])))
     .orderBy(desc(agentRuns.startedAt)).limit(1)
   const { autoReplyEnabled } = await import("./demo")
   if (run && await continueAfterHandBack(run.id, content, { autoReply: await autoReplyEnabled() })) return
+  // No run to continue: each message is routed as if it had just come in. A new run below only if none started one.
+  if (read.length) {
+    const { route } = await import("./router")
+    let acted = false
+    for (const item of read) {
+      const decision = await route(item.id, item.result?.classification ?? null).catch((error) => { console.error("hand back route", error); return null })
+      if (decision && decision.action !== "nothing") acted = true
+    }
+    if (acted) return
+  }
   const { getCase } = await import("./case")
   const { liveSignals } = await import("./signals")
   const file = await getCase(orderId)

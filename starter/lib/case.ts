@@ -16,6 +16,7 @@ import {
   orders, relatedRecords, searchDocuments, sites, timelineEntries, vehicles,
   demoEvents,
 } from "./schema"
+import { gigHolder } from "./policies"
 import type { ExecutedEffect } from "./schema"
 import { chipLabel, chipWho, sourceLabel } from "./timeline/sources"
 import { clock, relative } from "./time"
@@ -132,7 +133,7 @@ export type CaseFile = {
     stops: (CasePlace & { role: "pickup" | "transfer" | "delivery" })[]
     legs: { from: string; to: string; mode: string; distanceKm: number | null; status: string; driver: string | null }[]
     offer: { state: string; fee: string | null; at: string | null } | null
-    bookings: { id: string; kind: string; summary: string; state: "booked" | "lost"; departureAt: string | null; cutoffAt: string | null; zone: string | null; source: SourceRef }[]
+    bookings: { id: string; kind: string; summary: string; state: "booked" | "lost" | "cancelled"; departureAt: string | null; cutoffAt: string | null; zone: string | null; source: SourceRef }[]
     quotes: { id: string; kind: string; summary: string; state: "quote" | "sold out"; checkedAt: string; source: SourceRef }[]
     lastPosition: { at: string; receivedAt: string | null; kmToGo: number | null; eta: string | null; quality: string; source: SourceRef } | null
     /** Every GPS fix, newest first: the dataset's and live ones (the demo's driver app). */
@@ -369,16 +370,26 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
   const tradeInOpen = !!tradeIn && segments.some((segment) => segment.details.order_item_id === tradeIn.id && segment.details.status !== "COMPLETED")
   const stageLabel = gigCancelled && stage === "finding_driver" ? "Driver cancelled; needs a new driver" : stage === "delivered" && tradeInOpen ? "Delivered; trade-in still moving" : STAGE_LABEL[stage]
 
-  const driverId = str(primaryAssignment?.details.driver_id)
+  const datasetDriverId = str(primaryAssignment?.details.driver_id)
   // An offer to another driver is still open while the driver it would replace holds the gig (lib/policies.ts uses it).
-  const openOffers = effects.flatMap((effect) => effect.steps).filter((step) => step.ok && step.offer && (step.offer.replacing ?? null) === (driverId ?? null))
-    .map((step) => ({ to: step.offer!.to, at: step.entryId ? iso(entryById.get(step.entryId)?.occurredAt) || null : null }))
-    .sort((a, b) => String(a.at).localeCompare(String(b.at)))
-  const handover = openOffers.pop() ?? null
-  const driverState = gigCancelled ? "cancelled" : primaryAssignment?.details.status === "IN_PROGRESS" ? "driving" : primaryAssignment?.details.status === "COMPLETED" ? "finished" : "booked"
-  const otherDrivers = assignments
-    .filter((row) => row !== primaryAssignment && row.details.driver_id)
-    .map((row) => ({ name: dir.driverName(row.details.driver_id) ?? "Driver", state: label(str(row.details.status)).toLowerCase() }))
+  // A backup's yes in the driver app (live, channel gig_accepted) answers it: the backup holds the gig from then on.
+  const offersMade = effects.flatMap((effect) => effect.steps).filter((step) => step.ok && step.offer)
+    .map((step) => ({ to: step.offer!.to, replacing: step.offer!.replacing ?? null, at: step.entryId ? iso(entryById.get(step.entryId)?.occurredAt) || null : null }))
+  const acceptances = entries.filter((entry) => entry.origin === "live" && entry.channel === "gig_accepted" && entry.authorLabel)
+    .map((entry) => ({ by: entry.authorLabel!, at: entry.occurredAt.toISOString() }))
+  const holder = gigHolder({ driverId: datasetDriverId ?? null, offers: offersMade, acceptances })
+  const driverId = holder.driverId
+  const handover = holder.open
+  const driverState = holder.acceptedBy ? "booked" : gigCancelled ? "cancelled" : primaryAssignment?.details.status === "IN_PROGRESS" ? "driving" : primaryAssignment?.details.status === "COMPLETED" ? "finished" : "booked"
+  const otherDrivers = [
+    ...(holder.acceptedBy && datasetDriverId ? [{ name: dir.driverName(datasetDriverId) ?? "Driver", state: `handed the gig to ${holder.acceptedBy}` }] : []),
+    ...assignments
+      .filter((row) => row !== primaryAssignment && row.details.driver_id)
+      .map((row) => ({ name: dir.driverName(row.details.driver_id) ?? "Driver", state: label(str(row.details.status)).toLowerCase() })),
+  ]
+  // Driver travel the Executor cancelled after a person approved it: its entry id names the reservation.
+  const cancelledTravel = new Set(entries.filter((entry) => entry.origin === "live" && entry.channel === "executor_cancel" && entry.id.startsWith("executor_cancel:"))
+    .map((entry) => entry.id.split(":").pop()!))
 
   // ---- key times -------------------------------------------------------------
   const windows = chosenWindows(bundle)
@@ -587,7 +598,7 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
     const terminal = terminals.get(String(d.origin_terminal_id ?? ""))
     return {
       id: row.id, kind: travelLabel(str(d.kind)), summary: entryById.get(`travel_reservations:${row.id}`)?.summary ?? travelLabel(str(d.kind)),
-      state: lost ? "lost" as const : "booked" as const, departureAt: str(d.departure_at), cutoffAt: str(d.check_in_cutoff_at),
+      state: cancelledTravel.has(row.id) ? "cancelled" as const : lost ? "lost" as const : "booked" as const, departureAt: str(d.departure_at), cutoffAt: str(d.check_in_cutoff_at),
       zone: str(terminal?.details.timezone), source: ref(`travel_reservations:${row.id}`),
     }
   })
@@ -644,7 +655,7 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
         distanceKm: segments.filter((segment) => segment.details.order_item_id === primary?.id).reduce((sum, segment) => sum + (num(segment.details.distance_km) ?? 0), 0) || null,
         ferry: segments.some((segment) => segment.details.transport_mode === "DRIVE_WITH_FERRY"),
       },
-      driver: driverId ? { id: driverId, name: dir.driverName(driverId) ?? "Driver", home: dir.driverHome(driverId), state: driverState } : null,
+      driver: driverId ? { id: driverId, name: holder.acceptedBy ?? dir.driverName(driverId) ?? "Driver", home: holder.acceptedBy ? null : dir.driverHome(driverId), state: driverState } : null,
       otherDrivers,
       createdAt: bundle.order.createdAt,
       pickedUpAt, deliveredAt, cancelledAt,

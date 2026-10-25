@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { DemoEvent } from "@/lib/demo-scenarios"
 import { clockZone, at as fullTime } from "@/lib/time"
+import { BackupAccepts } from "./backup-accepts"
 
 type State = {
   now: string
@@ -113,6 +114,8 @@ export function DemoControls({ events, orders, defaultOrder, live }: { events: (
       </ul>
       {notice && <p className="note" role="alert">{notice}</p>}
     </section>
+
+    <BackupAccepts />
 
     <div className="demo-grid">
       <section className="demo-block" aria-label="Driver phone">

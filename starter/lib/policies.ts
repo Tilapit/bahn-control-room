@@ -120,6 +120,29 @@ export function gigOf(file: CaseFile): GigState {
   return { driverHoldsGig: state === "booked" || state === "driving", offeredTo: file.plan.handover?.to ?? null }
 }
 
+/** A yes from a backup driver in the driver app, as the case file reads it from the timeline (channel `gig_accepted`). */
+export type Acceptance = { by: string; at: string }
+
+/**
+ * Who holds the gig, from the dataset's driver, the offers approved cards carried out and the yeses in the driver app.
+ * A backup who accepts an offer made after it went out holds the gig from then on, and that offer is answered: the
+ * driver it replaced no longer holds it, so their travel can be cancelled. An offer nobody has accepted stays open.
+ */
+export function gigHolder(input: { driverId: string | null; offers: { to: string; replacing: string | null; at: string | null }[]; acceptances: Acceptance[] }): { driverId: string | null; acceptedBy: string | null; open: { to: string; at: string | null } | null } {
+  let driverId = input.driverId
+  let acceptedBy: string | null = null
+  const offers = [...input.offers].sort((a, b) => String(a.at).localeCompare(String(b.at)))
+  const yeses = [...input.acceptances].sort((a, b) => a.at.localeCompare(b.at))
+  for (const yes of yeses) {
+    const offer = offers.filter((item) => (item.replacing ?? null) === (driverId ?? null) && item.to === yes.by && (!item.at || item.at <= yes.at)).pop()
+    if (!offer) continue
+    driverId = `accepted:${yes.by}`
+    acceptedBy = yes.by
+  }
+  const open = offers.filter((item) => (item.replacing ?? null) === (driverId ?? null)).pop() ?? null
+  return { driverId, acceptedBy, open: open ? { to: open.to, at: open.at } : null }
+}
+
 /**
  * A precondition, whatever the level and whatever a person's rule says: the current driver's travel is cancelled or
  * changed only after a backup driver has accepted the gig. Until then the current driver is the only driver the car

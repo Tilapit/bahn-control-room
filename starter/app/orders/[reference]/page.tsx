@@ -109,7 +109,7 @@ export default async function OrderPage({ params }: Props) {
             </div>)}
             {file.plan.offer && <div className="plan-item"><span className="faint">Gig {file.plan.offer.state}{file.plan.offer.fee ? `, ${file.plan.offer.fee}` : ""}</span></div>}
             {file.plan.bookings.map((booking) => <div className="plan-item" key={booking.id}>
-              <span className={`kind ${booking.state === "booked" ? "booked" : "lost"}`}>{booking.state === "booked" ? "Booked" : "Booking lost"}</span>
+              <span className={`kind ${booking.state === "booked" ? "booked" : "lost"}`}>{booking.state === "booked" ? "Booked" : booking.state === "cancelled" ? "Cancelled" : "Booking lost"}</span>
               <span>{booking.summary.replace(/^(Replacement ferry|Ferry|Train|Flight|Hotel) booked( for the driver)?: /, "$1: ")}</span>
               <SourceChip label={booking.source.chip} at={booking.source.at} now={now} zone={zone} href={href(booking.source.entryId)} />
             </div>)}
