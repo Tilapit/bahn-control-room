@@ -2323,3 +2323,36 @@ user research.
 
 **Not done.** The agent continuing after a log was not run live on the shared database: it would resume
 CD-420322's recorded Opus run. A to-do has no deadline of its own.
+
+### 3. Orders, after the mock
+
+Built by a fork in its worktree, then merged; one fix by me.
+
+**Built.** The structure of `design/orders.jpg`, with every number from our data:
+- "Orders" over "All 1,000 orders. Open ones first, then whatever is due soonest."
+- One search field with a stage menu inside it: every stage in plain words with its real count ("Moving · 237", …).
+  Choosing a stage searches at once.
+- Chips All / Needs you / Agent working / Taken over / Quiet / Delivered today, each with a real count. With a
+  search or a stage, a "N orders match … · Clear search" line.
+- The table in one white rounded card: Car (status dot: red only for safety, amber for time risk, the accent while an
+  agent works), Order, Route, Stage, What's happening, Due, and Who. Who is "You", a colleague's initials and name for
+  a colleague's claim ("Anna L.", "Mikko P."), a dashed "Unclaimed" when something waits and nobody holds it,
+  "Agent", or a muted dash when nothing is open.
+- 25 rows a page ("Showing 25 of 1,000 · search or filter to find the rest", Previous / Next), counted after the team
+  view.
+- The page now compiles every order's case file (0.34 s for 1,000), so stages, deadlines and holders come from the
+  records.
+
+**Checked.** `npm run typecheck`; `npm test` 71/71 and all 11 eval groups. Screenshots: the fork's in light and dark,
+and mine after the merge with the new theme and the seeded claims.
+
+**Wrong first, and changed.**
+- The fork's server paging gave short pages, because the team view filters in the browser; the browser now filters
+  first and then pages.
+- The Cross-border tag squeezed routes until the route column was widened.
+- After the merge, a colleague's row said "Taken over by Ops: delivery today mi…", because the status sentence
+  hard-coded Ops. It now names the holder ("Taken over by Anna L.: …", and "you" for your own).
+
+**Not done.** The chip counts count every market; only the rows follow the view. Paging lives in the browser, so going
+back from an order lands on page 1. Urgent rows get no colour tint as in the mock: red is for safety only.
+"Delivered today" is 0 in the recorded morning; older deliveries count under Quiet.

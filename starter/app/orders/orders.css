@@ -1,0 +1,79 @@
+/* Orders, after design/orders.jpg: one search with a stage menu, chips, and the table in one white card.
+   Only the tokens of globals.css; red only for safety, amber only for time risk. */
+
+.orders-page .page-head { margin-bottom: 16px; }
+.orders-page .page-head h1 { font-size: 30px; letter-spacing: -0.02em; }
+
+/* One field: the words on the left, the stage on the right, a thin rule between them. */
+.o-search { display: flex; align-items: stretch; max-width: 680px; margin-bottom: 16px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; }
+.o-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.o-search-box { flex: 1; display: flex; align-items: center; gap: 8px; padding: 0 16px; color: var(--text-3); min-width: 0; }
+.o-search-box input { flex: 1; min-width: 0; height: 44px; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: 15px; }
+.o-search-box input::placeholder { color: var(--text-3); }
+.o-stage { display: flex; align-items: center; border-left: 1px solid var(--line-2); }
+.o-stage select { height: 44px; border: 0; border-radius: 0; background-color: transparent; padding: 0 36px 0 16px; font-size: 14px; font-weight: 600; color: var(--text); }
+.o-stage select:hover { background-color: var(--hover); }
+
+.o-chips-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
+.o-chips-row .filters { margin-bottom: 0; }
+.orders-page .filter { border-radius: 999px; background: var(--surface); padding: 4px 16px; }
+.orders-page .filter[aria-current="true"] { background: var(--text); border-color: var(--text); color: var(--surface); }
+.orders-page .filter .n { margin-left: 4px; }
+.o-match { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-bottom: 16px; font-size: 14px; color: var(--text-2); }
+.o-match .link { text-decoration: underline; text-underline-offset: 3px; }
+
+/* The table: one white card, quiet header, rows a line each. */
+.o-table { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.o-row {
+  display: grid; grid-template-columns: minmax(0, 1.5fr) 96px minmax(0, 1.9fr) minmax(0, 0.9fr) minmax(0, 2.3fr) 112px 112px;
+  gap: 16px; align-items: center; padding: 8px 16px; font-size: 14px; color: var(--text); text-decoration: none;
+}
+.o-row + .o-row { border-top: 1px solid var(--line); }
+.o-row:hover { background: var(--hover); }
+.o-row > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.o-head { font-size: 12px; font-weight: 500; color: var(--text-3); padding-top: 12px; padding-bottom: 12px; background: var(--raised); }
+.o-head:hover { background: var(--raised); }
+.o-car { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.o-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.o-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--line-2); }
+.o-dot.safety { background: var(--red); }
+.o-dot.time { background: var(--amber-dot); }
+.o-dot.agent { background: var(--accent); }
+.o-dot.open { background: var(--text-3); }
+.o-ref { font-family: var(--mono); font-size: 12px; color: var(--text-2); }
+.o-route { display: flex; align-items: baseline; }
+.o-route .tag.cross { margin-left: auto; padding-left: 8px; font-size: 11px; }
+.o-stage-cell, .o-status { color: var(--text-2); }
+.o-due { font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.o-due.time { color: var(--amber); font-weight: 600; }
+.o-due.safety { color: var(--red); font-weight: 600; }
+.o-snippet { grid-column: 1 / -1; margin-top: -4px; font-size: 13px; color: var(--text-3); white-space: normal !important; }
+
+/* Who: "Y" for you, initials for a colleague, a dashed circle for nobody, a light circle for an agent. */
+.o-who { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); }
+.o-avatar { flex: none; width: 18px; height: 18px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 10px; font-weight: 700; color: var(--on-accent); }
+.o-who.you { color: var(--text); font-weight: 600; }
+.o-who.you .o-avatar { background: var(--accent); }
+.o-who.colleague { color: var(--text); }
+.o-who.colleague .o-avatar { background: var(--text-2); }
+.o-who.unclaimed .o-avatar { border: 1.5px dashed var(--text-3); }
+.o-who.agent .o-avatar { background: var(--line-2); }
+.o-who.quiet { color: var(--text-3); }
+
+.o-foot { display: grid; justify-items: center; gap: 8px; margin-top: 16px; font-size: 14px; color: var(--text-2); }
+.o-pages { display: flex; align-items: center; gap: 12px; }
+.o-page-n { font-size: 13px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 1100px) {
+  .o-row { grid-template-columns: minmax(0, 1.3fr) 92px minmax(0, 1.4fr) minmax(0, 2fr) 96px 110px; }
+  .o-row > .o-stage-cell { display: none; }
+}
+@media (max-width: 760px) {
+  .o-search { flex-direction: column; }
+  .o-stage { border-left: 0; border-top: 1px solid var(--line-2); }
+  .o-row { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; }
+  .o-row > span { display: none; }
+  .o-row > .o-car, .o-row > .o-due, .o-row > .o-status { display: block; }
+  .o-row > .o-status { grid-column: 1 / -1; white-space: normal; }
+  .o-head { display: none; }
+}

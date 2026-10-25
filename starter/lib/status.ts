@@ -29,9 +29,10 @@ export function problemPhrase(text: string | null | undefined): string | null {
  * One plain sentence per order for the Orders list: "Waiting for you: ferry sold out", "Agent working: driver may be
  * ill", "Moving, 233 km to go", "Delivered Tue 20 Oct". Built by code from the case file and who has the order.
  */
-export function listStatus(file: CaseFile, state: { holder: Holder; problem: string | null; takenOver: boolean }, now: Date): string {
+export function listStatus(file: CaseFile, state: { holder: Holder; problem: string | null; takenOver: boolean; takenBy?: string | null }, now: Date): string {
   const { order, plan } = file
-  if (state.takenOver) return `Taken over by Ops${state.problem ? `: ${state.problem}` : ""}`
+  // "You" for the person using the app ("Ops" in the records), a colleague by name.
+  if (state.takenOver) return `Taken over by ${!state.takenBy || state.takenBy === "Ops" ? "you" : state.takenBy}${state.problem ? `: ${state.problem}` : ""}`
   if (state.holder === "you") return `Waiting for you${state.problem ? `: ${state.problem}` : ""}`
   if (state.holder === "agent") return `Agent working${state.problem ? `: ${state.problem}` : ""}`
   switch (order.stage.key) {
