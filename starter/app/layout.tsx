@@ -29,7 +29,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <body>
       <div className="app">
         <aside className="rail">
-          <div className="brand"><span className="brand-mark" aria-hidden="true">B</span>Control Room</div>
+          <div className="brand"><span className="brand-mark" aria-hidden="true">B</span>Bahn Control Room</div>
           <Nav openCards={openCards} />
           <div className="rail-foot"><b>Fictional data</b>No real people, cars or bookings.<a className="rail-demo" href="/demo">Demo controls</a></div>
         </aside>
@@ -38,7 +38,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <TopSearch />
             {!hasApiKey() && <a className="demo-mode" href="/demo" title="No API key is set, so agents cannot run live. Everything agents did here was recorded from real runs; the Demo page replays recorded scenarios.">Showing recorded agent runs</a>}
             <div className="clock" title="The app runs on a simulated clock that starts at the data snapshot.">
-              <span className="faint">Simulated time</span><span className="num">{at(clock, DESK_ZONE).replace(/ EE[S]?T$/, "")} Helsinki</span>
+              <span className="faint">Demo clock</span><span className="num">{at(clock, DESK_ZONE).replace(/ EE[S]?T$/, "")} Helsinki time</span>
             </div>
           </header>
           {children}

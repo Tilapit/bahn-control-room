@@ -29,6 +29,8 @@ function stagePhrase(file: CaseFile, now: Date): string {
 export function statusLine(file: CaseFile, urgency: Urgency, now: Date, issue: string | null): string {
   const first = issue ? issue.charAt(0).toUpperCase() + issue.slice(1) : stagePhrase(file, now)
   const nothingOpen = !issue && urgency.kind === "no_deadline"
-  const second = nothingOpen ? (file.order.stage.key === "delivered" || file.order.stage.key === "cancelled" ? "Nothing open." : null) : urgency.sentence
+  // The sentence holds the clock time with its zone; the distance from now follows it once.
+  const second = nothingOpen ? (file.order.stage.key === "delivered" || file.order.stage.key === "cancelled" ? "Nothing open." : null)
+    : urgency.relative ? `${urgency.sentence}, ${urgency.relative}` : urgency.sentence
   return [first, second].filter(Boolean).map((part) => part!.replace(/\.$/, "")).join(". ") + "."
 }

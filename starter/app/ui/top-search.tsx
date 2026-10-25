@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react"
 import type { AskResult } from "@/lib/agents/ask"
 import type { SearchHit } from "@/lib/case"
 import { Icon } from "./icons"
+import { Marked } from "./marked"
 
 /** Search orders by reference, plate, name, city or anything said in a message. ⌘K focuses it. */
 export function TopSearch() {
@@ -69,7 +70,7 @@ export function TopSearch() {
     if (event.key === "Escape") { setOpen(false); input.current?.blur() }
     if (event.key === "Enter" && question && !(hits?.length && active > 0)) { event.preventDefault(); void askAgents(); return }
     if (!hits?.length) {
-      if (event.key === "Enter" && query.trim()) { setOpen(false); router.push(`/orders?q=${encodeURIComponent(query.trim())}`) }
+      if (event.key === "Enter" && query.trim()) { event.preventDefault(); if (hits) void askAgents(); else { setOpen(false); router.push(`/orders?q=${encodeURIComponent(query.trim())}`) } }
       return
     }
     if (event.key === "ArrowDown") { event.preventDefault(); setActive((index) => Math.min(index + 1, hits.length - 1)) }
@@ -90,32 +91,41 @@ export function TopSearch() {
       <kbd>⌘K</kbd>
     </label>
     {open && (hits || answer || asking || askError) && <div className="search-results" id="search-results" role="listbox">
-      {question && !answer && <button type="button" className="search-hit ask-row" data-active={active === 0} onMouseDown={(event) => { event.preventDefault(); void askAgents() }} disabled={asking}>
+      {(question || (hits && hits.length === 0)) && !answer && <button type="button" className="search-hit ask-row" data-active={active === 0} onMouseDown={(event) => { event.preventDefault(); void askAgents() }} disabled={asking}>
         <span className="line1"><b>{asking ? "Asking the agents…" : "Ask the agents"}</b><span className="faint">Enter</span></span>
         <span className="line2" style={{ display: "block" }}>{asking ? "The Investigator is reading the records. It can only read here, not change anything." : `“${query.trim()}”, answered from the records, with sources`}</span>
       </button>}
       {askError && <p className="search-empty">{askError}</p>}
       {answer && <div className="ask-answer">
-        <p className="ask-question">“{answer.question}”</p>
+        <div className="ask-head">
+          <p className="ask-question">“{answer.question}”</p>
+          <button type="button" className="btn small quiet" onMouseDown={(event) => { event.preventDefault(); setOpen(false); setAnswer(null) }}>Close</button>
+        </div>
         <p>{answer.answer}</p>
         {answer.sources.length > 0 && <ul className="ask-sources">
           {answer.sources.map((source) => <li key={source.entryId}>
             <a className="chip" href={source.reference ? `/orders/${source.reference}#${source.entryId}` : "#"} onMouseDown={(event) => { event.preventDefault(); if (source.reference) { setOpen(false); router.push(`/orders/${source.reference}#${source.entryId}`) } }}>
-              {source.reference ? `${source.reference} · ` : ""}{source.label}
+              {source.reference ? `${source.reference} · ` : ""}{source.label}{source.when ? ` · ${source.when}` : ""}
             </a>
-            <span className="ask-source-text">{source.summary.length > 140 ? `${source.summary.slice(0, 137)}…` : source.summary}</span>
+            <span className="ask-source-text" title={source.summary}>{source.summary}</span>
           </li>)}
         </ul>}
-        {answer.runId && <p className="note">Answered by the Investigator, read-only · {answer.model} · ${answer.costUsd.toFixed(3)}</p>}
+        <p className="note ask-foot">
+          {answer.runId ? "Answered by an agent from the order records. It can only read; it changed nothing." : null}
+          {(() => {
+            const reference = answer.sources.find((source) => source.reference)?.reference ?? answer.question.match(/CD-\d{6}/i)?.[0]?.toUpperCase()
+            return reference ? <a className="ask-open" href={`/orders/${reference}`} onMouseDown={(event) => { event.preventDefault(); setOpen(false); router.push(`/orders/${reference}`) }}>Open {reference}</a> : null
+          })()}
+        </p>
       </div>}
-      {hits && hits.length === 0 && !question && <p className="search-empty">No order matches “{query}”.</p>}
+      {hits && hits.length === 0 && !question && <p className="search-empty">No order matches “{query}”. Search looks at order numbers, plates, cars, names, places and every message and record on an order.</p>}
       {(hits ?? []).map((hit, index) => <a
         key={hit.orderId} href={`/orders/${hit.reference}`} className="search-hit" role="option" aria-selected={index === active} data-active={index === active}
         onMouseDown={(event) => { event.preventDefault(); go(hit.reference) }}
       >
         <span className="line1"><b>{hit.car}</b><span className="faint num">{hit.reference}</span></span>
         <span className="line2" style={{ display: "block" }}>{hit.customer} · {hit.route}</span>
-        {hit.snippet && <span className="snippet" style={{ display: "block" }}>{hit.snippet.replaceAll("«", "").replaceAll("»", "")}</span>}
+        {hit.snippet && <span className="snippet" style={{ display: "block" }}>{hit.snippet.source} · {hit.snippet.when}: “<Marked text={hit.snippet.text} />”</span>}
       </a>)}
     </div>}
   </div>

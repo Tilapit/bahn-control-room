@@ -24,6 +24,7 @@
     "agents:backfill": "tsx scripts/backfill.ts",
     "fixtures:load": "tsx scripts/fixtures.ts load",
     "fixtures:export": "tsx scripts/fixtures.ts export",
+    "quiet:lines": "tsx scripts/quiet-lines.ts",
     "scenario:record": "tsx scripts/record-scenario.ts",
     "agents:narrate": "tsx scripts/narrate.ts",
     "setup": "npm run db:seed && npm run attachments:seed && npm run timeline:build && npm run cards:alerts && npm run disruptions:seed && npm run fixtures:load",

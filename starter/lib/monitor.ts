@@ -73,7 +73,7 @@ async function disruptionRule(files: CaseFile[], now: Date, options: Options): P
         id: `disruptions:${notice.id}:${match.file.order.id}`,
         orderId: match.file.order.id, at: now, source: "alert", channel: "disruption_feed", authorType: "system", authorLabel: notice.sourceLabel,
         kind: "alert", status: "signal", visibility: "internal",
-        summary: `Disruption notice from ${notice.sourceLabel}: ${notice.title}. ${match.effect}`,
+        summary: `${notice.sourceLabel}: ${notice.title}. ${match.effect}`,
         body: `${noticeLine(notice)}\nThis is the feed's notice, matched to this order by the Monitor. No driver or site has confirmed it.`,
         evidence: { table: "disruptions", id: notice.id },
       })
@@ -86,7 +86,7 @@ async function disruptionRule(files: CaseFile[], now: Date, options: Options): P
       "No driver, site or customer has reported it. Check what it means for each order before anyone is affected.",
     ].join("\n")
     const runId = await investigate(fresh.map((match) => match.file), trigger, options)
-    const summary = `Matched "${notice.title}" (${notice.sourceLabel}) to ${references.join(", ")}${runId ? "; the Investigator is looking into it" : "; no agent started"}.`
+    const summary = `Matched “${notice.title}” (${notice.sourceLabel}) to ${references.join(", ")}${runId ? "; the Investigator is looking into it" : "; no agent started"}.`
     for (const match of fresh) await recordHit(match.file, now, "disruption notice", `Checked ${notice.title} against routes, pickups, deliveries and drivers' booked trains.`, summary)
     hits.push({ rule: "disruption", summary, orders: references, investigatorRunId: runId })
     options.log?.(summary)

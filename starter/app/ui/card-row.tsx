@@ -3,23 +3,46 @@
 import Link from "next/link"
 import { useState } from "react"
 import type { QueueItem } from "@/lib/queue"
+import { optionWords, type StepZones } from "@/lib/present/steps"
 import type { CardOption, CardStep } from "@/lib/schema"
+import { zoneShort } from "@/lib/time"
 import { Icon } from "./icons"
 import { SourceChip } from "./when"
 
-export type Decided = { decisionId: string; cardId: string; message: string; executesAt?: string | null }
+/** A decision in its undo window. `reference` names the order, so two quick approvals never share one anonymous toast. */
+export type Decided = { decisionId: string; cardId: string; message: string; executesAt?: string | null; reference?: string }
 
 const orderHref = (reference: string) => `/orders/${reference}`
 const entryHref = (reference: string, entryId: string) => `/orders/${reference}#${entryId}`
 
-/** "Opus", "Sonnet": the model family, for the quiet line under an agent card. */
-function modelWord(model: string | null): string {
-  if (!model) return "Agent"
-  return model.includes("opus") ? "Opus" : model.includes("sonnet") ? "Sonnet" : model.includes("haiku") ? "Haiku" : "Model"
+/** "Opus, the larger model": the model family, for the quiet line under an agent card. */
+function modelWords(model: string | null): string {
+  if (!model) return "a model"
+  return model.includes("opus") ? "Opus, the larger model" : model.includes("sonnet") ? "Sonnet" : model.includes("haiku") ? "Haiku, the small model" : "a model"
 }
 
-function tokens(n: number): string {
-  return n >= 1000 ? `${Math.round(n / 1000)}k tokens` : `${n} tokens`
+/** "it changes a booking and is a booking and a cost and changes a date" → "it books or changes a booking, adds a cost and changes a date". */
+function approvalWords(reason: string): string {
+  const parts = [
+    /contacts a customer/.test(reason) ? "contacts a customer" : null,
+    /booking/.test(reason) ? "books or changes a booking" : null,
+    /cost/.test(reason) ? "adds a cost" : null,
+    /promised/.test(reason) ? "changes a date the customer was promised" : /date/.test(reason) ? "changes a date" : null,
+    /call/.test(reason) ? "hands a call to you" : null,
+  ].filter((part): part is string => !!part)
+  if (!parts.length) return reason
+  return `it ${parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`}`
+}
+
+/** "BMW M4: car not at…" and "Volvo V60: Delivered…" read the same way: a capital after the car. */
+function headlineWords(headline: string): string {
+  return headline.replace(/^([^:]{2,60}: )(\p{Ll})/u, (_, car: string, first: string) => `${car}${first.toUpperCase()}`)
+}
+
+/** A button names what it does: an answer to the agent's question says so, and every other approval starts with "Approve:". */
+function buttonLabel(option: CardOption): string {
+  if (/^(approve|reject|answer)\b/i.test(option.label)) return option.label
+  return option.kind === "answer" ? `Answer: ${option.label}` : option.kind === "reject" ? option.label : `Approve: ${option.label}`
 }
 
 /** What a person must read before approving: the exact words that go to a customer or a driver. */
@@ -34,15 +57,18 @@ function Words({ step, customer }: { step: CardStep; customer: string }) {
     : step.action === "message_driver" ? "Message to the driver"
     : null
   if (!title) return null
+  const call = step.action === "call_customer" || step.action === "call_contact"
   return <div className="words">
-    <div className="words-title">{title}</div>
+    <div className="words-title">{title}{call && <span className="h3-note">no phone numbers in this demo&apos;s records</span>}</div>
     <p>{text}</p>
   </div>
 }
 
-function OptionDetail({ option, customer }: { option: CardOption; customer: string }) {
+function OptionDetail({ option, customer, zones }: { option: CardOption; customer: string; zones: StepZones }) {
+  const words = optionWords(option, zones, true)
   return <>
     {option.effect_text && <p>{option.effect_text}</p>}
+    {words && <p className="if-approve"><b>{option.kind === "answer" ? "If you choose it: " : "If you approve: "}</b>{words}.</p>}
     {(option.steps ?? []).map((step, index) => <Words key={index} step={step} customer={customer} />)}
   </>
 }
@@ -82,22 +108,27 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
       })
       const result = await response.json() as { decisionId?: string; message?: string; executesAt?: string | null; error?: string }
       if (!response.ok || !result.decisionId) throw new Error(result.error ?? "The decision was not saved.")
-      onDecided({ decisionId: result.decisionId, cardId: card.id, message: result.message ?? `${label}.`, executesAt: result.executesAt ?? null })
+      onDecided({ decisionId: result.decisionId, cardId: card.id, message: result.message ?? `${label}.`, executesAt: result.executesAt ?? null, reference: card.group ? `${card.group.length} orders` : order.reference })
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The decision was not saved.")
       setBusy(null)
     }
   }
 
-  // Collapsed, the row's button already names the action; the line says what it does.
-  const proposalLine = fromAgent && primary ? primary.effect_text ?? primary.label : card.proposal?.effect_text
+  // Collapsed, the line says exactly what the button does, built by code from the option's steps.
+  const question = card.kind === "question"
+  const approveLine = fromAgent && primary ? optionWords(primary, order.zones) : null
+  const proposalLine = question ? "pick the answer that is right; the agent carries on from it, nothing is booked or sent"
+    : approveLine ?? (fromAgent && primary ? primary.effect_text ?? primary.label : card.proposal?.effect_text)
+  const lead = question ? "Agent asks you: " : approveLine ? "If you approve: " : fromMonitor ? "Proposed by code: " : fromAgent ? "Agent proposes: " : "Next step noted: "
+  const timesIn = order.zone ? zoneShort(now, order.zone) : null
 
   return <article className="row" data-open={open} aria-label={card.headline}>
     {!onOrderPage && <button type="button" className="row-head" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
       <span className={`mark ${tone}`} aria-hidden="true" />
       <span className="row-main">
         <span className="row-top">
-          <span className="row-title">{card.headline}</span>
+          <span className="row-title">{headlineWords(card.headline)}</span>
           {urgency.safety && <span className="tag safety">Safety</span>}
           {!onOrderPage && <span className="row-ref">{card.group ? `${card.group.length} orders` : order.reference}</span>}
         </span>
@@ -105,10 +136,11 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
           {urgency.sentence}
           {urgency.relative && <span className={`when rel ${tone}`}>· {urgency.relative}</span>}
         </span>
-        {proposalLine && !open && <span className="row-proposal">
-          <b>{fromMonitor ? "Proposed by code: " : fromAgent ? (card.kind === "question" ? "Agent asks: " : "Agent proposes: ") : "Next step noted: "}</b>{proposalLine}
+        {proposalLine && !open && <span className={`row-proposal${approveLine || question ? " full" : ""}`}>
+          <b>{lead}</b>{proposalLine}{approveLine || question ? "." : ""}
         </span>}
       </span>
+      <Icon name="chevron" size={14} className="row-chevron" />
     </button>}
 
     {open && <div className="detail">
@@ -126,7 +158,7 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
         </ul>
       </section>}
       {card.findings.length > 0 && <section>
-        <h3>What we know</h3>
+        <h3>What we know{timesIn && <span className="h3-note">times {timesIn}</span>}</h3>
         <ul className="findings">
           {card.findings.map((finding, index) => {
             const note = failing.find((candidate) => candidate.finding === index)
@@ -139,25 +171,28 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
             </li>
           })}
         </ul>
-        {fromAgent && notes.length > 0 && <p className="note verifier">
-          {failing.length === 0
-            ? `Checked by the verifier: all ${checked} facts match their sources.`
-            : `Checked by the verifier: ${checked - failing.filter((note) => note.finding != null).length} of ${checked} facts match their sources.`}
-          {failing.filter((note) => note.finding == null).map((note, index) => <span key={index} className="verifier-card-note">Verifier: {note.note}</span>)}
-        </p>}
+        {fromAgent && notes.length > 0 && (() => {
+          const wrongFacts = failing.filter((note) => note.finding != null).length
+          const remarks = failing.filter((note) => note.finding == null)
+          return <div className="note verifier">
+            <p>{wrongFacts === 0 ? `A second agent checked all ${checked} facts against their sources: they match.` : `A second agent checked the facts against their sources: ${checked - wrongFacts} of ${checked} match.`}
+              {remarks.length > 0 ? ` It also noted ${remarks.length === 1 ? "one thing" : `${remarks.length} things`} the card leaves out or words loosely:` : ""}</p>
+            {remarks.length > 0 && <ul className="verifier-remarks">{remarks.map((note, index) => <li key={index}>{note.note}</li>)}</ul>}
+          </div>
+        })()}
       </section>}
       {fromAgent && primary && <section>
         <h3>{fromMonitor ? "Proposed by code" : card.kind === "question" ? "Agent asks you" : "Agent proposes"}</h3>
         <div className="proposal">
-          <OptionDetail option={primary} customer={customer} />
+          <OptionDetail option={primary} customer={customer} zones={order.zones} />
           {(card.proposal?.cost_eur || card.proposal?.requires_approval_reason) && <p className="note">
             {card.proposal?.cost_eur ? `New cost about €${Math.round(card.proposal.cost_eur)}. ` : ""}
-            {card.proposal?.requires_approval_reason ? `Needs your approval: ${card.proposal.requires_approval_reason}.` : ""}
+            {card.proposal?.requires_approval_reason ? `Needs your approval: ${approvalWords(card.proposal.requires_approval_reason)}.` : ""}
           </p>}
         </div>
         {others.map((option) => <div className="other-option" key={option.id}>
-          <div className="other-label">Or: {option.label}</div>
-          <OptionDetail option={option} customer={customer} />
+          <div className="other-label">Or: {option.label.replace(/^approve:\s*/i, "")}</div>
+          <OptionDetail option={option} customer={customer} zones={order.zones} />
         </div>)}
       </section>}
       {!fromAgent && card.proposal && <section>
@@ -179,10 +214,10 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
         return <button
           key={option.id} type="button" className={`btn small${isPrimary ? " primary" : ""}`} disabled={!!busy}
           onClick={() => decide(option.id, option.label)}
-        >{busy === option.id ? "Saving…" : option.label}</button>
+        >{busy === option.id ? "Saving…" : buttonLabel(option)}</button>
       })}
-      {!open && fromAgent && card.options.length > 1 && <button type="button" className="btn small quiet" onClick={() => setOpen(true)}>
-        {card.options.length - 1} more choice{card.options.length - 1 === 1 ? "" : "s"}
+      {!open && fromAgent && card.options.length > 1 && <button type="button" className="btn small" onClick={() => setOpen(true)}>
+        {others.length ? "Other choices…" : fromMonitor ? "Reject…" : "Reject or reply…"}
       </button>}
       {!onOrderPage && <Link className="btn small quiet" href={orderHref(order.reference)}>Open order<Icon name="arrow" size={14} /></Link>}
       {error && <span className="note failed-note" role="alert">{error}</span>}
@@ -194,8 +229,7 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
         <button type="submit" className="btn small" disabled={!reply.trim() || !!busy}>Send to agent</button>
       </form>
       {card.run && <p className="note run-line">
-        <Link className="run-link" href={`/agents/${card.runId}`}>Investigated by the agent</Link> · {modelWord(card.run.model)} · {card.run.steps} steps · {tokens(card.run.tokens)} · ${card.run.costUsd.toFixed(2)}
-        {card.run.escalation ? <span title={card.run.escalation}> · moved to the senior model</span> : null}
+        <Link className="run-link" href={`/agents/${card.runId}`}>See what the agent did</Link>: {card.run.steps} steps with {modelWords(card.run.model)}{card.run.escalation ? <span title={card.run.escalation}> (moved up from Sonnet)</span> : null}, model cost ${card.run.costUsd.toFixed(2)}
       </p>}
     </div>}
   </article>

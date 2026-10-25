@@ -27,6 +27,7 @@ export function PermissionLevel({ action, label, level, limitEur, costs, locked 
       {(Object.keys(WORDS) as (keyof typeof WORDS)[]).map((key) => <option key={key} value={key}>{WORDS[key]}</option>)}
     </select>
     {value === "auto" && costs && <label className="limit">up to €<input inputMode="numeric" value={limit} placeholder="no limit" onChange={(event) => setLimit(event.target.value.replace(/[^0-9]/g, ""))} onBlur={() => save("auto", limit)} aria-label={`Cost limit for ${label}`} /></label>}
+    {value === "auto" && costs && !limit && <span className="failed-note">Without a limit the agent can book at any cost.</span>}
     {error && <span className="failed-note">{error}</span>}
   </span>
 }

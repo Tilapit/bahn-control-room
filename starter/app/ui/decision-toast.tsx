@@ -11,7 +11,7 @@ const DONE: Record<string, string> = {
   "Sending to the agent": "Sent to the agent. It is working on it",
   "Offering the gig": "Gig offered",
   "Changing the time": "Time changed",
-  "Handing you the call": "The call is yours; it is noted on the order",
+  "Handing you the call": "The call is yours: who to call and what to ask are on the order page",
   "Marking as handled": "Marked as handled",
   "Carrying it out": "Done",
 }
@@ -73,6 +73,7 @@ export function useDecisionToast(onUndone: (cardId: string) => void) {
     const seconds = toast.executesAt ? Math.max(0, Math.ceil((new Date(toast.executesAt).getTime() - Date.now()) / 1000)) : 0
     const word = toast.message.replace(/ in \d+ s$/, "")
     view = <div className={`toast${toast.phase === "failed" ? " failed" : ""}`} role="status" aria-live="polite">
+      {toast.reference && <b className="toast-ref">{toast.reference}</b>}
       {toast.phase === "waiting"
         ? <><span>{/ in \d+ s$/.test(toast.message) ? `${word} in ${seconds} s` : toast.message}</span><button type="button" onClick={undo}>Undo</button></>
         : <span>{toast.doneText}</span>}

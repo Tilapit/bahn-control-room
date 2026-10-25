@@ -30,6 +30,8 @@ function badges(entry: TimelineItem): { text: string; tone: string }[] {
   if (entry.kind === "fact") list.push(entry.status === "verified" ? { text: "Confirmed", tone: "booked" } : { text: "Not confirmed", tone: "signal" })
   if (entry.kind === "proposal") list.push({ text: "Proposal", tone: "" })
   if (entry.kind === "message" && entry.visibility === "internal" && entry.source !== "slack") list.push({ text: "Internal", tone: "internal" })
+  // Played by the demo (a scenario message or the simulated driver or site answering an agent), not a real person.
+  if (entry.evidence?.table === "demo_events") list.push({ text: "Simulated in the demo", tone: "internal" })
   const late = entry.receivedAt ? minutesUntil(entry.receivedAt, entry.at) : null
   if (late != null && late <= -10) list.push({ text: `arrived ${duration(-late)} later`, tone: "internal" })
   return list
@@ -39,17 +41,20 @@ function isMinor(entry: TimelineItem): boolean {
   return entry.source === "system" || (entry.kind === "event" && entry.source === "order" && entry.status !== "claimed") || entry.kind === "fact"
 }
 
-export function Timeline({ entries, now, zone, place }: { entries: TimelineItem[]; now: string; zone: string | null; place: string | null }) {
+export function Timeline({ entries, now, zone, place, zoneName }: { entries: TimelineItem[]; now: string; zone: string | null; place: string | null; zoneName?: string | null }) {
   const [filter, setFilter] = useState("all")
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
-  const counts = useMemo(() => Object.fromEntries(SOURCE_FILTERS.map((f) => [f.key, entries.filter((e) => (f.sources as string[]).includes(e.source)).length])), [entries])
+  // Every entry falls under one pill, so the pills add up to All: what no channel claims is "Other" (system, order record, documents).
+  const filters = useMemo(() => [...SOURCE_FILTERS.map((f) => ({ key: f.key, label: f.label, test: (entry: TimelineItem) => (f.sources as string[]).includes(entry.source) })),
+    { key: "other", label: "Other", test: (entry: TimelineItem) => !SOURCE_FILTERS.some((f) => (f.sources as string[]).includes(entry.source)) }], [])
+  const counts = useMemo(() => Object.fromEntries(filters.map((f) => [f.key, entries.filter(f.test).length])), [entries, filters])
   const visible = useMemo(() => {
-    const active = SOURCE_FILTERS.find((f) => f.key === filter)
+    const active = filters.find((f) => f.key === filter)
     return [...entries]
-      .filter((entry) => !active || (active.sources as string[]).includes(entry.source))
+      .filter((entry) => !active || active.test(entry))
       .sort((a, b) => b.at.localeCompare(a.at) || b.id.localeCompare(a.id))
-  }, [entries, filter])
+  }, [entries, filter, filters])
 
   const groups = useMemo(() => {
     const result: Group[] = []
@@ -75,10 +80,10 @@ export function Timeline({ entries, now, zone, place }: { entries: TimelineItem[
   }, [groups])
 
   return <section aria-label="Timeline">
-    <div className="section-title"><span>Timeline</span><span className="count">Every channel, newest first{place ? ` · times in ${place} time` : ""}</span></div>
+    <div className="section-title"><span>Timeline</span><span className="count">Every channel, newest first{place ? ` · times in ${place} time${zoneName ? ` (${zoneName})` : ""}` : ""}</span></div>
     <div className="filters" role="toolbar" aria-label="Show entries from">
       <button type="button" className="filter" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>All <span className="n">{entries.length}</span></button>
-      {SOURCE_FILTERS.filter((f) => counts[f.key] > 0).map((f) => <button key={f.key} type="button" className="filter" aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}>
+      {filters.filter((f) => counts[f.key] > 0).map((f) => <button key={f.key} type="button" className="filter" aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}>
         {f.label} <span className="n">{counts[f.key]}</span>
       </button>)}
     </div>
@@ -104,14 +109,15 @@ export function Timeline({ entries, now, zone, place }: { entries: TimelineItem[
 function Entry({ entry, now, zone }: { entry: TimelineItem; now: string; zone: string | null }) {
   const who = entry.authorLabel ?? entry.chip
   const text = entry.kind === "message" && entry.body ? entry.body : entry.summary
-  const extra = entry.kind === "message" ? null : entry.body
+  // Older look-up records list each option behind its internal id ("- hotel:norderkai-lodge:…: "); people see only the option.
+  const extra = entry.kind === "message" ? null : entry.body?.replace(/^- [a-z]+:\S+: /gm, "") ?? null
   return <div id={entry.id} className={`entry ${entry.kind}${isMinor(entry) ? " minor" : ""}`}>
     <time className="entry-time" dateTime={entry.at} title={`${long(entry.at, zone)} (${relative(entry.at, now)})`}>{clock(entry.at, zone)}</time>
     <div>
       <div className="entry-head">
         <span className="entry-who">{who}</span>
         <span className="entry-src">{entry.sourceLabel}{entry.language && entry.language !== "en" ? ` · written in ${new Intl.DisplayNames(["en"], { type: "language" }).of(entry.language)}` : ""}</span>
-        {badges(entry).map((badge) => <span key={badge.text} className={`entry-badge ${badge.tone}`}>{badge.text}</span>)}
+        {badges(entry).filter((badge) => badge.text !== entry.sourceLabel).map((badge) => <span key={badge.text} className={`entry-badge ${badge.tone}`}>{badge.text}</span>)}
       </div>
       <p className="entry-summary">{text}</p>
       {extra && <p className="entry-body">{extra}</p>}

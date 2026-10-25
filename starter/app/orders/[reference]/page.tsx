@@ -7,7 +7,7 @@ import { sweepDecisions } from "@/lib/decisions"
 import { cardsForOrder, orderView } from "@/lib/queue"
 import { liveSignals } from "@/lib/signals"
 import { statusLine } from "@/lib/status"
-import { range } from "@/lib/time"
+import { range, zoneShort } from "@/lib/time"
 import { urgency } from "@/lib/urgency"
 import { Icon } from "../../ui/icons"
 import { OrderCard } from "../../ui/order-card"
@@ -51,8 +51,8 @@ export default async function OrderPage({ params }: Props) {
           {status}
         </p>
         <div className="case-meta">
-          <span><Icon name="route" />{placeName(order.route.from)} → {order.route.via ? `${placeName(order.route.via)} → ` : ""}{placeName(order.route.to)}{order.route.distanceKm ? ` · ${order.route.distanceKm} km` : ""}{order.route.ferry ? " with ferry" : ""}</span>
-          <span><Icon name="driver" />{order.driver ? `${order.driver.name}, ${order.driver.state === "driving" ? "driving" : order.driver.state === "finished" ? "finished" : order.driver.state === "cancelled" ? "cancelled the gig" : "booked"}` : "No driver booked"}</span>
+          <span><Icon name="route" />{placeName(order.route.from)} → {order.route.via ? `${placeName(order.route.via)} → ` : ""}{placeName(order.route.to)}{order.route.distanceKm ? ` · ${order.route.distanceKm.toLocaleString("en-GB")} km` : ""}{order.route.ferry ? " with ferry" : ""}</span>
+          <span><Icon name="driver" />{order.driver ? `${order.driver.name}, ${order.driver.state === "driving" ? "driving" : order.driver.state === "finished" ? "finished" : order.driver.state === "cancelled" ? "cancelled the gig" : "driver, booked"}` : "No driver booked"}</span>
           <span><Icon name="building" />{order.customer.name}</span>
           {(order.car.registration || order.tradeIn) && <span><Icon name="car" />{[order.car.registration, order.tradeIn ? `with trade-in ${order.tradeIn.label}` : null].filter(Boolean).join(" · ")}</span>}
         </div>
@@ -64,7 +64,7 @@ export default async function OrderPage({ params }: Props) {
       <div>
         {card && <OrderCard item={card} now={now} />}
         {!card && <OpenItems file={file} now={now} zone={zone} />}
-        <Timeline entries={entries} now={now} zone={zone} place={(order.pickedUpAt || order.stage.key === "delivered" ? order.route.to?.city : order.route.from?.city) ?? null} />
+        <Timeline entries={entries} now={now} zone={zone} place={(order.pickedUpAt || order.stage.key === "delivered" ? order.route.to?.city : order.route.from?.city) ?? null} zoneName={zone ? zoneShort(now, zone) : null} />
       </div>
 
       <aside className="case-side">
@@ -78,7 +78,8 @@ export default async function OrderPage({ params }: Props) {
                 <div className={`value${risk ? " time" : ""}`}>{range(time.start, time.end, time.zone)}</div>
                 <div className="sub">
                   {time.note && <>{time.note} · </>}
-                  <SourceChip label={time.source.chip} at={time.source.at} now={now} zone={zone} href={href(time.source.entryId)} />
+                  {/* The source's time in the same zone as the key time above it, so one event never shows two clocks. */}
+                  <SourceChip label={time.source.chip} at={time.source.at} now={now} zone={time.zone ?? zone} href={href(time.source.entryId)} />
                 </div>
               </div>
             })}
@@ -126,19 +127,21 @@ function Agreed({ facts, now, zone, stage }: { facts: CaseFact[]; now: string; z
   const past = shown.filter((fact) => fact.historical)
   const row = (fact: CaseFact) => <div className={`fact${fact.historical ? " historical" : ""}`} key={fact.id}>
     <div className="subject">{fact.subject}</div>
-    <div className="value">{fact.value}</div>
+    {/* Statements filed before word-safe cutting stopped at 240 characters mid-word. */}
+    <div className="value">{fact.value.length >= 240 && !/[.!?…]$/.test(fact.value) ? `${fact.value.replace(/\s+\S*$/, "")}…` : fact.value}</div>
     <div className="meta">
       <span className={`state ${fact.status}`}>{fact.status === "verified" ? "Confirmed" : "Stated, not confirmed"}</span>
       <SourceChip label={fact.source.chip} at={fact.source.at} now={now} zone={zone} href={fact.source.entryId ? `#${fact.source.entryId}` : null} />
     </div>
   </div>
-  return <section aria-label="Agreed">
-    <div className="section-title"><span>Agreed</span></div>
+  const confirmed = current.filter((fact) => fact.status === "verified").length
+  return <section aria-label="Agreed and stated">
+    <div className="section-title"><span>Agreed and stated</span><span className="count">{confirmed} of {current.length} confirmed</span></div>
     <div className="facts">
       {current.map(row)}
-      {current.length === 0 && <p className="note">Nothing agreed for this stage yet.</p>}
+      {current.length === 0 && <p className="note">Nothing agreed or stated for this stage yet.</p>}
       {past.length > 0 && <details>
-        <summary className="disclosure">{past.length} from before the {stage === "delivered" ? "handovers" : "pickup"}</summary>
+        <summary className="disclosure">{past.length} earlier {past.length === 1 ? "statement" : "statements"} from before the {stage === "delivered" ? "handovers" : "pickup"}</summary>
         <div className="facts" style={{ marginTop: 10 }}>{past.map(row)}</div>
       </details>}
     </div>

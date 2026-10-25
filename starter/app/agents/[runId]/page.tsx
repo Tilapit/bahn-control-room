@@ -15,10 +15,15 @@ type Props = { params: Promise<{ runId: string }> }
 
 const KIND_LABEL = { thought: "Reasoning", action: null, reply: "Reply", card: "Outcome" } as const
 
+/** "Backfill. Open signals…": the morning catch-up, in words. */
+function triggerWords(trigger: string): string {
+  return trigger.replace(/^Backfill\.\s*/, "The morning catch-up: an agent looked at every order with something open. ")
+}
+
 /** Why the run moved to Opus, in code's words; the verifier's own note is behind a disclosure. */
 function escalationLine(reason: string): string {
   if (reason.startsWith("Safety")) return "On Opus from the start: a person's safety may be involved."
-  if (reason.startsWith("Conflicting evidence")) return "Moved to Opus: the verifier found two records that disagree about something the card states."
+  if (reason.startsWith("Conflicting evidence")) return "Moved to Opus, the larger model: two records disagree about something the proposal states."
   if (/over €500/.test(reason)) return `Moved to Opus: the proposal costs ${reason.match(/€\d[\d,]*/)?.[0] ?? "more than €500"}, over the €500 limit for Sonnet.`
   return `Moved to Opus: ${reason}`
 }
@@ -58,24 +63,26 @@ export default async function RunPage({ params }: Props) {
         <span>{RUN_STATUS[run.status] ?? run.status}</span>
         <span>{trace.modelLine === "Code" ? "Code, no model" : trace.modelLine}</span>
         {run.model && <span className="num">{tokenWords(trace.tokens)} · {dollars(run.costUsd)}</span>}
-        {run.wallMs > 0 && <span className="num">worked {seconds(run.wallMs)}</span>}
         <span>started <When iso={run.startedAt.toISOString()} now={now} zone={zone} /></span>
+        {run.finishedAt && <span>last step <When iso={run.finishedAt.toISOString()} now={now} zone={zone} as="clock" /></span>}
+        {run.wallMs > 0 && <span className="num" title="Real time the models worked; waiting for the driver or a site moves only the demo clock.">{seconds(run.wallMs)} of model time</span>}
+        {reference && <Link className="link" href={`/orders/${reference}`}>Open order {reference}</Link>}
         {run.nextCheckAt && <span>next check <When iso={run.nextCheckAt.toISOString()} now={now} zone={zone} /></span>}
       </div>
     </div>
 
     <section className="run-section">
       <h2 className="section-title">Why it started</h2>
-      <p>{run.trigger}</p>
+      <p>{triggerWords(run.trigger)}</p>
       {run.escalation && <div className="note" style={{ marginTop: 6 }}>{escalationLine(run.escalation)}{!run.escalation.startsWith("Safety") && <details className="more"><summary>Show the reason as recorded</summary><p>{run.escalation}</p></details>}</div>}
     </section>
 
     {cards.length > 0 && <section className="run-section">
-      <h2 className="section-title">{cards.length === 1 ? "Card for a person" : "Cards for a person"}</h2>
+      <h2 className="section-title">{cards.length === 1 ? "Proposal put to a person" : "Proposals put to a person"}</h2>
       <ul className="run-cards">
         {cards.map((card) => <li key={card.id}>
           <Link className="link" href={reference ? `/orders/${reference}` : "/"}>{card.headline}</Link>
-          <span className="faint"> · {card.status === "open" ? "waiting for you" : card.status === "expired" ? "replaced by a newer card" : card.status}</span>
+          <span className="faint"> · {card.status === "open" ? "waiting for you" : card.status === "expired" ? "replaced by a newer proposal" : card.status}</span>
         </li>)}
       </ul>
     </section>}
@@ -88,8 +95,9 @@ export default async function RunPage({ params }: Props) {
           return <li key={step.idx} className={`trace-step ${step.kind}${step.error ? " error" : ""}`}>
             <span className="entry-time"><When iso={step.at} now={now} zone={zone} as="clock" /></span>
             <div>
-              {(step.error || KIND_LABEL[step.kind]) && <span className="trace-kind">{step.error ? "Not accepted" : KIND_LABEL[step.kind]}</span>}
-              {text ? <div className="trace-text">{text.head}{text.rest && <details className="more"><summary>Show all reasoning</summary><p>{text.rest}</p></details>}</div>
+              {(step.error || (KIND_LABEL[step.kind] && step.kind !== "thought")) && <span className="trace-kind">{step.error ? "Sent back" : KIND_LABEL[step.kind]}</span>}
+              {/* The model's own reasoning is raw working notes: one click away, not part of the plain-words trace. */}
+              {text ? <details className="more reasoning"><summary>Show the agent&apos;s reasoning</summary><p>{`${text.head} ${text.rest}`.trim()}{/[.!?…)]$/.test(step.text.trim()) ? "" : "…"}</p></details>
                 : <p className="trace-text">{step.text}</p>}
               {step.details != null && <details className="more"><summary>Show details</summary><pre className="raw">{JSON.stringify(step.details, null, 2)}</pre></details>}
             </div>
@@ -106,7 +114,7 @@ export default async function RunPage({ params }: Props) {
           <span className="muted">{item.calls} call{item.calls === 1 ? "" : "s"} · {tokenWords(item.input + item.output + item.cacheRead + item.cacheWrite)} ({tokenWords(item.cacheRead).replace(" tokens", "")} read from cache) · {dollars(item.costUsd)}</span>
         </li>)}
       </ul>
-      <p className="note" style={{ marginTop: 6 }}>Haiku calls inside a run are the verifier, the simulated driver or site, and the narrator. Cost is computed from the token counts and the prices in the code.</p>
+      <p className="note" style={{ marginTop: 6 }}>Haiku calls inside a run are the second check of the proposal, the simulated driver or site, and the one-line summary. Cost is computed from the token counts and the model prices.</p>
     </section>}
   </main>
 }

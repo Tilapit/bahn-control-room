@@ -38,6 +38,8 @@ export type QueueOrder = {
   route: string
   /** Zone used for times on this order: pickup until the car is collected, then delivery. */
   zone: string | null
+  /** The pickup's and the delivery's own zones, for a proposed new time at either end. */
+  zones: { pickup: string | null; delivery: string | null }
 }
 
 export type QueueItem = { card: QueueCard; order: QueueOrder; urgency: Urgency }
@@ -55,6 +57,12 @@ export type QueueCounts = {
   byRule: number
 }
 
+/** "Munich → Hamburg → Lahti"; a transfer yard in the delivery city is not a third stop; one city at both ends is "Within Helsinki". */
+export function routeWords(from: string, via: string | null, to: string): string {
+  if (from === to && (!via || via === to)) return `Within ${from}`
+  return via && via !== from && via !== to ? `${from} → ${via} → ${to}` : `${from} → ${to}`
+}
+
 export function orderView(file: CaseFile): QueueOrder {
   const { order } = file
   const from = order.route.from?.city ?? "?"
@@ -62,8 +70,9 @@ export function orderView(file: CaseFile): QueueOrder {
   const collected = !!order.pickedUpAt || order.stage.key === "delivered"
   return {
     id: order.id, reference: order.reference, car: order.car.label, customer: order.customer.name,
-    route: order.route.via ? `${from} → ${order.route.via.city} → ${to}` : `${from} → ${to}`,
+    route: routeWords(from, order.route.via?.city ?? null, to),
     zone: (collected ? order.route.to?.zone : order.route.from?.zone) ?? null,
+    zones: { pickup: order.route.from?.zone ?? null, delivery: order.route.to?.zone ?? null },
   }
 }
 

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { DemoEvent } from "@/lib/demo-scenarios"
-import { clock, at as fullTime } from "@/lib/time"
+import { clockZone, at as fullTime } from "@/lib/time"
 
 type State = {
   now: string
@@ -19,6 +19,8 @@ type State = {
 
 const STATUS: Record<string, string> = { running: "Working", waiting_driver: "Waiting for driver", waiting_site: "Waiting for site", waiting_person: "Waiting for you", done: "Done", failed: "Stopped" }
 const DESK_ZONE = "Europe/Helsinki"
+/** "Wed 21 Oct 12:48 Helsinki time", as in the top bar. */
+const deskTime = (iso: string) => `${fullTime(iso, DESK_ZONE).replace(/ EES?T$/, "")} Helsinki time`
 
 const mmss = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`
 
@@ -71,10 +73,10 @@ export function DemoControls({ events, orders, defaultOrder, live }: { events: (
     <section className="demo-block" aria-label="Simulated clock">
       <div className="section-title"><span>Simulated clock</span></div>
       <div className="demo-row">
-        <span className="demo-clock num">{state ? `${fullTime(state.now, DESK_ZONE)}` : "…"}</span>
+        <span className="demo-clock num">{state ? deskTime(state.now) : "…"}</span>
         <button type="button" className="btn small" disabled={!!busy} onClick={() => post("/api/demo/clock", { minutes: 15 }, "clock")}>+15 min</button>
         <button type="button" className="btn small" disabled={!!busy} onClick={() => post("/api/demo/clock", { minutes: 60 }, "clock")}>+1 h</button>
-        <button type="button" className="btn small quiet" disabled={!!busy} onClick={() => post("/api/demo/clock", { reset: true }, "clock")}>Back to the start{state ? ` (${fullTime(state.start, DESK_ZONE)})` : ""}</button>
+        <button type="button" className="btn small quiet" disabled={!!busy} onClick={() => post("/api/demo/clock", { reset: true }, "clock")}>Back to the start{state ? ` (${deskTime(state.start)})` : ""}</button>
       </div>
       <label className="demo-switch">
         <input type="checkbox" checked={state?.autoReply ?? true} onChange={(event) => post("/api/demo/settings", { autoReply: event.target.checked }, "switch")} />
@@ -92,7 +94,7 @@ export function DemoControls({ events, orders, defaultOrder, live }: { events: (
 
     <section className="demo-block" aria-label="Scripted events">
       <div className="section-title"><span>Scripted events</span></div>
-      {!live && <p className="note">No API key is set, so agents cannot run live. Replay plays back a recorded live run of the same event at its real speed, marked as a replay.</p>}
+      <p className="note">{live ? "Play live runs the real agents now, with the simulated driver. " : "No API key is set, so agents cannot run live. "}Replay recorded run plays back an earlier live run of the same event at its real speed, marked as a replay.</p>
       {state?.replay && <p className="replay-status" role="status"><span className="replay-tag">Replay</span> Playing back a recorded live run on {state.replay.order}: {mmss(Math.min(state.replay.durationMs, Date.now() - Date.parse(state.replay.startedAt)))} of {mmss(state.replay.durationMs)}. Watch it on For you, the order page or Agents.</p>}
       <ul className="demo-events">
         {events.map((event) => <li key={event.id}>
@@ -122,7 +124,7 @@ export function DemoControls({ events, orders, defaultOrder, live }: { events: (
           <div className="phone-head">{state?.driver ?? "No driver"} · driver app</div>
           <div className="phone-thread" ref={threadRef}>
             {state?.thread.slice(-12).map((message) => <div key={message.id} className={`bubble${message.mine ? " mine" : ""}`}>
-              <div className="bubble-who">{message.mine ? "You" : message.who}{message.simulated && message.mine ? " · simulated" : ""} · {clock(message.at, DESK_ZONE)}</div>
+              <div className="bubble-who">{message.mine ? "You" : message.who}{message.simulated && message.mine ? " · simulated" : ""} · {clockZone(message.at, DESK_ZONE)}</div>
               <div>{message.text}</div>
             </div>)}
             {state && !state.thread.length && <p className="note">No messages on this order yet.</p>}

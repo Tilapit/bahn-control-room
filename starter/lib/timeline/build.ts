@@ -770,11 +770,13 @@ export function buildTimeline(data: DatasetRows): { entries: NewEntry[]; facts: 
     set.add(name)
     driversByOrder.set(row.orderId, set)
   }
+  // Every record on the order is searchable, not only messages: "Hamburg ferry" finds the booking and the alert too.
   const bodiesByOrder = new Map<string, string[]>()
   for (const entry of entries) {
-    if (!entry.orderId || entry.kind !== "message" || !entry.body) continue
+    if (!entry.orderId) continue
     const list = bodiesByOrder.get(entry.orderId) ?? []
-    list.push(entry.body)
+    list.push(entry.summary)
+    if (entry.body) list.push(entry.body)
     bodiesByOrder.set(entry.orderId, list)
   }
   const search: SearchDoc[] = data.orders.map((order) => {
@@ -789,7 +791,7 @@ export function buildTimeline(data: DatasetRows): { entries: NewEntry[]; facts: 
       pickup?.name, pickup?.city, pickup?.country, str(pickup?.details.address_line1),
       delivery?.name, delivery?.city, delivery?.country, str(delivery?.details.address_line1),
     ]
-    // Header fields, then message text after a separator, so a snippet is only shown for a match inside a message.
+    // Header fields, then the records' text after a separator.
     const header = parts.filter(Boolean).join(" \n ")
     return { orderId: order.id, reference: order.reference, content: `${header}${SEARCH_SEPARATOR}${(bodiesByOrder.get(order.id) ?? []).join(" \n ")}` }
   })

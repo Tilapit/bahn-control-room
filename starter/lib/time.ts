@@ -104,6 +104,29 @@ export function dayAndClock(value: unknown, now: Date | string, zone?: string | 
   return `${word} ${clock(date, tz)}`
 }
 
+/** "today 16:00 CEST": a day word and the clock, with the zone name, so a time in another country is never read as Helsinki time. */
+export function dayClockZone(value: unknown, now: Date | string, zone?: string | null): string {
+  const text = dayAndClock(value, now, zone)
+  return text ? `${text} ${zoneShort(value, zone)}` : ""
+}
+
+/** "today 10:00–16:00 EEST", "Fri 23 Oct 13:00–15:00 EEST", "today 22:00 – tomorrow 06:00 CEST": a window, never only its start. */
+export function dayRange(start: unknown, end: unknown, now: Date | string, zone?: string | null): string {
+  if (!parse(end)) return dayClockZone(start, now, zone)
+  const from = dayAndClock(start, now, zone)
+  const to = dayAndClock(end, now, zone)
+  if (!from || !to) return dayClockZone(start, now, zone)
+  const [fromDay, fromClock] = [from.slice(0, from.lastIndexOf(" ")), from.slice(from.lastIndexOf(" ") + 1)]
+  const [toDay, toClock] = [to.slice(0, to.lastIndexOf(" ")), to.slice(to.lastIndexOf(" ") + 1)]
+  return fromDay === toDay ? `${fromDay} ${fromClock}–${toClock} ${zoneShort(end, zone)}` : `${from} – ${to} ${zoneShort(end, zone)}`
+}
+
+/** "14:00 CEST" */
+export function clockZone(value: unknown, zone?: string | null): string {
+  const text = clock(value, zone)
+  return text ? `${text} ${zoneShort(value, zone)}` : ""
+}
+
 export function minutesUntil(value: unknown, now: Date | string): number | null {
   const date = parse(value)
   const base = parse(now)

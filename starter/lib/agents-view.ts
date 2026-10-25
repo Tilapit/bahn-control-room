@@ -32,6 +32,8 @@ export type RunRow = {
   tokens: number
   costUsd: number
   replay: boolean
+  /** A safety stop: its proposal is first on For you, so it is first here too. */
+  safety: boolean
 }
 
 /** The main model of a run, and the move to the senior model when there was one. Haiku helpers (verifier, simulated driver, narrator) count in tokens and cost, not here. */
@@ -61,11 +63,13 @@ const dayKey = (date: Date) => new Intl.DateTimeFormat("en-GB", { timeZone: DESK
 
 export async function agentsView(filter: RunFilter) {
   const at = await clockNow()
-  const [runs, orderRows] = await Promise.all([
+  const [runs, orderRows, openCards] = await Promise.all([
     db.select().from(agentRuns).orderBy(desc(agentRuns.startedAt)),
     db.select({ id: orders.id, reference: orders.reference, make: vehicles.make, model: vehicles.model })
       .from(orders).leftJoin(orderItems, and(eq(orderItems.orderId, orders.id), eq(orderItems.role, "PRIMARY"))).leftJoin(vehicles, eq(vehicles.id, orderItems.vehicleId)),
+    db.select({ runId: cards.runId, severity: cards.severity }).from(cards).where(eq(cards.status, "open")),
   ])
+  const safetyRuns = new Set(openCards.filter((card) => card.severity === "safety").map((card) => card.runId))
   const byOrder = new Map(orderRows.map((row) => [row.id, row]))
   // A working run has no narration yet: show its latest step, so the row moves while it works.
   const working = runs.filter((run) => run.status === "running").map((run) => run.id)
@@ -80,22 +84,27 @@ export async function agentsView(filter: RunFilter) {
   const counts = { active: runs.filter(active).length, done: runs.filter((run) => !quiet(run) && !active(run)).length, quiet: runs.filter(quiet).length }
   const shown = runs
     .filter((run) => filter === "quiet" ? quiet(run) : filter === "active" ? active(run) : !quiet(run) && !active(run))
-    // Working first, then waiting on someone, then the rest; newest first inside each.
-    .sort((a, b) => ACTIVE.indexOf(a.status) - ACTIVE.indexOf(b.status) || b.startedAt.getTime() - a.startedAt.getTime())
-  const today = runs.filter((run) => dayKey(run.startedAt) === dayKey(at) && run.model)
+    // Working first, then waiting on someone, a safety stop before the rest; newest first inside each, then by order so equal times keep one order.
+    .sort((a, b) => ACTIVE.indexOf(a.status) - ACTIVE.indexOf(b.status) || Number(safetyRuns.has(b.id)) - Number(safetyRuns.has(a.id))
+      || b.startedAt.getTime() - a.startedAt.getTime() || (a.orderId ?? "").localeCompare(b.orderId ?? ""))
+  const todayAll = runs.filter((run) => dayKey(run.startedAt) === dayKey(at))
+  const today = todayAll.filter((run) => run.model)
   const rows: RunRow[] = shown.map((run) => {
     const order = run.orderId ? byOrder.get(run.orderId) : null
     return {
-      id: run.id, agent: run.agent, status: run.status, statusLabel: RUN_STATUS[run.status] ?? run.status,
-      sentence: run.status === "running" ? `${latest.get(run.id) ?? "Reading the case file"}…` : run.narration ?? run.outcomeSummary ?? run.trigger,
+      // A finished run that looks again later is watching, not done; a quiet check only checked.
+      id: run.id, agent: run.agent, status: run.status,
+      statusLabel: quiet(run) ? "Checked" : run.status === "done" && run.nextCheckAt && run.nextCheckAt > at ? "Watching" : RUN_STATUS[run.status] ?? run.status,
+      sentence: run.status === "running" ? `${latest.get(run.id) ?? "Reading the order's records"}…`
+        : run.narration ?? (run.status === "waiting_person" && run.outcomeSummary ? `Put a proposal to a person: ${run.outcomeSummary}` : run.outcomeSummary ?? run.trigger),
       reference: order?.reference ?? null, car: order?.make ? `${order.make} ${order.model}` : null,
       startedAt: run.startedAt.toISOString(), nextCheckAt: run.nextCheckAt?.toISOString() ?? null,
-      model: modelLine(run), tokens: tokensOf(run), costUsd: run.costUsd, replay: run.replay,
+      model: modelLine(run), tokens: tokensOf(run), costUsd: run.costUsd, replay: run.replay, safety: safetyRuns.has(run.id),
     }
   })
   return {
     now: at.toISOString(), rows, counts,
-    today: { runs: today.length, tokens: today.reduce((sum, run) => sum + tokensOf(run), 0), costUsd: today.reduce((sum, run) => sum + run.costUsd, 0) },
+    today: { runs: today.length, codeRuns: todayAll.length - today.length, tokens: today.reduce((sum, run) => sum + tokensOf(run), 0), costUsd: today.reduce((sum, run) => sum + run.costUsd, 0) },
   }
 }
 
@@ -105,7 +114,16 @@ export async function agentsView(filter: RunFilter) {
 
 export type TraceStep = { idx: number; at: string; kind: "thought" | "action" | "reply" | "card"; text: string; details: unknown | null; error: boolean }
 
-/** Card-building calls read as one action: "Put a card together". */
+/** Step lines written before the wording change, in the words people read now: a draft is sent back, not a "card". */
+function plainStep(text: string): string {
+  return text
+    .replace(/^Card sent back by code checks/, "Draft sent back by the code checks")
+    .replace(/^Card sent back by the verifier/, "Draft sent back by the second check")
+    .replace(/^Card held back: a finding or step in the same turn failed/, "Draft held back: one of its facts or actions was not accepted")
+    .replace(/^Verifier found conflicting sources; handed to the senior model/, "The second check found records that disagree; handed to Opus, the larger model")
+}
+
+/** Card-building calls read as one action: "Drafted a proposal". */
 const CARD_TOOLS = new Set(["add_finding", "add_step"])
 
 export async function runTrace(runId: string) {
@@ -121,10 +139,10 @@ export async function runTrace(runId: string) {
   let cardGroup: { findings: string[]; steps: string[]; problems: string[]; at: string; idx: number } | null = null
   const flushGroup = () => {
     if (!cardGroup) return
-    const parts = [`${cardGroup.findings.length} finding${cardGroup.findings.length === 1 ? "" : "s"}`, cardGroup.steps.length ? `${cardGroup.steps.length} action${cardGroup.steps.length === 1 ? "" : "s"} for the options` : null].filter(Boolean)
+    const parts = [`${cardGroup.findings.length} fact${cardGroup.findings.length === 1 ? "" : "s"}`, cardGroup.steps.length ? `${cardGroup.steps.length} action${cardGroup.steps.length === 1 ? "" : "s"}` : null].filter(Boolean)
     out.push({
       idx: cardGroup.idx, at: cardGroup.at, kind: "action", error: cardGroup.problems.length > 0,
-      text: `Put a card together: ${parts.join(", ")}${cardGroup.problems.length ? `; ${cardGroup.problems.length} not accepted by the checks` : ""}.`,
+      text: `Drafted a proposal: ${parts.join(", ")}${cardGroup.problems.length ? `; the checks sent ${cardGroup.problems.length} back` : ""}.`,
       details: { findings: cardGroup.findings, actions: cardGroup.steps, notAccepted: cardGroup.problems },
     })
     cardGroup = null
@@ -149,7 +167,7 @@ export async function runTrace(runId: string) {
     out.push({
       idx: step.idx, at: step.at.toISOString(), error: !!output?.isError,
       kind: step.type === "message" ? "reply" : step.tool === "propose" || step.tool === "resolve" ? "card" : "action",
-      text: step.summary ?? "", details: { input: call?.input ?? step.input ?? null, output: step.output ?? null },
+      text: plainStep(step.summary ?? ""), details: { input: call?.input ?? step.input ?? null, output: step.output ?? null },
     })
   }
   flushGroup()

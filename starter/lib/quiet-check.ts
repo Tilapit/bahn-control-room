@@ -6,7 +6,7 @@ import type { CaseFile } from "./case"
 import { addStep, createRun, updateRun } from "./agents/runs"
 import { orderView } from "./queue"
 import { liveSignals } from "./signals"
-import { dayAndClock, relative } from "./time"
+import { dayClockZone, dayRange, relative } from "./time"
 
 export const QUIET_AGENT = "Quiet check"
 const HOUR = 3_600_000
@@ -20,21 +20,26 @@ function sentence(file: CaseFile, now: Date): string {
   const pickup = time("pickup_slot") ?? time("pickup_planned")
   switch (order.stage.key) {
     case "delivered":
-      return `Nothing open. Delivered${order.deliveredAt ? ` ${dayAndClock(order.deliveredAt, now, to?.zone)}` : ""}${to?.city ? ` in ${to.city}` : ""}.`
+      return `Nothing open. Delivered${order.deliveredAt ? ` ${dayClockZone(order.deliveredAt, now, to?.zone)}` : ""}${to?.city ? ` in ${to.city}` : ""}.`
     case "cancelled":
-      return `Nothing open. The order was cancelled${order.cancelledAt ? ` ${dayAndClock(order.cancelledAt, now, from?.zone)}` : ""}.`
+      return `Nothing open. The order was cancelled${order.cancelledAt ? ` ${dayClockZone(order.cancelledAt, now, from?.zone)}` : ""}.`
     case "moving": {
       const gps = plan.lastPosition
       const parts = [`On the road to ${to?.city ?? "the delivery address"}`]
       if (gps) parts.push(`last GPS ${relative(gps.at, now)}${gps.kmToGo != null ? `, ${gps.kmToGo} km to go` : ""}`)
-      if (promise) parts.push(`delivery promised ${dayAndClock(promise.start, now, promise.zone)}${promise.place ? ` in ${promise.place}` : ""}`)
+      if (promise) parts.push(`delivery promised ${dayRange(promise.start, promise.end, now, promise.zone)}${promise.place ? ` in ${promise.place}` : ""}`)
       return `Nothing open. ${parts.join("; ")}.`
     }
     case "at_transfer":
-      return `Nothing open. At the transfer yard${order.route.via?.city ? ` in ${order.route.via.city}` : ""}${promise ? `; delivery promised ${dayAndClock(promise.start, now, promise.zone)}` : ""}.`
+      return `Nothing open. At the transfer yard${order.route.via?.city ? ` in ${order.route.via.city}` : ""}${promise ? `; delivery promised ${dayRange(promise.start, promise.end, now, promise.zone)}` : ""}.`
     default:
-      return `Nothing open. ${order.stage.label}${pickup ? `; pickup ${pickup.key === "pickup_slot" ? "" : "planned "}${dayAndClock(pickup.start, now, pickup.zone)}${pickup.place ? ` in ${pickup.place}` : ""}` : ""}.`
+      return `Nothing open. ${order.stage.label}${pickup ? `; pickup ${pickup.key === "pickup_slot" ? "" : "planned "}${dayRange(pickup.start, pickup.end, now, pickup.zone)}${pickup.place ? ` in ${pickup.place}` : ""}` : ""}.`
   }
+}
+
+/** The quiet line for a list: "Nothing open. Delivery promised today 10:00–16:00 EEST in Tampere." */
+export function quietLine(file: CaseFile, now: Date): string {
+  return sentence(file, now)
 }
 
 /** When to look again: an hour before the next key time, at most four hours out. Finished orders need no check. */

@@ -5,6 +5,7 @@ You get the order, why the run started, what the agent did in order, and where t
 - Start with what was checked or done, past tense: "Checked…", "Asked the driver…", "Looked up…", "Read 10 messages…".
 - Then the result: "explained by an agreement in support chat at 12:04", "the driver reports a fever", "proposed booking the Sat 14:00 ferry".
 - Use ops words: order, car, driver, gig, pickup, delivery, ferry, customer, site, booking, quote. Never use internal words, ids, handles like E12, codes in capitals, or JSON.
+- Say "proposal" or "proposed", never "card"; say "the order's records", never "case file"; leave out checks that sent a draft back ("verifier", "checks", "sent back"): only the result counts.
 - A quote is not a booking. An alert is a signal, not a diagnosis. A driver's message is what they say, not a fact.
 - Times exactly as given, with their zone when one is given. Do not invent times, places or numbers.
 - Do not name the car or the order reference; the row already shows them.
@@ -14,6 +15,6 @@ Good:
 - "Checked a route deviation; explained by an agreement in support chat at 12:04."
 - "Confirmed with the ferry line that the timed-out request booked nothing, then quoted the Sat 14:00 sailing and a Hamburg hotel."
 - "Asked the driver if they are safe and where the car is; they report Hollenmark services on the A7. Proposed calling the dealer."
-- "Read 10 messages on this order and filed 5 facts, each as stated, not confirmed."
+- "Read 10 messages on this order and noted 5 statements, each as said, not confirmed."
 
 Answer with JSON: {"sentence": "..."}.

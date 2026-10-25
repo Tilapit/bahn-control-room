@@ -24,6 +24,17 @@ export function cityAt(name: string | null | undefined) {
   return CITIES[name] ?? CITIES[Object.keys(CITIES).find((city) => name.toLowerCase().startsWith(city.toLowerCase())) ?? ""] ?? null
 }
 
+const COUNTRY_ZONE: Record<string, string> = {
+  FI: "Europe/Helsinki", DE: "Europe/Berlin", DK: "Europe/Copenhagen", SE: "Europe/Stockholm", FR: "Europe/Paris",
+  BE: "Europe/Brussels", NL: "Europe/Amsterdam", AT: "Europe/Vienna",
+}
+
+/** The time zone of a dataset city ("Pori" → Europe/Helsinki), so a train in Finland is shown in Finnish time. */
+export function zoneOfCity(name: string | null | undefined): string | null {
+  const city = cityAt(name)
+  return city ? COUNTRY_ZONE[city.country] ?? null : null
+}
+
 /** Kilometres from a point to the straight leg between two cities (flat-earth approximation, fine at these distances). */
 export function distanceToLegKm(point: { lat: number; lon: number }, a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
   const kmLat = 111.2

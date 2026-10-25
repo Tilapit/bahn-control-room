@@ -43,7 +43,7 @@ export const ACTIONS: PolicyAction[] = [
   { action: "approve_repair_cost", level: "approval", label: "Agree a repair cost", reason: "it is a cost", proposable: true },
   { action: "message_customer", level: "approval", label: "Email the customer", reason: "it contacts a customer", customerContact: true, proposable: true },
   { action: "call_customer", level: "approval", label: "Call the customer", reason: "it contacts a customer", customerContact: true, proposable: true },
-  { action: "call_contact", level: "approval", label: "Call a seller or other contact", reason: "a person makes the call", proposable: true },
+  { action: "call_contact", level: "approval", label: "Call a seller or other contact", reason: "it hands the call to a person", proposable: true },
 ]
 
 const BY_ACTION = new Map(ACTIONS.map((entry) => [entry.action, entry]))

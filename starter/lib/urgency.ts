@@ -2,7 +2,7 @@
 // and each card says it as a sentence. Never a score.
 
 import type { CaseFile } from "./case"
-import { clock, dayAndClock, duration, minutesUntil } from "./time"
+import { clockZone, dayClockZone, dayRange, duration, minutesUntil } from "./time"
 
 export type ConsequenceKind =
   | "ferry_cutoff" | "pickup_slot" | "pickup_running" | "pickup_missed" | "yard_release"
@@ -45,7 +45,7 @@ export function urgency(file: CaseFile, now: Date): Urgency {
   const ferryAtRisk = file.open.alerts.some((alert) => FERRY_SIGNALS.has(alert.signal))
   for (const time of file.keyTimes) {
     if (time.key !== "ferry_cutoff" || !ferryAtRisk || done) continue
-    if (later(time.start)) upcoming.push({ at: time.start, kind: "ferry_cutoff", sentence: `Ferry check-in${time.place ? ` in ${time.place}` : ""} closes ${relativeWords(time.start, now)}, at ${clock(time.start, time.zone)}` })
+    if (later(time.start)) upcoming.push({ at: time.start, kind: "ferry_cutoff", sentence: `Ferry check-in${time.place ? ` in ${time.place}` : ""} closes at ${clockZone(time.start, time.zone)}` })
   }
 
   // Pickup slot for a car not yet collected (or a yard release slot after a transfer).
@@ -55,18 +55,18 @@ export function urgency(file: CaseFile, now: Date): Urgency {
     const what = `${yard ? "Yard release" : "Pickup"}${time.place ? ` in ${time.place}` : ""}`
     const slot = `${yard ? "Yard release" : "Pickup"} slot${time.place ? ` in ${time.place}` : ""}`
     if (later(time.start)) {
-      upcoming.push({ at: time.start, kind: yard ? "yard_release" : "pickup_slot", sentence: `${what} starts ${dayAndClock(time.start, now, time.zone)}` })
+      upcoming.push({ at: time.start, kind: yard ? "yard_release" : "pickup_slot", sentence: `${what} starts ${dayClockZone(time.start, now, time.zone)}` })
     } else if (time.end && later(time.end)) {
-      upcoming.push({ at: time.end, kind: "pickup_running", sentence: `${slot} is open now, until ${clock(time.end, time.zone)}` })
+      upcoming.push({ at: time.end, kind: "pickup_running", sentence: `${slot} is open now, until ${clockZone(time.end, time.zone)}` })
     } else if (time.end) {
-      missed.push({ at: time.end, kind: "pickup_missed", sentence: `${slot} ended ${duration(-(minutesUntil(time.end, now) ?? 0))} ago and the car was not collected` })
+      missed.push({ at: time.end, kind: "pickup_missed", sentence: `${slot} ended at ${clockZone(time.end, time.zone)} and the car was not collected` })
     }
   }
   if (!done && !file.keyTimes.some((time) => time.key === "pickup_slot" || time.key === "picked_up")) {
     const planned = file.keyTimes.find((time) => time.key === "pickup_planned")
     if (planned && later(planned.start)) upcoming.push({
       at: planned.start, kind: "planned_pickup",
-      sentence: `Planned pickup${planned.place ? ` in ${planned.place}` : ""} on ${dayAndClock(planned.start, now, planned.zone)} is not confirmed yet`,
+      sentence: `Planned pickup${planned.place ? ` in ${planned.place}` : ""}, ${dayRange(planned.start, planned.end, now, planned.zone)}, is not confirmed yet`,
     })
   }
 
@@ -74,8 +74,8 @@ export function urgency(file: CaseFile, now: Date): Urgency {
   const promise = file.keyTimes.find((time) => time.key === "delivery_promise" && time.label === "Delivery promise")
   if (promise && !done) {
     const end = promise.end ?? promise.start
-    if (later(end)) upcoming.push({ at: end, kind: "delivery_promise", sentence: `Customer was promised delivery${promise.place ? ` in ${promise.place}` : ""} by ${dayAndClock(end, now, promise.zone)}` })
-    else missed.push({ at: end, kind: "promise_missed", sentence: `Delivery promise ended ${duration(-(minutesUntil(end, now) ?? 0))} ago and the car has not arrived` })
+    if (later(end)) upcoming.push({ at: end, kind: "delivery_promise", sentence: `Customer was promised delivery${promise.place ? ` in ${promise.place}` : ""} by ${dayClockZone(end, now, promise.zone)}` })
+    else missed.push({ at: end, kind: "promise_missed", sentence: `Delivery promise${promise.place ? ` in ${promise.place}` : ""} ended at ${clockZone(end, promise.zone)} and the car has not arrived` })
   }
 
   // Booked driver travel, when the driver is the problem.
@@ -83,7 +83,7 @@ export function urgency(file: CaseFile, now: Date): Urgency {
   if (driverAtRisk && !done) {
     for (const time of file.keyTimes) {
       if (time.key !== "driver_travel" || !later(time.start)) continue
-      upcoming.push({ at: time.start, kind: "driver_travel", sentence: `${time.label}${time.place ? ` from ${time.place}` : ""} leaves ${relativeWords(time.start, now)}, at ${clock(time.start, time.zone)}` })
+      upcoming.push({ at: time.start, kind: "driver_travel", sentence: `${time.label}${time.place ? ` from ${time.place}` : ""} leaves at ${clockZone(time.start, time.zone)}` })
     }
   }
 
@@ -98,7 +98,7 @@ export function urgency(file: CaseFile, now: Date): Urgency {
     const due = new Date(new Date(alert.at).getTime() + hours * 3600_000).toISOString()
     const age = duration(-(minutesUntil(alert.at, now) ?? 0))
     // Sorted by the alert's response time, but the sentence does not invent a deadline.
-    if (later(due)) return { ...finish({ at: due, kind: "alert_followup", sentence: `No deadline in the records; alert raised ${age} ago` }, now, safety), relative: "", timeRisk: false }
+    if (later(due)) return { ...finish({ at: due, kind: "alert_followup", sentence: `No deadline in the records; alert open for ${age}` }, now, safety), relative: "", timeRisk: false }
     return { at: null, kind: "no_deadline", sentence: `No deadline in the records; open for ${age}`, relative: "", timeRisk: false, safety }
   }
   return { at: null, kind: "no_deadline", sentence: "No deadline in the records", relative: "", timeRisk: false, safety }
@@ -116,10 +116,6 @@ function finish(candidate: Candidate, now: Date, safety: boolean): Urgency {
   }
 }
 
-function relativeWords(iso: string, now: Date): string {
-  const minutes = minutesUntil(iso, now) ?? 0
-  return minutes >= 0 ? `in ${duration(minutes)}` : `${duration(minutes)} ago`
-}
 
 function severityRank(severity: string): number {
   return { critical: 0, high: 1, medium: 2, low: 3 }[severity] ?? 4

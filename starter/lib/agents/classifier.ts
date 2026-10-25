@@ -14,6 +14,13 @@ import { at } from "../time"
 import { callJson, prompt } from "./llm"
 import { addStep, addUsageToRun, createRun, nextStepIndex, updateRun } from "./runs"
 
+/** Cut a long text at a word, with "…", so a shortened statement never ends mid-word. */
+function clip(text: string, max: number): string {
+  if (text.length <= max) return text
+  const cut = text.slice(0, max - 1)
+  return `${cut.slice(0, cut.lastIndexOf(" ") > max / 2 ? cut.lastIndexOf(" ") : cut.length).replace(/[,;:\s]+$/, "")}…`
+}
+
 export type Classification = {
   intent: "question" | "update" | "request" | "agreement" | "complaint" | "other"
   urgency: "safety" | "time" | "normal"
@@ -87,7 +94,7 @@ export async function classifyEntry(entryId: string, options: { trigger?: string
     // Only a newer statement supersedes: backfill and late uploads can arrive out of order.
     const older = known.filter((candidate) => candidate.subject.toLowerCase() === fact.subject.toLowerCase() && candidate.origin !== "dataset" && candidate.statedAt <= row.occurredAt)
     await db.insert(facts).values({
-      id, orderId: row.orderId, subject: fact.subject.slice(0, 80), value: fact.value.slice(0, 240), status: "claimed",
+      id, orderId: row.orderId, subject: fact.subject.slice(0, 80), value: clip(fact.value, 240), status: "claimed",
       sourceEntryId: row.id, statedByLabel: `${row.authorLabel ?? "Someone"}, ${sourceWord(row)}`, statedAt: row.occurredAt,
       kind: fact.kind, origin: "classifier",
     })

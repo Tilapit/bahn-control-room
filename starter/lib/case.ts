@@ -2,7 +2,7 @@
 // order) and by the order screen. Everything in it comes from records and
 // carries a source entry and a time; nothing here is written by an LLM.
 
-import { and, asc, eq, gte, inArray, isNotNull, isNull, or, sql } from "drizzle-orm"
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, or, sql } from "drizzle-orm"
 import { db } from "./db"
 import { now as clockNow } from "./clock"
 import { Directory } from "./present/actors"
@@ -17,9 +17,8 @@ import {
   demoEvents,
 } from "./schema"
 import type { ExecutedEffect } from "./schema"
-import { SEARCH_SEPARATOR } from "./timeline/build"
 import { chipLabel, chipWho, sourceLabel } from "./timeline/sources"
-import { clock } from "./time"
+import { clock, relative } from "./time"
 import { documentLabel, incidentLabel, money, signalLabel, taskLabel, travelLabel } from "./words"
 
 // ---------------------------------------------------------------------------
@@ -724,8 +723,23 @@ export type SearchHit = {
   car: string
   customer: string
   route: string
-  /** A matching passage when the match was in a message. */
-  snippet: string | null
+  /** The newest record on the order that holds every searched word: the words around the match («» marks them), where it came from and when. */
+  snippet: { text: string; source: string; when: string; entryId: string } | null
+}
+
+/** The words around the first match, cut at word boundaries, with every searched word marked «like this». */
+function passage(text: string, tokens: string[]): string {
+  // Older look-up records list options behind internal ids ("- hotel:norderkai-lodge:…: "): never show those.
+  const flat = text.replace(/^- [a-z]+:\S+: /gm, "").replace(/\s+/g, " ").trim()
+  const lower = flat.toLowerCase()
+  const first = Math.min(...tokens.map((token) => lower.indexOf(token)).filter((index) => index >= 0))
+  const at = Number.isFinite(first) ? first : 0
+  let start = Math.max(0, at - 60)
+  if (start > 0) { const space = flat.indexOf(" ", start); start = space >= 0 && space < at ? space + 1 : start }
+  let end = Math.min(flat.length, at + 120)
+  if (end < flat.length) { const space = flat.lastIndexOf(" ", end); end = space > at ? space : end }
+  const marked = flat.slice(start, end).replace(new RegExp(`(${tokens.map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "giu"), "«$1»")
+  return `${start > 0 ? "…" : ""}${marked}${end < flat.length ? "…" : ""}`
 }
 
 /** Full-text search over reference, plate, VIN, car, customer, driver, cities and message bodies. */
@@ -734,31 +748,44 @@ export async function search(query: string, limit = 20): Promise<SearchHit[]> {
   if (!tokens.length) return []
   const tsquery = tokens.map((token) => `${token}:*`).join(" & ")
   const like = `%${query.trim()}%`
-  const result = await db.execute<{ order_id: string; reference: string; snippet: string }>(sql`
-    select d.order_id, d.reference,
-      ts_headline('simple', split_part(d.content, ${SEARCH_SEPARATOR}, 2), q, 'MaxFragments=1, MaxWords=14, MinWords=6, StartSel=«, StopSel=»') as snippet
+  const result = await db.execute<{ order_id: string; reference: string }>(sql`
+    select d.order_id, d.reference
     from ${searchDocuments} d, to_tsquery('simple', ${tsquery}) q
     where d.tsv @@ q or d.reference ilike ${like} or d.content ilike ${like}
     order by (d.reference ilike ${like}) desc, ts_rank(d.tsv, q) desc, d.reference
-    limit ${limit}
+    limit ${limit * 3}
   `)
-  const hits = [...result]
-  if (!hits.length) return []
-  const ids = hits.map((hit) => hit.order_id)
-  const [orderRows, itemRows, customerRows, addressRows] = await Promise.all([
+  const found = [...result]
+  if (!found.length) return []
+  const ids = found.map((hit) => hit.order_id)
+  const [orderRows, itemRows, customerRows, addressRows, entryRows, at] = await Promise.all([
     db.select().from(orders).where(inArray(orders.id, ids)),
     db.select({ orderId: orderItems.orderId, role: orderItems.role, make: vehicles.make, model: vehicles.model }).from(orderItems)
       .innerJoin(vehicles, eq(orderItems.vehicleId, vehicles.id)).where(inArray(orderItems.orderId, ids)),
     db.select().from(customers),
     db.select().from(addresses),
+    // Records that hold every searched word, newest first: the passage shown under a hit, with its source and time.
+    db.select().from(timelineEntries)
+      .where(and(inArray(timelineEntries.orderId, ids), ...tokens.map((token) => sql`(${timelineEntries.summary} || ' ' || coalesce(${timelineEntries.body}, '')) ilike ${`%${token}%`}`)))
+      .orderBy(desc(timelineEntries.occurredAt)).limit(500),
+    clockNow(),
   ])
+  const passages = new Map<string, NonNullable<SearchHit["snippet"]>>()
+  for (const entry of entryRows) {
+    if (!entry.orderId || passages.has(entry.orderId)) continue
+    const has = (text: string | null) => !!text && tokens.every((token) => text.toLowerCase().includes(token))
+    const text = has(entry.body) ? entry.body! : has(entry.summary) ? entry.summary : `${entry.summary} ${entry.body ?? ""}`
+    passages.set(entry.orderId, { text: passage(text, tokens), source: chipLabel(entry), when: relative(entry.occurredAt, at), entryId: entry.id })
+  }
+  // An order where one record holds every word ("Hamburg ferry" in one booking) comes before one that only has the words somewhere.
+  const hits = [...found].sort((a, b) => Number(passages.has(b.order_id)) - Number(passages.has(a.order_id))).slice(0, limit)
   const orderMap = new Map(orderRows.map((order) => [order.id, order]))
   const customerMap = new Map(customerRows.map((row) => [row.id, row.name]))
   const addressMap = new Map(addressRows.map((row) => [row.id, row.city]))
   return hits.map((hit) => {
     const order = orderMap.get(hit.order_id) as OrderRow
     const item = itemRows.find((row) => row.orderId === hit.order_id && row.role === "PRIMARY") ?? itemRows.find((row) => row.orderId === hit.order_id)
-    const snippet = hit.snippet.includes("«") ? hit.snippet.replace(/\s+/g, " ").trim() : null
+    const snippet = passages.get(hit.order_id) ?? null
     return {
       orderId: hit.order_id, reference: hit.reference,
       car: item ? `${item.make} ${item.model}` : "Car not identified yet",

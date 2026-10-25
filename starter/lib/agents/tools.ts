@@ -9,7 +9,8 @@ import { now as clockNow } from "../clock"
 import { MODELS, type Usage } from "../models"
 import { levelFor, PROPOSABLE } from "../policies"
 import { orderView } from "../queue"
-import { at, clock } from "../time"
+import { zoneOfCity } from "../geo"
+import { at, clock, zoneShort } from "../time"
 import { money } from "../words"
 import { caseText, timelineText } from "./case-text"
 import { writeEntry } from "./entries"
@@ -305,7 +306,7 @@ const EXECUTORS: Record<string, Executor> = {
 
   async search(ctx, input) {
     const hits = await search(text(input.query), 8)
-    const lines = hits.map((hit) => `${hit.reference} · ${hit.car} · ${hit.route} · ${hit.customer}${hit.snippet ? ` · “${hit.snippet.replace(/[«»]/g, "")}”` : ""}`)
+    const lines = hits.map((hit) => `${hit.reference} · ${hit.car} · ${hit.route} · ${hit.customer}${hit.snippet ? ` · ${hit.snippet.source}, ${hit.snippet.when}: “${hit.snippet.text.replace(/[«»]/g, "")}”` : ""}`)
     return { content: lines.join("\n") || "No orders match.", output: hits, summary: `Searched for “${text(input.query)}”` }
   },
 
@@ -355,7 +356,7 @@ const EXECUTORS: Record<string, Executor> = {
     const short = result.options.map((option) => `${at(option.departureAt, "Europe/Berlin").replace(/ CES?T$/, "")} ${option.state === "quote" ? `${money(option.priceCents, "EUR")} (quote, not booked)` : option.state}`).join("; ")
     const entryId = await lookupEntry(ctx, {
       source: "quote", author: `${result.options[0].provider} (checked by the agent)`, status: result.options.some((option) => option.state === "quote") ? "quote" : null,
-      summary: `Ferry re-check, ${result.route}: ${short}`, body: lines.map((line) => line.replace(/^- [^:]+: /, "")).join("\n"),
+      summary: `Ferry re-check, ${result.route}: ${short}`, body: lines.map((line) => line.replace(/^- \S+: /, "")).join("\n"),
     })
     for (const option of result.options) {
       ctx.lookups[option.id] = { kind: "ferry", label: describeFerry(option), priceCents: option.priceCents, entryId, details: option as unknown as Record<string, unknown> }
@@ -371,11 +372,11 @@ const EXECUTORS: Record<string, Executor> = {
     const checkIn = parseTime(input.check_in, await clockNow()).toISOString()
     const checkOut = parseTime(input.check_out, new Date(new Date(checkIn).getTime() + 12 * 3600_000)).toISOString()
     const options = hotelOptions(city, checkIn, checkOut)
-    const zone = city === "Hamburg" ? "Europe/Berlin" : orderView(ctx.file ?? (await caseOf(ctx))!).zone
+    const zone = zoneOfCity(city) ?? orderView(ctx.file ?? (await caseOf(ctx))!).zone
     const lines = options.map((option) => `- ${option.id}: ${option.name}, ${money(option.priceCents, "EUR")} for ${at(option.checkIn, zone)} to ${at(option.checkOut, zone)}, ${option.note} (quote, not booked)`)
     const entryId = await lookupEntry(ctx, {
       source: "quote", author: "Hotel search (by the agent)", status: "quote",
-      summary: `Hotel quotes in ${city}: ${options.map((option) => `${option.name} ${money(option.priceCents, "EUR")}`).join(", ")}`, body: lines.map((line) => line.replace(/^- [^:]+: /, "")).join("\n"),
+      summary: `Hotel quotes in ${city}: ${options.map((option) => `${option.name} ${money(option.priceCents, "EUR")}`).join(", ")}`, body: lines.map((line) => line.replace(/^- \S+: /, "")).join("\n"),
     })
     for (const option of options) ctx.lookups[option.id] = { kind: "hotel", label: `${option.name}, ${at(option.checkIn, zone)} to ${at(option.checkOut, zone)}`, priceCents: option.priceCents, entryId, details: option as unknown as Record<string, unknown> }
     return { content: `Hotels in ${city}. Quotes, not bookings.\n${lines.join("\n")}\nSource: ${ctx.refs.cite(entryId)}`, output: options, summary: `Looked up hotels in ${city}` }
@@ -386,13 +387,14 @@ const EXECUTORS: Record<string, Executor> = {
     const to = text(input.to)
     const after = parseTime(input.after, await clockNow())
     const options = await travelOptions(from, to, after)
-    const zone = orderView(ctx.file ?? (await caseOf(ctx))!).zone
-    const lines = options.map((option) => `- ${option.id}: ${option.kind} by ${option.provider}, ${option.from} to ${option.to}, departs ${at(option.departureAt, zone)}, arrives ${at(option.arrivalAt, zone)}, ${money(option.priceCents, "EUR")} (quote, not booked)${option.note ? `; ${option.note}` : ""}`)
+    // Each time in its own place's zone: a Helsinki to Pori train in Finnish time, wherever the car is.
+    const zone = zoneOfCity(from) ?? orderView(ctx.file ?? (await caseOf(ctx))!).zone
+    const lines = options.map((option) => `- ${option.id}: ${option.kind} by ${option.provider}, ${option.from} to ${option.to}, departs ${at(option.departureAt, zoneOfCity(option.from) ?? zone)}, arrives ${at(option.arrivalAt, zoneOfCity(option.to) ?? zone)}, ${money(option.priceCents, "EUR")} (quote, not booked)${option.note ? `; ${option.note}` : ""}`)
     const entryId = await lookupEntry(ctx, {
       source: "quote", author: "Travel search (by the agent)", status: "quote",
-      summary: `Driver travel quotes ${from} to ${to}: ${options.map((option) => `${option.kind} ${clock(option.departureAt, zone)} ${money(option.priceCents, "EUR")}`).join(", ")}`, body: lines.map((line) => line.replace(/^- [^:]+: /, "")).join("\n"),
+      summary: `Driver travel quotes ${from} to ${to}: ${options.map((option) => `${option.kind} ${clock(option.departureAt, zoneOfCity(option.from) ?? zone)} ${money(option.priceCents, "EUR")}`).join(", ")} (${zoneShort(after, zone)})`, body: lines.map((line) => line.replace(/^- \S+: /, "")).join("\n"),
     })
-    for (const option of options) ctx.lookups[option.id] = { kind: "travel", label: `${option.kind} ${option.from} to ${option.to}, ${at(option.departureAt, zone)}`, priceCents: option.priceCents, entryId, details: option as unknown as Record<string, unknown> }
+    for (const option of options) ctx.lookups[option.id] = { kind: "travel", label: `${option.kind} ${option.from} to ${option.to}, ${at(option.departureAt, zoneOfCity(option.from) ?? zone)}`, priceCents: option.priceCents, entryId, details: option as unknown as Record<string, unknown> }
     return { content: `Trains and flights. Quotes, not bookings.\n${lines.join("\n") || "- none found"}\nSource: ${ctx.refs.cite(entryId)}`, output: options, summary: `Looked up trains and flights from ${from} to ${to}` }
   },
 
@@ -402,7 +404,7 @@ const EXECUTORS: Record<string, Executor> = {
     const shops = findRepairShops(near, file?.plan.lastPosition?.kmToGo ?? null)
     const lines = shops.map((shop) => `- ${shop.id}: ${shop.name}, ${shop.kind}, ${shop.distanceKm} km away${shop.towEtaMinutes ? `, tow truck in about ${shop.towEtaMinutes} min` : ""}${shop.towToShopCents ? `, tow to their workshop about ${money(shop.towToShopCents, "EUR")}` : ""}${shop.towToDeliveryCents ? `, tow to the delivery address in ${file?.order.route.to?.city ?? "the delivery city"} about ${money(shop.towToDeliveryCents, "EUR")}` : ""}. ${shop.note}`)
     const entryId = await lookupEntry(ctx, {
-      source: "agent", author: "Repair shop lookup", summary: `Recovery and workshops near ${near}: ${shops.map((shop) => shop.name).join(", ")}`, body: lines.map((line) => line.replace(/^- [^:]+: /, "")).join("\n"),
+      source: "agent", author: "Repair shop lookup", summary: `Recovery and workshops near ${near}: ${shops.map((shop) => shop.name).join(", ")}`, body: lines.map((line) => line.replace(/^- \S+: /, "")).join("\n"),
     })
     for (const shop of shops) ctx.lookups[shop.id] = { kind: "shop", label: shop.name, priceCents: shop.towToShopCents || null, entryId, details: shop as unknown as Record<string, unknown> }
     return { content: `Near "${near}" (the place as described, not a verified position). Prices are estimates, not bookings.\n${lines.join("\n")}\nSource: ${ctx.refs.cite(entryId)}`, output: shops, summary: `Looked up recovery and workshops near ${near}` }
@@ -413,7 +415,7 @@ const EXECUTORS: Record<string, Executor> = {
     if (!result.options.length) return { content: `No free drivers live in ${result.city ?? "the pickup city"}.`, summary: "Looked for backup drivers: none found" }
     const lines = result.options.map((driver) => `- ${driver.id}: ${driver.name}, ${driver.home}; ${driver.note}`)
     const entryId = await lookupEntry(ctx, {
-      source: "agent", author: "Driver pool lookup", summary: `Possible backup drivers in ${result.city}: ${result.options.map((driver) => driver.name).join(", ")} (not asked yet)`, body: lines.map((line) => line.replace(/^- [^:]+: /, "")).join("\n"),
+      source: "agent", author: "Driver pool lookup", summary: `Possible backup drivers in ${result.city}: ${result.options.map((driver) => driver.name).join(", ")} (not asked yet)`, body: lines.map((line) => line.replace(/^- \S+: /, "")).join("\n"),
     })
     for (const driver of result.options) ctx.lookups[driver.id] = { kind: "driver", label: driver.name, priceCents: null, entryId, details: driver as unknown as Record<string, unknown> }
     return { content: `Drivers who could take the gig. None has been asked; availability needs their yes.\n${lines.join("\n")}\nSource: ${ctx.refs.cite(entryId)}`, output: result, summary: `Looked for backup drivers in ${result.city}` }
@@ -434,7 +436,7 @@ const EXECUTORS: Record<string, Executor> = {
       // Cite the notice as it landed on this run's orders; if it is not on one of them, the look-up itself is the record.
       const onOrder = ctx.group.map((id) => `disruptions:${notice.id}:${id}`)
       const known = [...(await entriesById(onOrder)).keys()][0]
-      const entryId = known ?? await lookupEntry(ctx, { source: "alert", author: notice.sourceLabel, summary: `Disruption notice from ${notice.sourceLabel}: ${notice.title}`, body: noticeLine(notice), status: "signal" })
+      const entryId = known ?? await lookupEntry(ctx, { source: "alert", author: notice.sourceLabel, summary: `${notice.sourceLabel}: ${notice.title}`, body: noticeLine(notice), status: "signal" })
       const matches = matchDisruption(notice, all, now)
       lines.push(`- ${noticeLine(notice)} ${ctx.refs.cite(entryId)}\n  Orders code matched to it: ${matches.length ? matches.map((match) => `${match.file.order.reference} (${match.effect})`).join("; ") : "none"}`)
     }

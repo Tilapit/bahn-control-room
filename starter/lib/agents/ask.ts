@@ -6,6 +6,7 @@ import type Anthropic from "@anthropic-ai/sdk"
 import { entriesById, getCase } from "../case"
 import { now as clockNow } from "../clock"
 import { modelName, ROLE_MODEL, usageOf } from "../models"
+import { relative } from "../time"
 import { anthropic, hasApiKey, prompt } from "./llm"
 import { Refs } from "./refs"
 import { addStep, addUsageToRun, addWallTime, createRun, updateRun } from "./runs"
@@ -29,7 +30,8 @@ const ANSWER_TOOL: Anthropic.Beta.BetaTool = {
 }
 const TOOLS = [...TOOL_DEFINITIONS.filter((tool) => READ_TOOLS.has(tool.name)).map(({ cache_control: _c, ...tool }) => tool), ANSWER_TOOL] as Anthropic.Beta.BetaTool[]
 
-export type AskSource = { label: string; at: string; reference: string | null; entryId: string; summary: string }
+/** One record the answer rests on, with its source and time ("Driver · 25 min ago"), like every fact shown to a person. */
+export type AskSource = { label: string; at: string; when: string; reference: string | null; entryId: string; summary: string }
 export type AskResult = { answer: string; sources: AskSource[]; model: string; costUsd: number; runId: string | null }
 
 /** Does this read like a question for the agents rather than a search for an order? */
@@ -94,7 +96,8 @@ export async function ask(question: string): Promise<AskResult> {
   const entries = await entriesById(ids)
   const references = new Map<string, string>()
   for (const entry of entries.values()) if (entry.orderId && !references.has(entry.orderId)) references.set(entry.orderId, (await getCase(entry.orderId))?.order.reference ?? "")
-  const sources = ids.map((id) => entries.get(id)).filter((entry) => !!entry).map((entry) => ({ label: entry!.chip, at: entry!.at, reference: entry!.orderId ? references.get(entry!.orderId) ?? null : null, entryId: entry!.id, summary: entry!.summary }))
+  const asOf = await clockNow()
+  const sources = ids.map((id) => entries.get(id)).filter((entry) => !!entry).map((entry) => ({ label: entry!.chip, at: entry!.at, when: relative(entry!.at, asOf), reference: entry!.orderId ? references.get(entry!.orderId) ?? null : null, entryId: entry!.id, summary: entry!.summary }))
   await addStep(runId, idx++, { at: await clockNow(), type: "message", tool: "answer", output: { text, sources: ids }, summary: `Answered: ${text}` })
   await addWallTime(runId, Date.now() - started)
   const finished = await updateRunAndRead(runId, text, question)

@@ -1,8 +1,11 @@
-// npm run screens -- [--dark] [--both] [--base http://localhost:3001] [--out ../screens] [shot ...]
+// npm run screens -- [--dark] [--both] [--slices 6] [--base http://localhost:3001] [--out ../screens] [shot ...]
 // Takes full-page screenshots of the running app with Playwright.
 // A shot is a path ("/orders/CD-420322"), optionally named ("for-you=/"),
-// optionally followed by "+expand" to open the first card before the picture.
-// Each shot is saved full-page and as the first screen ("-fold").
+// optionally followed by an action: "+expand" opens the first card, "+search" types a search,
+// "+ask" asks the agents a question (live, with an API key), "+approve" approves the first agent
+// card, takes the picture during the undo window and then presses Undo, so nothing is carried out.
+// Each shot is saved full-page and as the first screen ("-fold"). With --slices N, also as up to N
+// screens scrolled one after another ("-1", "-2", …): what a person sees, readable at full size.
 
 import { mkdir } from "node:fs/promises"
 import { join, resolve } from "node:path"
@@ -19,6 +22,8 @@ const DEFAULT_SHOTS = [
   "order-CD-420299=/orders/CD-420299",
   "order-CD-420603=/orders/CD-420603",
   "order-CD-420123=/orders/CD-420123",
+  "run=/agents/run_fcb33edc",
+  "orders-filter=/orders?q=Hamburg",
   "settings=/settings",
   "learning=/settings/learning",
   "demo=/demo",
@@ -35,7 +40,8 @@ async function main() {
   const args = process.argv.slice(2)
   const base = option(args, "--base", process.env.APP_URL ?? "http://localhost:3001")
   const out = resolve(option(args, "--out", join(process.cwd(), "..", "screens")))
-  const values = new Set([option(args, "--base", ""), option(args, "--out", "")])
+  const slices = Number(option(args, "--slices", "0")) || 0
+  const values = new Set([option(args, "--base", ""), option(args, "--out", ""), option(args, "--slices", "")])
   const shots = args.filter((arg) => !arg.startsWith("--") && !values.has(arg))
   const themes: ("light" | "dark")[] = args.includes("--both") ? ["light", "dark"] : args.includes("--dark") ? ["dark"] : ["light"]
   await mkdir(out, { recursive: true })
@@ -64,10 +70,36 @@ async function main() {
           await page.locator(".row-head").first().click()
           await page.waitForTimeout(150)
         }
+        if (action === "ask") {
+          await page.locator(".search-box input").fill("Why is CD-420603 at risk?")
+          await page.locator(".search-box input").press("Enter")
+          await page.locator(".ask-answer, .search-empty").first().waitFor({ timeout: 120_000 })
+        }
         const file = join(out, `${name}-${theme}.png`)
+        if (action === "approve") {
+          // Inside the 8-second undo window: one picture of the first screen, then Undo, so nothing is carried out.
+          await page.locator("article.row .row-actions .btn.primary").first().click()
+          await page.locator(".toast").waitFor()
+          await page.waitForTimeout(1200)
+          await page.screenshot({ path: file, fullPage: false })
+          await page.locator(".toast button", { hasText: "Undo" }).click()
+          await page.waitForTimeout(800)
+          console.log(file)
+          continue
+        }
         await page.screenshot({ path: file, fullPage: true })
         // The first screen, as a person sees it on opening the page.
         await page.screenshot({ path: join(out, `${name}-${theme}-fold.png`), fullPage: false })
+        if (slices) {
+          const height = await page.evaluate(() => document.documentElement.scrollHeight)
+          const step = 960 - 120
+          for (let index = 0; index < slices && index * step < height - 120; index += 1) {
+            await page.evaluate((y) => window.scrollTo(0, y), index * step)
+            await page.waitForTimeout(120)
+            await page.screenshot({ path: join(out, `${name}-${theme}-${index + 1}.png`), fullPage: false })
+          }
+          await page.evaluate(() => window.scrollTo(0, 0))
+        }
         console.log(`${file}${errors.length ? `  (browser errors: ${errors.join(" | ")})` : ""}`)
         errors.length = 0
       }

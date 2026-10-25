@@ -169,7 +169,8 @@ export function hotelOptions(city: string, checkIn: string, checkOut: string): H
       id: `hotel:${slug(name)}:${slug(city)}:${checkIn.slice(0, 10)}`,
       name: `${name} ${city}`, city, checkIn, checkOut,
       priceCents: (between(seed, 79, 139) + index * 6) * 100 * nights,
-      note: index === 0 ? `${between(seed, 2, 6)} km from the ferry terminal, secure parking for the car` : index === 1 ? "city centre, street parking only" : `${between(seed, 8, 15)} km out, free parking`,
+      // Only a port city has a ferry terminal to be near.
+      note: index === 0 ? `${between(seed, 2, 6)} km from ${city === "Hamburg" ? "the ferry terminal" : "the centre"}, secure parking for the car` : index === 1 ? "city centre, street parking only" : `${between(seed, 8, 15)} km out, free parking`,
     }
   })
 }
@@ -231,7 +232,7 @@ export async function travelOptions(from: string, to: string, after: Date): Prom
       id: `travel:train:${slug(from)}-${slug(to)}:${departure.toISOString()}`, kind: "train", provider: local ? "City rail" : pick(seed, ["Northrail", "Baltic Link Rail"]),
       from, to, departureAt: departure.toISOString(), arrivalAt: new Date(departure.getTime() + rideMinutes * 60_000).toISOString(),
       priceCents: local ? 450 : Math.round(km * 0.18 + between(seed, 5, 25)) * 100, datasetOptionId: null,
-      note: strike ? `may not run: ${strike.title.toLowerCase()} (${strike.sourceLabel})` : undefined,
+      note: strike ? `may not run (${strike.sourceLabel.toLowerCase()}: ${strike.title})` : undefined,
     })
   }
   if (!local && strikes.length) {
