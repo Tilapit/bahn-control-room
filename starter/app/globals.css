@@ -10,7 +10,7 @@
   --raised: #fbfbfa;
   --text: #1d1d1f;
   --text-2: #57585c;
-  --text-3: #8b8c91;
+  --text-3: #75767b;
   --line: rgba(0, 0, 0, 0.075);
   --line-2: rgba(0, 0, 0, 0.13);
   --hover: rgba(0, 0, 0, 0.035);
@@ -830,3 +830,39 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 .inbox-outside:hover { background: var(--hover); color: var(--text-2); }
 .inbox-outside-show { margin-left: auto; flex: none; color: var(--accent-text); font-weight: 500; }
 .later-toggle .faint { color: var(--text-3); }
+
+/* ---------- Review fixes (round 4) ---------- */
+
+/* The cost of a proposal is never cut away with the words before it. */
+.inbox-cost { flex: none; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+/* The pane's sentence ends with the same countdown as the list. */
+.cd-rel { margin-left: 8px; font-size: 13px; color: var(--text-3); }
+/* A quiet shadow at the pane's edge while there is more to scroll (pure CSS: local backgrounds cover it at the ends). */
+.inbox-detail {
+  background:
+    linear-gradient(var(--surface) 30%, transparent) center top / 100% 32px no-repeat local,
+    linear-gradient(transparent, var(--surface) 70%) center bottom / 100% 32px no-repeat local,
+    radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, 0.1), transparent) center top / 100% 10px no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, 0.1), transparent) center bottom / 100% 10px no-repeat scroll;
+}
+@media (prefers-color-scheme: dark) {
+  .inbox-detail {
+    background:
+      linear-gradient(var(--surface) 30%, transparent) center top / 100% 32px no-repeat local,
+      linear-gradient(transparent, var(--surface) 70%) center bottom / 100% 32px no-repeat local,
+      radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, 0.5), transparent) center top / 100% 10px no-repeat scroll,
+      radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, 0.5), transparent) center bottom / 100% 10px no-repeat scroll;
+  }
+}
+
+@media (max-width: 760px) {
+  /* The phone's bottom bar is one row of five, not a column. */
+  .rail nav { display: flex; flex: 1; justify-content: space-around; }
+  /* On a phone a row's words wrap instead of being cut. */
+  .inbox-title, .inbox-proposal { height: auto; }
+  .inbox-list { padding-right: 0; }
+  .content { padding-bottom: 96px; }
+}
+/* The reject row sits apart from the other option above it, so "If you choose it" reads as that option's. */
+.answer-box .answer-row { margin-top: 4px; }
+.answer-box .other-option + .answer-row { padding-top: 8px; }

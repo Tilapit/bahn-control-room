@@ -426,7 +426,8 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
   if (!pickedUpAt && !cancelledAt) {
     for (const reservation of rows(bundle, "travel_reservations")) {
       const d = reservation.details
-      if (d.kind === "FERRY" || d.kind === "HOTEL" || d.status !== "BOOKED") continue
+      // Travel the Executor cancelled is no longer a time anything depends on.
+      if (d.kind === "FERRY" || d.kind === "HOTEL" || d.status !== "BOOKED" || cancelledTravel.has(reservation.id)) continue
       const departure = str(d.departure_at)
       if (!departure || new Date(departure) < asOf) continue
       keyTimes.push({

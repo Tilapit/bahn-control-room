@@ -62,6 +62,10 @@ export function stepList(option: CardOption, zones: StepZones, shown = false): s
   const ordered = [...steps.filter((step) => step.action !== "note"), ...steps.filter((step) => step.action === "note")]
   const words = ordered.map((step) => stepWords(step, zones, shown)).filter((text): text is string => !!text)
   if (!words.length && steps.every((step) => step.action === "note")) return ["Nothing changes; the plan stays as it is"]
+  // An offer to another driver leaves the current driver's travel alone until the new one accepts (a rule in code).
+  if (steps.some((step) => step.action === "switch_driver") && !steps.some((step) => step.action === "cancel_driver_travel")) {
+    words.push("travel booked for the current driver stays booked until the new driver accepts; then a card asks you to cancel it")
+  }
   return words.map((text) => text.charAt(0).toUpperCase() + text.slice(1))
 }
 

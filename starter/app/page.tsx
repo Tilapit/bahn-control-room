@@ -31,7 +31,7 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<{
   ].filter(Boolean).join(" ")
   return <main className="content inbox-page">
     <Queue items={items} now={now} initial={initial} tail={countsTail(counts)} emptyLine={others} endLine={`That is everything that needs you. ${others}`} yoursWithoutCard={yoursWithoutCard}
-      hint="Each case is something an agent could not settle on its own, most urgent first. Nothing happens until you press a button, and you can undo for 8 seconds.">
+      hint="Each item is something an agent could not settle on its own, most urgent first. Nothing happens until you press a button, and you can undo for 8 seconds.">
       {suggestion && <AutonomySuggestion suggestion={suggestion} />}
     </Queue>
   </main>

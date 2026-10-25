@@ -46,6 +46,9 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
   const [selectedId, setSelectedId] = useState<string | null>(() => items.find((item) => item.order.reference === initial)?.card.id ?? null)
   // Narrow screens only: the case is open full width instead of the list.
   const [opened, setOpened] = useState(false)
+  // The case a person opened (a click, or Enter). A approves only that one: on a case J or K merely moved to, the first
+  // A opens it, so one stray key never approves the case that happened to be selected when the page loaded.
+  const [activeId, setActiveId] = useState<string | null>(null)
   const detailRef = useRef<HTMLDivElement>(null)
   const toast = useDecisionToast((cardId) => {
     setHidden((set) => { const next = new Set(set); next.delete(cardId); return next })
@@ -56,19 +59,25 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
   const visible = items.filter((item) => !hidden.has(item.card.id))
   // Orders a person took over come first, under Yours, whatever the view: they are this person's own.
   const yours = visible.filter((item) => item.takenOver)
-  // The view (market and desks) decides what is listed; what it leaves out is counted in one muted row, never hidden silently.
-  const rest = visible.filter((item) => !item.takenOver && inView(item.team, view))
-  const outside = visible.filter((item) => !item.takenOver && !inView(item.team, view))
+  // The view (market and desks) decides what is listed; what it leaves out is counted in one muted row, never hidden
+  // silently. A person's safety is listed in every view, with its country.
+  const listed = (item: QueueItem) => inView(item.team, view) || item.urgency.safety
+  const rest = visible.filter((item) => !item.takenOver && listed(item))
+  const outside = visible.filter((item) => !item.takenOver && !listed(item))
   const nowItems = rest.filter(isNow)
   const later = rest.filter((item) => !isNow(item))
   const outsideNow = outside.filter(isNow)
   const where = viewWords(view)
   const elsewhere = otherWords(view)
+  const ownNow = nowItems.filter((item) => inView(item.team, view)).length
+  const safetyElsewhere = nowItems.length - ownNow
   const line = [
-    `${nowItems.length} need${nowItems.length === 1 ? "s" : ""} you now${where ? ` ${where}` : ""}`,
-    outsideNow.length ? `${outsideNow.length} in ${elsewhere}` : null,
+    `${ownNow} need${ownNow === 1 ? "s" : ""} you now${where ? ` ${where}` : ""}`,
+    safetyElsewhere ? `+${safetyElsewhere} safety in ${groupWords(nowItems.filter((item) => !inView(item.team, view)), view).replace(/ \d+/g, "")}` : null,
+    outsideNow.length ? `${outsideNow.length} more in ${elsewhere}` : null,
     `${later.length} can wait`,
-    ...tail,
+    // What agents handle and what is quiet is counted across every market, so it is said only for everyone.
+    ...(where ? [] : tail),
   ].filter(Boolean).join(" · ")
   // The rows J and K move through, in the order they are shown.
   const order = [...yours, ...nowItems, ...(showLater ? later : [])]
@@ -82,12 +91,14 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
     const next = order[index + 1] ?? order[index - 1] ?? null
     setHidden((set) => new Set(set).add(result.cardId))
     setSelectedId(next?.card.id ?? null)
+    setActiveId(null)
     toast.show(result)
     router.refresh()
   }
 
   const select = useCallback((id: string, open = false) => {
     setSelectedId(id)
+    setActiveId(open ? id : null)
     if (open) setOpened(true)
     requestAnimationFrame(() => document.querySelector(`.inbox-row[data-card="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" }))
   }, [])
@@ -103,17 +114,25 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
       } else if (key === "enter" && selected && !(event.target as HTMLElement | null)?.closest("button, a")) {
         event.preventDefault()
         setOpened(true)
-        detailRef.current?.focus()
+        setActiveId(selected.card.id)
+        detailRef.current?.focus({ preventScroll: true })
       } else if (key === "escape" && opened) {
         setOpened(false)
-      } else if (key === "a" || key === "r" || key === "t") {
+      } else if ((key === "a" || key === "r" || key === "t") && selected) {
+        event.preventDefault()
+        if (key === "a" && activeId !== selected.card.id) {
+          setActiveId(selected.card.id)
+          setOpened(true)
+          detailRef.current?.focus({ preventScroll: true })
+          return
+        }
         const button = detailRef.current?.querySelector<HTMLButtonElement>(`[data-key="${key}"], [data-key-host="${key}"] button`)
-        if (button && !button.disabled) { event.preventDefault(); button.click() }
+        if (button && !button.disabled) button.click()
       }
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [order, selected, opened, select])
+  }, [order, selected, opened, select, activeId])
 
   const head = <div className="page-head inbox-head">
     <div>
@@ -149,7 +168,7 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
         </ul>
       </section>}
       <section aria-label="Now">
-        <h2 className="queue-section">Now <span className="faint">· safety, or lost within 4 hours</span></h2>
+        <h2 className="queue-section">Now <span className="faint">· safety first, then what is due within 4 hours or already missed</span></h2>
         {nowItems.length === 0 ? <p className="note queue-note">Nothing is at risk in the next 4 hours{where ? ` ${where}` : ""}.</p> : <ul className="inbox-rows">{nowItems.map(row)}</ul>}
         {outsideRow}
       </section>
@@ -157,15 +176,15 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
         <button type="button" className="later-toggle" aria-expanded={showLater} onClick={() => setShowLater((value) => !value)}>
           <Icon name="chevron" size={14} className="row-chevron" />
           <b>Later · {later.length}</b>{outside.length - outsideNow.length > 0 && <span className="faint">+{outside.length - outsideNow.length} in {elsewhere}</span>}
-          <span>{firstLater ? `nothing lost before ${dayClockZone(firstLater, now, DESK)}` : "no deadline in the records"}</span>
+          <span>{firstLater ? `nothing due before ${dayClockZone(firstLater, now, DESK)}` : "no deadline in the records"}</span>
         </button>
         {showLater && <ul className="inbox-rows">{later.map(row)}</ul>}
       </section>}
-      <p className="inbox-keys" aria-hidden="true"><kbd>J</kbd><kbd>K</kbd> move · <kbd>Enter</kbd> open · <kbd>A</kbd> approve · <kbd>R</kbd> reply · <kbd>T</kbd> take over</p>
+      <p className="inbox-keys" aria-hidden="true"><kbd>J</kbd><kbd>K</kbd> move · <kbd>Enter</kbd> open, then <kbd>A</kbd> approve · <kbd>R</kbd> reject or reply · <kbd>T</kbd> I&apos;ll handle this</p>
       {endLine && <p className="queue-end">{endLine}</p>}
     </div>
     <div className="inbox-detail" ref={detailRef} tabIndex={-1} aria-label="Selected case">
-      <button type="button" className="btn quiet inbox-back" onClick={() => setOpened(false)}><Icon name="chevron" size={14} className="back-chevron" />All cases</button>
+      <button type="button" className="btn quiet inbox-back" onClick={() => setOpened(false)}><Icon name="chevron" size={14} className="back-chevron" />Back to the list</button>
       {selected
         ? <CaseDetail key={selected.card.id} item={selected} now={now} keys onDecided={decided} />
         : <div className="empty"><h2>Nothing needs you now.</h2><p>{later.length ? `${later.length} more can wait under Later.` : emptyLine}</p></div>}

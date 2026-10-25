@@ -21,10 +21,11 @@ export function DemoLink() {
 }
 
 /** `nowTeams`: one entry per card that needs someone now; the badge counts those in the person's view. */
-export function Nav({ nowTeams }: { nowTeams: Team[] }) {
+export function Nav({ nowTeams }: { nowTeams: (Team & { safety?: boolean })[] }) {
   const path = usePathname()
   const [view] = useTeamView()
-  const openCards = nowTeams.filter((team) => inView(team, view)).length
+  // A person's safety needs someone now in every view, as on For you.
+  const openCards = nowTeams.filter((team) => team.safety || inView(team, view)).length
   return <nav aria-label="Main">
     {LINKS.map((link) => <Link key={link.href} href={link.href} className="nav-link" aria-current={link.match(path) ? "page" : undefined}>
       <Icon name={link.icon} />

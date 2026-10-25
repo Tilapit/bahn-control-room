@@ -13,7 +13,7 @@ import { SimilarCases } from "./similar-cases"
 import { Icon } from "./icons"
 import { TakenOverBar, TakeOverButton } from "./takeover"
 import { CrossBorder, useTeamView } from "./view-switcher"
-import { passesThrough } from "@/lib/teams"
+import { inView, passesThrough } from "@/lib/teams"
 import { SourceChip } from "./when"
 
 /** A decision in its undo window. `reference` names the order, so two quick approvals never share one anonymous toast. */
@@ -51,10 +51,12 @@ function approvalWords(option: CardOption | null, reason: string): string {
 
 /** A button names what it does: an answer to the agent's question says so, and every other approval starts with "Approve:". */
 function buttonLabel(option: CardOption): string {
-  if (/^(approve|reject|answer)\b/i.test(option.label)) return option.label
+  // A reject never says "I'll handle it": that is what the take-over button does, and the two read alike.
+  if (/^reject\b/i.test(option.label)) return option.label.replace(/[,;]\s*I[’']ll handle it\.?$/i, "")
+  if (/^(approve|answer)\b/i.test(option.label)) return option.label
   // "Move ferry …" reads "Approve: move ferry …"; an acronym ("CMR …") keeps its capitals.
   const rest = /^\p{Lu}\p{Ll}/u.test(option.label) ? option.label.charAt(0).toLowerCase() + option.label.slice(1) : option.label
-  return option.kind === "answer" ? `Answer: ${rest}` : option.kind === "reject" ? option.label : `Approve: ${rest}`
+  return option.kind === "answer" ? `Answer: ${rest}` : option.kind === "reject" ? option.label.replace(/[,;]\s*I[’']ll handle it\.?$/i, "") : `Approve: ${rest}`
 }
 
 /** Cut at a word, never inside one: "Book the Sat 24 Oct 14:00 sailing and a…". */
@@ -114,9 +116,8 @@ function Effects({ option, zones }: { option: CardOption; zones: StepZones }) {
 function proposalLine(item: QueueItem): string {
   const { card } = item
   if (card.kind === "question") return "The agent asks you a question"
-  const primary = card.runId ? card.options.find((option) => option.kind !== "reject") ?? null : null
-  const cost = card.proposal?.cost_eur ? ` · about €${Math.round(card.proposal.cost_eur)}` : ""
-  if (primary) return `${primary.label.replace(/^approve:\s*/i, "")}${cost}`
+  const primary = card.runId || card.origin === "monitor" ? card.options.find((option) => option.kind !== "reject") ?? null : null
+  if (primary) return primary.label.replace(/^approve:\s*/i, "")
   return card.proposal?.effect_text ? `Next step noted: ${card.proposal.effect_text}` : "Built from an alert; no agent has worked on it yet"
 }
 
@@ -127,21 +128,28 @@ function proposalLine(item: QueueItem): string {
 export function CaseListRow({ item, selected, onSelect }: { item: QueueItem; selected: boolean; onSelect: () => void }) {
   const { card, order, urgency } = item
   const tone = urgency.safety ? "safety" : urgency.timeRisk ? "time" : ""
+  const missed = !!urgency.at && urgency.relative.endsWith("ago")
+  const when = missed ? `missed ${urgency.relative}` : urgency.relative
+  const cost = card.kind !== "question" && card.proposal?.cost_eur ? `€${Math.round(card.proposal.cost_eur)}` : ""
   const [view] = useTeamView()
-  // A row says "Cross-border" when it is in this view only because its route passes through the view's country.
+  // A row says "Cross-border" when it is in this view only because its route passes through the view's country,
+  // and names the country of a safety case listed from outside the view.
   const through = passesThrough(item.team, view)
+  const foreign = !inView(item.team, view)
   return <li className="inbox-row" data-selected={selected} data-card={card.id}>
     <button type="button" onClick={onSelect} aria-current={selected ? "true" : undefined} title={card.headline}>
       <span className={`mark ${tone}`} aria-hidden="true" />
       <span className="inbox-line1">
-        <span className="inbox-title">{clip(problemLine(order.car, card.headline, card.group?.length ?? null), urgency.safety ? 38 : 44)}</span>
+        <span className="inbox-title">{clip(problemLine(order.car, card.headline, card.group?.length ?? null), (urgency.safety ? 50 : 56) - when.length)}</span>
         {urgency.safety && <span className="tag safety">Safety</span>}
         {item.takenOver && <span className="tag yours">Yours</span>}
-        <span className={`when ${tone}`}>{urgency.relative}</span>
+        <span className={`when ${tone}`}>{when}</span>
       </span>
       <span className="inbox-line2">
-        <span className="inbox-proposal">{clip(proposalLine(item), through ? 42 : 54)}</span>
+        <span className="inbox-proposal">{clip(proposalLine(item), (through ? 42 : foreign ? 46 : 54) - (cost ? cost.length + 2 : 0))}</span>
+        {cost && <span className="inbox-cost" title="New cost if you approve">{cost}</span>}
         {through && <CrossBorder team={item.team} />}
+        {foreign && <span className="tag cross">{item.team.market === "Other" ? "Other country" : item.team.market}</span>}
         <span className="row-ref">{card.group ? "" : order.reference}</span>
       </span>
     </button>
@@ -176,9 +184,11 @@ export function CaseDetail({ item, now, onOrderPage = false, keys = false, onDec
   const fromAgent = !!card.runId
   // Built by a Monitor rule in code (a driver cancelled a gig): a proposal, but no agent waits for a reply.
   const fromMonitor = card.origin === "monitor"
+  // An agent's proposal, or one a rule in code wrote (a cancelled gig, a backup who accepted): both need a yes.
+  const proposes = fromAgent || fromMonitor
   const proposalSource = card.proposal?.params as { source_entry_id?: string; source_label?: string; source_at?: string } | undefined
-  const primary = fromAgent ? card.options.find((option) => option.kind !== "reject") ?? null : null
-  const others = fromAgent ? card.options.filter((option) => option !== primary && option.kind !== "reject") : []
+  const primary = proposes ? card.options.find((option) => option.kind !== "reject") ?? null : null
+  const others = proposes ? card.options.filter((option) => option !== primary && option.kind !== "reject") : []
   const rejects = card.options.filter((option) => option.kind === "reject")
   const notes = card.verifierNotes ?? []
   const failing = notes.filter((note) => !note.ok)
@@ -217,8 +227,8 @@ export function CaseDetail({ item, now, onOrderPage = false, keys = false, onDec
   return <article className="case-detail" aria-label={card.headline} data-card={card.id}>
     {!onOrderPage && <header className="cd-head">
       <h2>{problemLine(order.car, card.headline, card.group?.length ?? null)}{urgency.safety && <span className="tag safety">Safety</span>}{item.takenOver && <span className="tag yours">Yours</span>}</h2>
-      <p className="cd-when"><span className={`when ${tone}`}>{urgency.sentence}</span></p>
-      <p className="cd-meta">{card.group ? `${card.group.length} orders, one cause` : <>{order.reference} · {order.route} · {customer}</>}
+      <p className="cd-when"><span className={`when ${tone}`}>{urgency.sentence}</span>{urgency.relative && <span className="cd-rel">{urgency.relative.endsWith("ago") ? `missed ${urgency.relative}` : urgency.relative}</span>}</p>
+      <p className="cd-meta">{card.group ? `${card.group.length} orders, one cause` : <>{order.reference} · {order.route} · customer {customer}</>}
         {!card.group && <CrossBorder team={item.team} />}{item.team.desk && <span>{item.team.desk} desk</span>}
         {!card.group && <Link className="cd-open" href={orderHref(order.reference)}>Open order<Icon name="arrow" size={14} /></Link>}</p>
     </header>}
@@ -233,7 +243,7 @@ export function CaseDetail({ item, now, onOrderPage = false, keys = false, onDec
       </li>)}
     </ul>}
 
-    {fromAgent && primary && <div className="approve-box">
+    {proposes && primary && <div className="approve-box">
       <h3>{question ? "Agent asks you" : fromMonitor ? "If you approve (proposed by code)" : "If you approve"}</h3>
       {question ? <p>Pick the answer that is right; the agent carries on from it. Nothing is booked or sent.</p> : <Effects option={primary} zones={order.zones} />}
       {!question && (card.proposal?.cost_eur || card.proposal?.requires_approval_reason) && <p className="note">
@@ -243,7 +253,7 @@ export function CaseDetail({ item, now, onOrderPage = false, keys = false, onDec
       </p>}
       {steps.map((step, index) => <Words key={index} step={step} customer={customer} />)}
     </div>}
-    {!fromAgent && card.proposal && <div className="approve-box">
+    {!proposes && card.proposal && <div className="approve-box">
       <h3>Next step already noted</h3>
       <p>{card.proposal.effect_text} {proposalSource?.source_label && <SourceChip label={proposalSource.source_label} at={proposalSource.source_at ?? null} now={now} zone={order.zone}
         href={proposalSource.source_entry_id ? entryHref(order.reference, proposalSource.source_entry_id) : null} />}</p>
@@ -252,10 +262,10 @@ export function CaseDetail({ item, now, onOrderPage = false, keys = false, onDec
 
     <div className="row-actions">
       {buttons.map((option, index) => <button
-        key={option.id} type="button" className={`btn${fromAgent ? " primary" : ""}`} disabled={!!busy}
-        data-key={keys && fromAgent && !question && index === 0 ? "a" : undefined}
-        onClick={() => decide(option.id, option.label)}>{busy === option.id ? "Saving…" : buttonLabel(option)}{keys && fromAgent && !question && index === 0 && <Key k="A" />}</button>)}
-      {!onOrderPage && !item.takenOver && !card.group && <span className="key-wrap" data-key-host={keys ? "t" : undefined}><TakeOverButton reference={order.reference} className="btn" />{keys && <Key k="T" />}</span>}
+        key={option.id} type="button" className={`btn${proposes ? " primary" : ""}`} disabled={!!busy}
+        data-key={keys && proposes && !question && index === 0 ? "a" : undefined}
+        onClick={() => decide(option.id, option.label)}>{busy === option.id ? "Saving…" : buttonLabel(option)}{keys && proposes && !question && index === 0 && <Key k="A" />}</button>)}
+      {!onOrderPage && !item.takenOver && !card.group && <span className="key-wrap" data-key-host={keys ? "t" : undefined}><TakeOverButton reference={order.reference} className="btn" hint={keys ? <Key k="T" /> : null} /></span>}
       {(rejects.length > 0 || others.length > 0) && <button type="button" className="btn" aria-expanded={answering} data-key={keys ? "r" : undefined} onClick={() => setAnswering((value) => !value)}>
         {fromAgent && !fromMonitor ? "Reject or reply" : "Reject…"}{keys && <Key k="R" />}
       </button>}
@@ -278,10 +288,10 @@ export function CaseDetail({ item, now, onOrderPage = false, keys = false, onDec
     </div>}
 
     {/* What people decided on the same kind of proposal before, why, and whether it worked: next to the decision. */}
-    {fromAgent && <SimilarCases cardId={card.id} />}
+    {proposes && <SimilarCases cardId={card.id} />}
 
     {card.findings.length > 0 && <section>
-      <h3>What we know{timesIn && <span className="h3-note">times {timesIn}</span>}</h3>
+      <h3>What we know<span className="h3-note">most important first{timesIn ? ` · times ${timesIn}` : ""}</span></h3>
       <ul className="facts-compact">
         {card.findings.map((finding, index) => {
           const note = failing.find((candidate) => candidate.finding === index)

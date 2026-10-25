@@ -12,7 +12,7 @@ export const EMPTY_REASON: ReasonValue = { reason: null, text: "" }
  */
 export function DecisionReason({ value, onChange, disabled = false }: { value: ReasonValue; onChange: (value: ReasonValue) => void; disabled?: boolean }) {
   return <fieldset className="reason" disabled={disabled}>
-    <legend>Why not as proposed? <span className="faint">Pick one; the agents learn from it.</span></legend>
+    <legend>Why not as proposed? <span className="faint">Pick one reason first; nothing happens until you choose below. The agents learn from it.</span></legend>
     <div className="reason-chips" role="radiogroup" aria-label="Reason">
       {REASONS.map((reason) => <button key={reason} type="button" role="radio" aria-checked={value.reason === reason}
         className="reason-chip" data-on={value.reason === reason}

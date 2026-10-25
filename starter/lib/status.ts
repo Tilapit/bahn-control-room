@@ -9,6 +9,8 @@ import type { Urgency } from "./urgency"
 export type Holder = "you" | "agent" | "nobody"
 
 /** "ferry sold out" from a card headline ("BMW M4: ferry sold out; 14:00 sailing still free") or a live signal. */
+const OPS_START = /^(driver|car|ferry|pickup|delivery|customer|train|flight|hotel|site|order|gig|backup|photos?|proof|invoice|agent|rail|protest|strike|warning|empty|no|not|the|a|an)\b/i
+
 export function problemPhrase(text: string | null | undefined): string | null {
   if (!text) return null
   const whole = text.replace(/^\d+ orders:\s*/, "").replace(/^[^:]{2,60}:\s*(?=\S)/, "").replace(/^(open|taken) (alert|task|incident):\s*/, "").trim()
@@ -17,6 +19,9 @@ export function problemPhrase(text: string | null | undefined): string | null {
   const plain = first.length < 16 ? whole : first
   if (!plain) return null
   const short = plain.length > 72 ? `${plain.slice(0, 72).replace(/\s+\S*$/, "")}…` : plain
+  // A person's name or an acronym keeps its capitals ("Ida Ervanton took the gig", "CMR missing"); an ops word starts
+  // lower case ("driver Carl says").
+  if ((!OPS_START.test(short) && /^\p{Lu}\p{Ll}+\s+\p{Lu}/u.test(short)) || /^\p{Lu}{2,}\b/u.test(short)) return short
   return short.charAt(0).toLowerCase() + short.slice(1)
 }
 

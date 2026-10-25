@@ -224,9 +224,9 @@ async function withChannels(items: QueueItem[]): Promise<QueueItem[]> {
 
 /** Open cards for the rail badge. */
 /** The rail badge: the team of every card that needs someone now (not taken over), so the badge can follow a view. */
-export async function nowTeams(): Promise<Team[]> {
+export async function nowTeams(): Promise<(Team & { safety: boolean })[]> {
   const { items } = await getQueue()
-  return items.filter((item) => !item.takenOver && isNowItem(item)).map((item) => item.team)
+  return items.filter((item) => !item.takenOver && isNowItem(item)).map((item) => ({ ...item.team, safety: item.urgency.safety }))
 }
 
 /** Open cards on one order, as queue items, for the order page. */

@@ -2096,3 +2096,85 @@ those up. I took a screenshot of the Demo page after the merge (the block, its b
 republished to all drivers cannot be "accepted" from the demo, because only a named backup can be. Travel that has
 already departed is left alone rather than shown as cancellable. The hand-back path was not run live with a model,
 so as not to start agent runs on the shared database while others were working.
+
+### 6. A fresh reviewer's first look at the new For you and case pane, twice
+
+**How.** Two fresh subagents (Sonnet), each with only screenshots, a line on how each was reached, and the question as
+asked: "ops coordinator, first time: what would you click first, what is unclear?" The first ran early, on item 1's
+screens, while the forks were still working: laptop light and dark, after J J, after R, and a phone list and case.
+The second ran on the merged state with items 2–5: Everyone and Finland, after R, the ferry case with similar past
+cases, and the phone. The second did not see the fixes made for the first; where they overlap, that is said below.
+
+**First clicks.** Review 1: the Toyota "in 27 min", the shortest clock, and it could not see why the Bentley ranks
+above it. Review 2: the view menu, then Finland, because "For you" opened on Everyone.
+
+**Real, and fixed:**
+- **Order and wording of Now.** "safety, or lost within 4 hours" left both reviewers asking "lost what?", and why a
+  4-hour case sits above a 27-minute one. The heading now reads "safety first, then what is due within 4 hours or
+  already missed", and Later reads "nothing due before …".
+- **Time zones against the clock.** "Driver's train from Aalborg leaves at 12:25 CEST" looked past against a 12:58
+  Helsinki clock, while the list said "in 27 min". The pane now ends the sentence with the same countdown ("in
+  27 min"). Each place's time stays in its own zone (SPEC section 10).
+- **A missed deadline looked like a due one.** Six amber dots, and the overdue BMW looked like the 3-hour ones. The
+  row and the pane now say "missed 1 h 58 min ago".
+- **"I'll handle this" vs the reject.** "Reject: send nothing, book nothing, I'll handle it" read like the take-over
+  button. Reject labels now drop "I'll handle it" (straight or curly apostrophe). The key line says "T I'll handle
+  this" instead of "take over", the same words as the button.
+- **What happens to Carl.** "Switch driver to Ida (offer) and message Carl": is Carl off the gig, and what about his
+  train, flight and hotel? The effects now add, in code for any driver switch without a cancellation: "Travel booked
+  for the current driver stays booked until the new driver accepts; then a card asks you to cancel it" (item 5's
+  flow).
+- **The phone's bottom bar** stacked its five items in a column over a third of the screen and covered the Approve
+  button. This was a bug from an earlier round: `.rail nav` stayed a block. It is one row now, and the content keeps
+  room under it.
+- **Phone titles** stopped mid-phrase with no "…" (the CSS fallback hid the last word). On a phone, row text now
+  wraps, and the list uses the full width.
+- **The T hint** sat outside "I'll handle this" while A and R sat inside their buttons. All three are inside now.
+- **No price in the list** for "book train, Marseille hotel and Sat 24 Oct 14:00 ferry…". The cost is now its own
+  figure on line 2 ("€672"), never cut away with the words.
+- **The pane cut off with no cue that it scrolls.** One reviewer counted 4 facts on the laptop and 7 on the phone.
+  The pane now has a quiet shadow at an edge while there is more to scroll, in pure CSS: local backgrounds cover the
+  shadow at the ends.
+- **Pale grey text** in light mode: `--text-3` went from #8b8c91 to #75767b (4.6:1 on white).
+- **A safety case vanished into the grey row** (review 2, in Finland's view: the Bentley stopped on the A7 is a
+  German customer's car). A person's safety is now listed in every view, tagged with its country ("Germany"). The
+  header says "4 need you now in Finland · +1 safety in Germany · 2 more in other countries · 9 can wait", and the
+  sidebar badge counts it too.
+- **The header's tail did not follow the view** ("agents are handling 10 · nothing open on 966" under Finland). Those
+  numbers count every market, so they are shown only for Everyone. That also keeps the line to one line.
+- **One stray A.** "A approves; row one is already open on load." A now approves only a case that was opened (a
+  click, or Enter). On a case J or K merely moved to, the first A opens it and the second approves. The 8-second undo
+  stays. R and T act at once: a reply box and a take-over are undone with a click. The key line says "Enter open,
+  then A approve".
+- **Reason chips.** "Do the chips act at once?", and the option below them looked disabled. The legend now says
+  "Pick one reason first; nothing happens until you choose below", and the reject row sits apart from the option
+  above it, so "If you choose it: …" reads as that option's.
+- **Smaller ones.** The pane says "customer Marvellin Motorhandel" (the customer was unlabelled). "All cases" became
+  "Back to the list", and "case" is gone from visible text in favour of the ops words. "What we know" says "most
+  important first" (both reviewers expected time order; the agent orders findings by weight, and each has its time on
+  the left).
+
+**Found while recording the new footage, and fixed:**
+- Item 5's cancel card is written by code with no agent run, so the pane showed it like an alert card ("No agent
+  has worked on it yet") with no "If you approve" box. Cards a Monitor rule proposes now show "If you approve
+  (proposed by code)" and an accent button, like the cancelled-gig card.
+- The card read "Toyota Corolla · ida Ervanton took the gig": the problem phrase lowercased a person's name. A name
+  or an acronym now keeps its capitals ("CMR missing" had the same bug), while an ops word still starts lower case
+  ("driver Carl says …").
+- After the Executor cancelled Carl's train and flight, the order still showed them as amber key times. Cancelled
+  travel is no longer a key time.
+
+**Not changed, and why.**
+- The message to the driver stays behind "Show message to driver". An earlier brief asked for the words one click
+  away; the email to a customer, which approving sends, is open from the start.
+- "Approve: call Marvellin …" stays. The first effect line says "You call Marvellin Motorhandel", and the note says
+  approving does not dial.
+- One Approve still carries all of a proposal's steps, as the card design asks; the 8-second undo covers a mistake.
+- For you opens on Everyone until a person picks a view: a first-time user has no market yet.
+- "agent", "desk" and the zones are not explained on the page. How it works explains them, and the brief asked for no
+  tutorial text.
+- The phone's search placeholder is cut and the phone has no clock (hidden on purpose below 760 px).
+
+**Checked.** `npm run typecheck`; `npx tsx --test tests/*.test.ts` 66 of 66. Screenshots after each fix, all looked
+at: laptop Everyone and Finland, after J J, after R; phone list and case. A Playwright run of the keys: on load, A
+showed no toast; a second A did, Undo brought the case back, and R opened the reply box in one press.

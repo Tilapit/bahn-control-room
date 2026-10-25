@@ -13,14 +13,14 @@ async function send(reference: string, action: "take" | "hand_back" | "log", not
 }
 
 /** "I'll handle this": the order becomes the person's; agents and Monitor rules stop acting on it (enforced in code). */
-export function TakeOverButton({ reference, className = "btn small" }: { reference: string; className?: string }) {
+export function TakeOverButton({ reference, className = "btn small", hint = null }: { reference: string; className?: string; hint?: React.ReactNode }) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   return <>
     <button type="button" className={className} disabled={busy} title="Agents and Monitor rules stop acting on this order until you hand it back"
       onClick={async () => { setBusy(true); setError(await send(reference, "take")); setBusy(false); router.refresh() }}>
-      {busy ? "Taking it…" : "I'll handle this"}
+      {busy ? "Taking it…" : "I'll handle this"}{hint}
     </button>
     {error && <span className="note failed-note" role="alert">{error}</span>}
   </>
