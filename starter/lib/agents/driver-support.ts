@@ -46,6 +46,10 @@ export type SupportOutcome = { runId: string; status: "replied" | "handed_off" |
 export async function runDriverSupport(orderRef: string, messageEntryId: string, messageText: string): Promise<SupportOutcome> {
   const file = await getCase(orderRef)
   if (!file) throw new Error(`No order ${orderRef}`)
+  // Ops took the order over: Driver support does not answer for them (lib/takeover.ts).
+  const { agentBlockedOn } = await import("../takeover")
+  const blocked = await agentBlockedOn([file.order.id])
+  if (blocked) return { runId: "", status: "failed", summary: blocked }
   const model = ROLE_MODEL.driverSupport
   const started = await clockNow()
   const runId = await createRun({ orderId: file.order.id, agent: "Driver support", model, trigger: `Driver wrote: “${messageText}”`, at: started })

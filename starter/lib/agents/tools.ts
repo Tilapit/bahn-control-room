@@ -451,6 +451,10 @@ const EXECUTORS: Record<string, Executor> = {
 }
 
 export async function executeTool(ctx: RunCtx, name: string, input: Input): Promise<ToolOutcome> {
+  // Ops took the order over: no tool runs on it, not even a question or a look-up, until a person hands it back.
+  const { agentBlockedOn } = await import("../takeover")
+  const blocked = await agentBlockedOn(ctx.group.length ? ctx.group : [ctx.orderId])
+  if (blocked) return error(`${blocked} You cannot act on it until they hand it back: no questions, look-ups or proposals.`, "Stopped: a person has taken this order over")
   if (name === "add_finding") return (await import("./propose")).addFinding(ctx, input)
   if (name === "add_step") return (await import("./propose")).addStep(ctx, input)
   if (name === "add_affected_order") return (await import("./propose")).addAffected(ctx, input)

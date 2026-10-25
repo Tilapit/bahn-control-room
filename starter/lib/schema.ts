@@ -326,6 +326,18 @@ export const policyChanges = pgTable("policy_changes", {
   reason: text("reason").notNull(),
 })
 
+/** Ops handles an order themselves: no agent and no Monitor rule acts on it until a person hands it back (lib/takeover.ts). */
+export const takeovers = pgTable("takeovers", {
+  id: text("id").primaryKey(),
+  orderId: text("order_id").notNull(),
+  takenAt: timestamp("taken_at", { withTimezone: true }).notNull(),
+  takenBy: text("taken_by").notNull(),
+  handedBackAt: timestamp("handed_back_at", { withTimezone: true }),
+  handedBackBy: text("handed_back_by"),
+  /** What the person did, in their words, given to the agent on the hand-back. */
+  note: text("note"),
+}, (table) => [index("takeovers_order_idx").on(table.orderId)])
+
 export const evalCases = pgTable("eval_cases", {
   id: text("id").primaryKey(),
   cardId: text("card_id").notNull(),

@@ -15,6 +15,7 @@ import { answersOn } from "../demo"
 import { costUsd, MODELS, modelName, ROLE_MODEL, usageOf } from "../models"
 import { orderView } from "../queue"
 import { orders } from "../schema"
+import { agentBlockedOn } from "../takeover"
 import { clock, zoneShort } from "../time"
 import { isSafety } from "../urgency"
 import { anthropic, prompt } from "./llm"
@@ -79,6 +80,9 @@ function cut(content: string): string {
 export async function startInvestigation(orderRef: string, options: StartOptions): Promise<RunOutcome> {
   const file = await getCase(orderRef)
   if (!file) throw new Error(`No order ${orderRef}`)
+  // Ops took the order over: no run starts on it until a person hands it back (lib/takeover.ts).
+  const blocked = await agentBlockedOn([file.order.id, ...(options.group ?? [])])
+  if (blocked) return { runId: "", status: "paused", summary: blocked }
   const safety = isSafety(file)
   const model = initialModel(safety)
   const at = await clockNow()
@@ -204,6 +208,16 @@ async function loop(runId: string, orderId: string, reference: string, startMode
   }
 
   while (true) {
+    // Ops took the order over: the run stops before its next model call, with its conversation kept, until a person
+    // hands the order back (continueAfterHandBack). Nothing reaches the model or the order meanwhile.
+    const blocked = await agentBlockedOn(ctx.group)
+    if (blocked) {
+      await save({ status: "paused", nextCheckAt: null, outcomeSummary: `Paused: ${blocked}` })
+      await addWallTime(runId, Date.now() - segmentStart)
+      await exportTrace(runId)
+      log(`  → paused: ${blocked}`)
+      return { runId, status: "paused", summary: blocked }
+    }
     if (state.modelCalls >= STEP_CAP) {
       await finish("failed", `Stopped at the ${STEP_CAP}-step limit without a conclusion.`)
       return { runId, status: "failed", summary: "Step limit reached" }
@@ -328,6 +342,23 @@ export async function continueAfterPerson(runId: string, content: string, option
   const pending = state?.pending.find((item) => item.party === "person")
   if (!run || !state || !pending) return null
   return resumeRun(runId, [{ toolUseId: pending.toolUseId, content }], options)
+}
+
+/**
+ * Ops handed a taken-over order back: the run continues with what the person did. A question still open (to the
+ * driver, a site or a person) gets the note as its answer; a run paused between turns gets it as a new line.
+ */
+export async function continueAfterHandBack(runId: string, content: string, options: Omit<StartOptions, "trigger"> = { autoReply: true }): Promise<RunOutcome | null> {
+  const run = await getRun(runId)
+  const state = run?.state as unknown as RunState | null
+  if (!run || !state || !run.orderId) return null
+  if (state.pending.length) return resumeRun(runId, state.pending.map((item) => ({ toolUseId: item.toolUseId, content })), options)
+  const last = state.messages[state.messages.length - 1]
+  if (last?.role !== "user") return null
+  last.content = typeof last.content === "string" ? `${last.content}\n\n${content}` : [...last.content, { type: "text", text: content }]
+  await updateRun(runId, { status: "running", state: state as unknown as Record<string, unknown> })
+  const [order] = await db.select({ reference: orders.reference }).from(orders).where(eq(orders.id, run.orderId)).limit(1)
+  return loop(runId, run.orderId, order?.reference ?? "", run.model ?? ROLE_MODEL.investigator, state, { trigger: run.trigger, ...options })
 }
 
 /** A real (or injected) message from the party a paused run is waiting on: hand it to the run as their answer. */

@@ -631,3 +631,18 @@ a.filter { text-decoration: none; }
   .how-tr.head { display: none; }
   .how-columns, .how-stats { grid-template-columns: 1fr; }
 }
+
+/* ---------- Take over ---------- */
+
+.tag.yours { color: var(--accent-text); }
+.queue-section { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); margin: 8px 0 8px; }
+.queue-section .faint { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.yours { margin-bottom: 24px; }
+.yours-plain { display: flex; justify-content: space-between; gap: 16px; padding: 12px 20px; border-bottom: 1px solid var(--line); color: inherit; text-decoration: none; }
+.yours-plain:hover { background: var(--hover); }
+.takeover-bar { margin: 4px 0 12px; padding: 12px 14px; border-radius: var(--radius-s); background: var(--accent-soft); display: grid; gap: 10px; font-size: 14px; max-width: 760px; }
+.takeover-bar p { margin: 0; }
+.takeover-bar .reply input { background: var(--surface); }
+.row .takeover-bar { margin: 0 0 4px 20px; }
+.case-actions { margin-top: 14px; display: flex; align-items: center; gap: 12px; font-size: 13px; }
+.case-head .takeover-bar { margin-top: 14px; }

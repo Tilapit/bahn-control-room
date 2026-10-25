@@ -40,8 +40,8 @@ export default async function Orders({ searchParams }: Props) {
     db.select({ id: orders.id }).from(orders).where(eq(orders.status, "DELIVERED")),
     orderCount(),
   ])
-  const takenOver = new Set<string>()
   const { cardOf, holding } = held
+  const takenOver = new Set([...holding].filter(([, kind]) => kind === "taken").map(([id]) => id))
 
   // Who has each order, so the chips can count 1,000 orders while only the open ones are compiled.
   const open = new Set([...holding.keys(), ...takenOver])

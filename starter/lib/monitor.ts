@@ -14,6 +14,7 @@ import { addStep, createRun, updateRun } from "./agents/runs"
 import { writeEntry } from "./agents/entries"
 import { hasApiKey } from "./agents/llm"
 import { agentRuns, type CardFinding, type CardOption, cards, timelineEntries } from "./schema"
+import { openTakeovers } from "./takeover"
 import { urgency } from "./urgency"
 import type { RunState } from "./agents/investigator"
 import { orderView } from "./queue"
@@ -248,11 +249,11 @@ async function cancelledGigRule(files: CaseFile[], now: Date): Promise<MonitorHi
 /** After the first wait (15 simulated minutes) one follow-up; 30 minutes after that, the run escalates to a person. */
 const FOLLOW_UP_WAIT_MINUTES = 30
 
-async function noReplyRule(now: Date, options: Options): Promise<MonitorHit[]> {
+async function noReplyRule(now: Date, options: Options, taken: Set<string> = new Set()): Promise<MonitorHit[]> {
   const waiting = await db.select().from(agentRuns).where(inArray(agentRuns.status, ["waiting_driver", "waiting_site"]))
   const hits: MonitorHit[] = []
   for (const run of waiting) {
-    if (!run.nextCheckAt || run.nextCheckAt > now || !run.state || !run.orderId) continue
+    if (!run.nextCheckAt || run.nextCheckAt > now || !run.state || !run.orderId || taken.has(run.orderId)) continue
     const state = run.state as unknown as RunState
     const pending = state.pending.filter((item) => item.party !== "person")
     if (!pending.length) continue
@@ -299,9 +300,11 @@ async function noReplyRule(now: Date, options: Options): Promise<MonitorHit[]> {
 /** Run every rule once against the current simulated time. */
 export async function runMonitor(options: Options = {}): Promise<MonitorHit[]> {
   const now = await clockNow()
-  const files = await getCases()
+  // Ops took these orders over: no Monitor rule acts on them until a person hands them back (lib/takeover.ts).
+  const taken = new Set((await openTakeovers()).map((row) => row.orderId))
+  const files = (await getCases()).filter((file) => !taken.has(file.order.id))
   const on = (rule: NonNullable<Options["only"]>[number]) => !options.only || options.only.includes(rule)
-  const hits = [...on("disruption") ? await disruptionRule(files, now, options) : [], ...on("gig-cancelled") ? await cancelledGigRule(files, now) : [], ...on("no-reply") ? await noReplyRule(now, options) : []]
+  const hits = [...on("disruption") ? await disruptionRule(files, now, options) : [], ...on("gig-cancelled") ? await cancelledGigRule(files, now) : [], ...on("no-reply") ? await noReplyRule(now, options, taken) : []]
   // The disruption rule may have just started runs; the silent-car rule sees them as attended.
-  return [...hits, ...on("silent-car") ? await silentCarRule(await getCases(), now, options) : []]
+  return [...hits, ...on("silent-car") ? await silentCarRule((await getCases()).filter((file) => !taken.has(file.order.id)), now, options) : []]
 }

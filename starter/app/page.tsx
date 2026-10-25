@@ -9,7 +9,7 @@ import { Queue } from "./ui/queue"
 export const metadata: Metadata = { title: "For you" }
 
 function countsLine(counts: QueueCounts): string {
-  const parts = [`${counts.needYou} order${counts.needYou === 1 ? " needs" : "s need"} you`]
+  const parts = [`${counts.needYou} order${counts.needYou === 1 ? " needs" : "s need"} you${counts.yours ? ` (${counts.yours} you took over)` : ""}`]
   if (counts.decided) parts.push(`you decided ${counts.decided} in the last day`)
   if (counts.handling) parts.push(`agents are handling ${counts.handling} more without you`)
   if (counts.unattended) parts.push(`${counts.unattended} more have open items no agent has looked at yet`)
@@ -21,7 +21,7 @@ function countsLine(counts: QueueCounts): string {
 export default async function ForYou() {
   await connection()
   await sweepDecisions()
-  const [{ now, items, counts }, suggestion] = await Promise.all([getQueue(), autonomySuggestion()])
+  const [{ now, items, counts, yoursWithoutCard }, suggestion] = await Promise.all([getQueue(), autonomySuggestion()])
   const others = [
     counts.decided ? `You decided ${counts.decided} in the last day.` : null,
     counts.handling ? `Agents are handling ${counts.handling} orders.` : null,
@@ -39,6 +39,6 @@ export default async function ForYou() {
       </div>
     </div>
     {suggestion && <AutonomySuggestion suggestion={suggestion} />}
-    <Queue items={items} now={now} emptyLine={others} endLine={`That is everything that needs you. ${others}`} />
+    <Queue items={items} now={now} emptyLine={others} endLine={`That is everything that needs you. ${others}`} yoursWithoutCard={yoursWithoutCard} />
   </main>
 }

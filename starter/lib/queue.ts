@@ -8,6 +8,7 @@ import { db } from "./db"
 import { agentRuns, agentSteps, cards, decisions } from "./schema"
 import type { CardFinding, CardGroupItem, CardOption, CardProposal, VerifierNote } from "./schema"
 import { liveSignals } from "./signals"
+import { openTakeovers } from "./takeover"
 import { compareUrgency, type Urgency, urgency, withProposalDeadline } from "./urgency"
 
 const HANDLING_AGENTS = ["Investigator", "Driver support"]
@@ -42,10 +43,13 @@ export type QueueOrder = {
   zones: { pickup: string | null; delivery: string | null }
 }
 
-export type QueueItem = { card: QueueCard; order: QueueOrder; urgency: Urgency }
+/** `takenOver`: Ops is handling the order themselves; agents are paused on it until it is handed back. */
+export type QueueItem = { card: QueueCard; order: QueueOrder; urgency: Urgency; takenOver: { at: string; by: string } | null }
 
 export type QueueCounts = {
   needYou: number
+  /** Orders a person took over: theirs until they hand them back. Counted inside needYou too. */
+  yours: number
   /** Orders with a live signal and an agent run, but no card for a person. */
   handling: number
   /** Orders with a live signal that no agent has looked at yet. */
@@ -108,11 +112,13 @@ async function runInfo(runIds: (string | null)[]): Promise<Map<string, RunInfo>>
   }]))
 }
 
-export async function getQueue(): Promise<{ now: string; items: QueueItem[]; counts: QueueCounts }> {
+export type YoursWithoutCard = { order: QueueOrder; takenOver: { at: string; by: string }; open: string[] }
+
+export async function getQueue(): Promise<{ now: string; items: QueueItem[]; counts: QueueCounts; yoursWithoutCard: YoursWithoutCard[] }> {
   const at = await clockNow()
   // Only orders with something open, an agent still watching or a decision of the last day can need anyone;
   // the rest are counted, not compiled (1,000 orders in scale mode).
-  const [openCards, openIds, total, ordersWithRun, ruleRows, decidedRows] = await Promise.all([
+  const [openCards, openIds, total, ordersWithRun, ruleRows, decidedRows, taken] = await Promise.all([
     db.select().from(cards).where(eq(cards.status, "open")),
     ordersWithOpenItems(),
     orderCount(),
@@ -121,11 +127,13 @@ export async function getQueue(): Promise<{ now: string; items: QueueItem[]; cou
     db.select({ n: count() }).from(decisions).where(eq(decisions.actor, "Agent, under your rule")),
     db.select({ orderId: cards.orderId, group: cards.group }).from(decisions).innerJoin(cards, eq(cards.id, decisions.cardId))
       .where(and(isNull(decisions.undoneAt), gte(decisions.decidedAt, new Date(at.getTime() - 24 * 3600_000)), sql`${decisions.actor} <> 'Agent, under your rule'`)),
+    openTakeovers(),
   ])
+  const takenOver = new Map(taken.map((row) => [row.orderId, { at: row.takenAt.toISOString(), by: row.takenBy }]))
   // An agent that finished but looks again later is still handling the order, signal or not (Agents shows it as "Watching").
   const watching = new Set(ordersWithRun.filter((run) => run.status === "done" && run.nextCheckAt && run.nextCheckAt > at).map((run) => run.orderId))
   const decidedByYou = new Set(decidedRows.flatMap((row) => [row.orderId, ...(row.group ?? []).map((member) => member.order_id)]))
-  const ids = [...new Set([...openIds, ...watching, ...decidedByYou].filter((id): id is string => !!id))]
+  const ids = [...new Set([...openIds, ...watching, ...decidedByYou, ...takenOver.keys()].filter((id): id is string => !!id))]
   const files = ids.length ? await getCases(ids) : []
   const byOrder = new Map(files.map((file) => [file.order.id, file]))
   const runs = await runInfo(openCards.map((row) => row.runId))
@@ -133,7 +141,7 @@ export async function getQueue(): Promise<{ now: string; items: QueueItem[]; cou
   for (const row of openCards) {
     const file = byOrder.get(row.orderId)
     if (!file) continue
-    items.push({ card: toQueueCard(row, runs), order: orderView(file), urgency: withProposalDeadline(urgency(file, at), primaryOption(row.options), at) })
+    items.push({ card: toQueueCard(row, runs), order: orderView(file), urgency: withProposalDeadline(urgency(file, at), primaryOption(row.options), at), takenOver: takenOver.get(row.orderId) ?? null })
   }
   items.sort((a, b) => compareUrgency(a.urgency, b.urgency))
 
@@ -142,22 +150,26 @@ export async function getQueue(): Promise<{ now: string; items: QueueItem[]; cou
   let handling = 0
   let unattended = 0
   let decided = 0
+  // A taken-over order with no card is still the person's: it is listed under Yours with what is open on it.
+  let yoursWithoutCard = 0
   for (const file of files) {
+    if (takenOver.has(file.order.id) && !withCard.has(file.order.id)) { yoursWithoutCard += 1; continue }
     if (withCard.has(file.order.id) || (!liveSignals(file).length && !watching.has(file.order.id))) continue
     // An order whose card a person just decided is not "handled by agents": the call or the booking is theirs now.
     if (decidedByYou.has(file.order.id)) decided += 1
     else if (withRun.has(file.order.id)) handling += 1
     else unattended += 1
   }
-  const needYou = withCard.size
+  const needYou = withCard.size + yoursWithoutCard
   return {
     now: at.toISOString(),
     items,
-    counts: { needYou, handling, unattended, decided, quiet: total - needYou - handling - unattended - decided, total, byRule: ruleRows[0]?.n ?? 0 },
+    counts: { needYou, yours: takenOver.size, handling, unattended, decided, quiet: total - needYou - handling - unattended - decided, total, byRule: ruleRows[0]?.n ?? 0 },
+    yoursWithoutCard: files.filter((file) => takenOver.has(file.order.id) && !withCard.has(file.order.id)).map((file) => ({ order: orderView(file), takenOver: takenOver.get(file.order.id)!, open: liveSignals(file) })),
   }
 }
 
-export type Holding = "card" | "decided" | "agent" | "unattended"
+export type Holding = "card" | "decided" | "agent" | "unattended" | "taken"
 
 /**
  * Who has each order with something open, by the same rules as For you's header: a card waits for a person, a person
@@ -176,12 +188,14 @@ export async function holdings(at: Date): Promise<{ files: CaseFile[]; cardOf: M
   const watching = new Set(ordersWithRun.filter((run) => run.status === "done" && run.nextCheckAt && run.nextCheckAt > at).map((run) => run.orderId))
   const withRun = new Set(ordersWithRun.map((run) => run.orderId))
   const decidedByYou = new Set(decidedRows.flatMap((row) => [row.orderId, ...(row.group ?? []).map((member) => member.order_id)]))
-  const ids = [...new Set([...openIds, ...watching, ...decidedByYou, ...cardOf.keys()].filter((id): id is string => !!id))]
+  const taken = new Set((await openTakeovers()).map((row) => row.orderId))
+  const ids = [...new Set([...openIds, ...watching, ...decidedByYou, ...cardOf.keys(), ...taken].filter((id): id is string => !!id))]
   const files = ids.length ? await getCases(ids) : []
   const holding = new Map<string, Holding>()
   for (const file of files) {
     const id = file.order.id
-    if (cardOf.has(id)) holding.set(id, "card")
+    if (taken.has(id)) holding.set(id, "taken")
+    else if (cardOf.has(id)) holding.set(id, "card")
     else if (!liveSignals(file).length && !watching.has(id)) continue
     else holding.set(id, decidedByYou.has(id) ? "decided" : withRun.has(id) ? "agent" : "unattended")
   }
@@ -198,6 +212,7 @@ export async function openCardCount(): Promise<number> {
 export async function cardsForOrder(file: CaseFile, at: Date): Promise<QueueItem[]> {
   // A card for several orders shows on each of them.
   const rowsFound = (await db.select().from(cards).where(and(eq(cards.status, "open"), or(eq(cards.orderId, file.order.id), sql`${cards.group} @> ${JSON.stringify([{ order_id: file.order.id }])}::jsonb`))))
-  const runs = await runInfo(rowsFound.map((row) => row.runId))
-  return rowsFound.map((row) => ({ card: toQueueCard(row, runs), order: orderView(file), urgency: withProposalDeadline(urgency(file, at), primaryOption(row.options), at) }))
+  const [runs, [taken]] = await Promise.all([runInfo(rowsFound.map((row) => row.runId)), openTakeovers([file.order.id])])
+  const takenOver = taken ? { at: taken.takenAt.toISOString(), by: taken.takenBy } : null
+  return rowsFound.map((row) => ({ card: toQueueCard(row, runs), order: orderView(file), urgency: withProposalDeadline(urgency(file, at), primaryOption(row.options), at), takenOver }))
 }

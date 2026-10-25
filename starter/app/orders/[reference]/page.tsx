@@ -5,12 +5,14 @@ import { connection } from "next/server"
 import { type CaseFact, type CaseFile, type CasePlace, getCase, timeline } from "@/lib/case"
 import { sweepDecisions } from "@/lib/decisions"
 import { cardsForOrder, orderView } from "@/lib/queue"
+import { openTakeovers } from "@/lib/takeover"
 import { liveSignals } from "@/lib/signals"
 import { statusLine } from "@/lib/status"
 import { range, zoneShort } from "@/lib/time"
 import { urgency } from "@/lib/urgency"
 import { Icon } from "../../ui/icons"
 import { OrderCard } from "../../ui/order-card"
+import { TakenOverBar, TakeOverButton } from "../../ui/takeover"
 import { Timeline } from "../../ui/timeline"
 import { SourceChip } from "../../ui/when"
 
@@ -31,7 +33,7 @@ export default async function OrderPage({ params }: Props) {
   if (!file) notFound()
   const now = file.asOf
   const at = new Date(now)
-  const [entries, items] = await Promise.all([timeline(file.order.id), cardsForOrder(file, at)])
+  const [entries, items, [taken]] = await Promise.all([timeline(file.order.id), cardsForOrder(file, at), openTakeovers([file.order.id])])
   const { order } = file
   const view = orderView(file)
   const zone = view.zone
@@ -58,6 +60,8 @@ export default async function OrderPage({ params }: Props) {
           {order.synthetic && <span className="faint">Scale mode: a made-up copy of <Link className="link" href={`/orders/${order.synthetic}`}>{order.synthetic}</Link></span>}
           {(order.car.registration || order.tradeIn) && <span><Icon name="car" />{[order.car.registration, order.tradeIn ? `with trade-in ${order.tradeIn.label}` : null].filter(Boolean).join(" · ")}</span>}
         </div>
+        {taken ? <TakenOverBar reference={order.reference} since={taken.takenAt.toISOString()} by={taken.takenBy} zone={zone} />
+          : <div className="case-actions"><TakeOverButton reference={order.reference} /><span className="faint">Agents and Monitor rules stop acting on this order until you hand it back.</span></div>}
       </div>
       {order.car.image && <figure className="case-figure"><img className="case-car" src={order.car.image} alt={`Illustration of a ${order.car.label}`} title="Model illustration, not a photo of this car" /><figcaption>Model illustration</figcaption></figure>}
     </header>

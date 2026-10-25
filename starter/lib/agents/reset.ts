@@ -4,7 +4,7 @@
 
 import { and, eq, inArray, sql } from "drizzle-orm"
 import { db } from "../db"
-import { agentRuns, agentSteps, cards, decisions, demoEvents, evalCases, facts, policies, timelineEntries } from "../schema"
+import { agentRuns, agentSteps, cards, decisions, demoEvents, evalCases, facts, policies, takeovers, timelineEntries } from "../schema"
 
 export async function resetOrderLiveState(orderId: string, options: { allFacts?: boolean } = {}): Promise<void> {
   const runs = await db.select({ id: agentRuns.id }).from(agentRuns).where(eq(agentRuns.orderId, orderId))
@@ -26,6 +26,7 @@ export async function resetOrderLiveState(orderId: string, options: { allFacts?:
       sql`${facts.sourceEntryId} in (select id from timeline_entries where order_id = ${orderId} and origin = 'live')`))
     await tx.delete(timelineEntries).where(and(eq(timelineEntries.orderId, orderId), eq(timelineEntries.origin, "live")))
     await tx.delete(demoEvents).where(eq(demoEvents.orderId, orderId))
+    await tx.delete(takeovers).where(eq(takeovers.orderId, orderId))
   })
 }
 
@@ -60,6 +61,7 @@ export async function resetAllLiveState(): Promise<void> {
     await tx.delete(facts).where(inArray(facts.origin, ["classifier", "agent"]))
     await tx.delete(timelineEntries).where(eq(timelineEntries.origin, "live"))
     await tx.delete(demoEvents)
+    await tx.delete(takeovers)
     await tx.update(policies).set({ approvedUnchangedCount: 0, decidedCount: 0 })
   })
 }

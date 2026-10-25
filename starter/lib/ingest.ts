@@ -8,6 +8,7 @@ import { classifyEntry } from "./agents/classifier"
 import { writeDemoEvent, writeEntry } from "./agents/entries"
 import { hasApiKey } from "./agents/llm"
 import { route, type RouteDecision } from "./router"
+import { agentBlockedOn } from "./takeover"
 
 export type IngestInput = {
   order: string
@@ -46,6 +47,13 @@ export async function ingest(input: IngestInput): Promise<{ entryId: string; eve
 /** Classify a message and route it. Runs in the background after ingest; agents can take a minute. */
 export async function processEntry(entryId: string): Promise<{ classified: boolean; route: RouteDecision | null }> {
   if (!hasApiKey()) return { classified: false, route: null }
+  // Ops took the order over: no agent reads it now, the Classifier included; the person sees the message on the timeline.
+  const { db } = await import("./db")
+  const { timelineEntries } = await import("./schema")
+  const { eq } = await import("drizzle-orm")
+  const [entry] = await db.select({ orderId: timelineEntries.orderId }).from(timelineEntries).where(eq(timelineEntries.id, entryId)).limit(1)
+  const blocked = await agentBlockedOn([entry?.orderId])
+  if (blocked) return { classified: false, route: { action: "nothing", reason: blocked } }
   const result = await classifyEntry(entryId)
   const decision = await route(entryId, result?.classification ?? null)
   return { classified: !!result, route: decision }

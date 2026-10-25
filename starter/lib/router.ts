@@ -10,6 +10,7 @@ import type { Classification } from "./agents/classifier"
 import { runDriverSupport } from "./agents/driver-support"
 import { answerFromMessage, startInvestigation } from "./agents/investigator"
 import { agentRuns, timelineEntries } from "./schema"
+import { agentBlockedOn } from "./takeover"
 import { isSafety } from "./urgency"
 
 export type RouteDecision = { action: "resumed" | "investigator" | "driver_support" | "nothing"; runId?: string; reason: string }
@@ -38,6 +39,9 @@ export async function route(entryId: string, classification: Classification | nu
   if (!entry?.orderId) return { action: "nothing", reason: "The message is not linked to an order." }
   const file = await getCase(entry.orderId)
   if (!file) return { action: "nothing", reason: "Order not found." }
+  // Ops took the order over: the message is on its timeline for them, and no agent picks it up (lib/takeover.ts).
+  const blocked = await agentBlockedOn([entry.orderId])
+  if (blocked) return { action: "nothing", reason: `${blocked} The message waits for them on the timeline.` }
   const autoReply = await autoReplyEnabled()
   const fromDriver = entry.authorType === "driver"
   const fromSite = entry.authorType === "site_contact"

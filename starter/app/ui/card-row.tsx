@@ -7,6 +7,7 @@ import { optionWords, type StepZones } from "@/lib/present/steps"
 import type { CardOption, CardStep } from "@/lib/schema"
 import { zoneShort } from "@/lib/time"
 import { Icon } from "./icons"
+import { TakenOverBar, TakeOverButton } from "./takeover"
 import { SourceChip } from "./when"
 
 /** A decision in its undo window. `reference` names the order, so two quick approvals never share one anonymous toast. */
@@ -145,6 +146,7 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
         <span className="row-top">
           <span className="row-title">{headlineWords(card.headline)}</span>
           {urgency.safety && <span className="tag safety">Safety</span>}
+          {item.takenOver && <span className="tag yours">Yours</span>}
           {!onOrderPage && <span className="row-ref">{card.group ? `${card.group.length} orders` : order.reference}</span>}
         </span>
         <span className="row-consequence">
@@ -158,6 +160,7 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
       <Icon name="chevron" size={14} className="row-chevron" />
     </button>}
 
+    {open && item.takenOver && !onOrderPage && <TakenOverBar reference={order.reference} since={item.takenOver.at} by={item.takenOver.by} zone={order.zone} />}
     {open && <div className="detail">
       <section>
         <h3>What happened</h3>
@@ -231,6 +234,7 @@ export function CardRow({ item, now, open: startOpen = false, onOrderPage = fals
           onClick={() => decide(option.id, option.label)}
         >{busy === option.id ? "Saving…" : buttonLabel(option)}</button>
       })}
+      {!onOrderPage && !item.takenOver && !card.group && <TakeOverButton reference={order.reference} />}
       {!open && fromAgent && card.options.length > 1 && <button type="button" className="btn small" onClick={() => setOpen(true)}>
         {others.length ? "Other choices…" : fromMonitor ? "Reject…" : "Reject or reply…"}
       </button>}

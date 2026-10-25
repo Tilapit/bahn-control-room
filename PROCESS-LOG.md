@@ -1496,3 +1496,55 @@ while searching.
 **Checked:** typecheck; `npm run smoke` (For you, all 100 order pages, search); every chip and a search fetched at
 100 and at 1,000 orders; screenshots `screens/orders-*`, `orders-needs-you-*`, `orders-filter-*` in light and dark,
 looked at (the first had the countdown cut off by the ellipsis: "in 4 h 8 …"; fixed).
+
+### 2. Take over: "I'll handle this", and "Hand back to agent"
+
+**What it does.** Every card on For you and every order page has "I'll handle this". It marks the order as taken
+over by Ops (`takeovers` table: who, when, handed back when, the person's note), stops every agent and Monitor
+action on that order, and moves its card to a **Yours** section at the top of For you, where the card stays open to
+read with all its findings. While the order is theirs, the person can write what they did ("Add to timeline") and
+then "Hand back to agent": the agent continues with their note. Taking over, each note and handing back are
+timeline entries in the person's name; decisions on the card already were.
+
+**Enforced in code, in one module** (`lib/takeover.ts`, `agentBlockedOn`), asked at every place an agent can act:
+- the Investigator's loop, before every model call: a running run stops there with its conversation saved
+  (status `paused`), so nothing reaches the model or the order;
+- `executeTool`, before any agent tool: no question to a driver or site, no look-up, no `propose` or `resolve`;
+- `startInvestigation`: no run starts (no run row, no model call);
+- Driver support, the Router and the Classifier behind it: a driver's message on a taken-over order lands on the
+  timeline for the person and goes to no agent;
+- the Monitor: every rule (disruption notices, silent cars, a cancelled gig, no reply) skips taken-over orders.
+A person's own approval on the order's card still runs, through the Executor as before: that is the person acting.
+The agent's autonomy rules cannot act either, because they run inside `propose`, which the tool guard stops.
+
+**Hand back** (`handBack`): the newest paused or waiting Investigator run continues (`continueAfterHandBack`): a
+question still open gets the note as its answer; a run paused between turns gets it as a new line. With no such run,
+a new one starts if the order still has something open. Without an API key the hand-back is recorded and says no
+agent continued.
+
+**Test** (`tests/takeover.test.ts`, as asked): with an order taken over, `ask_driver`, `ferry_options`, `propose`
+and `resolve` all come back refused without a pause or a finish, `startInvestigation` returns "paused" with no run
+created, the Router sends a driver's message to no agent, nothing an agent would write reaches the order's
+timeline; after the hand-back the order is open to agents again. It uses the real database (skipped without one)
+and no model.
+
+**What went wrong first.**
+- The API route 404'd: `app/api/orders/[id]` already existed and I had created `app/api/orders/[reference]`; Next.js
+  does not serve two names for one dynamic segment. Moved under `[id]`.
+- The new test failed in `npm test` but passed alone: `decisions.test.ts` runs at the same time on the same order
+  (CD-420004) and wrote its own "Approved" entry while mine checked that nothing new was written. It uses CD-420020
+  now, which no other test touches. The rule was never at fault.
+
+**Checked:** typecheck, `npm test` (40 tests) and the recorded evals; take over, a note and the hand-back through the
+API on CD-420449; screenshots `for-you-yours-*`, `order-taken-over-*`, `orders-taken-*` in light and dark, looked at.
+
+**Not done.** The person is "Ops" for everyone (the demo has no sign-in). Messages that arrive while an order is
+taken over are not read by the Classifier afterwards; the agent reads them through `get_case` after the hand-back.
+
+**The hand-back, live.** On CD-420449 (the driver who may be ill): I'll handle this, a note ("Called Carl: he is
+ill and will not travel. Phoned Ida Ervanton…"), Hand back to agent. The recorded run (`run_a898304f`), which was
+waiting on its card, continued with the note and wrote a new card within a minute: "driver ill and released; Ida
+Ervanton can cover Thursday pickup". Its option was "send gig offer to Ida, cancel Carl's travel, message Carl":
+the same pattern the live eval caught in task 4 (cancelling the current driver's travel in the click that only
+offers the gig). That is the earlier request's code check, still queued; noted here because the hand-back path
+reaches it too.
