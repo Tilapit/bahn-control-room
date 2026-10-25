@@ -214,9 +214,10 @@ async function withChannels(items: QueueItem[]): Promise<QueueItem[]> {
 }
 
 /** Open cards for the rail badge. */
+/** The rail's badge: the cases under Now on For you (a person's safety, or lost within 4 hours), not the ones taken over. */
 export async function openCardCount(): Promise<number> {
-  const [row] = await db.select({ n: count() }).from(cards).where(eq(cards.status, "open"))
-  return row?.n ?? 0
+  const { items } = await getQueue()
+  return items.filter((item) => !item.takenOver && (item.urgency.safety || item.urgency.timeRisk)).length
 }
 
 /** Open cards on one order, as queue items, for the order page. */

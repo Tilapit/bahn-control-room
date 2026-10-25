@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import type { QueueItem } from "@/lib/queue"
-import { CardRow, type Decided } from "./card-row"
+import { CaseDetail, type Decided } from "./card-row"
 import { useDecisionToast } from "./decision-toast"
 
 /** The open card on an order page: the same card as in For you, opened. After a decision it
@@ -26,6 +26,6 @@ export function OrderCard({ item, now }: { item: QueueItem; now: string }) {
       <span className={`mark ${item.urgency.safety ? "safety" : item.urgency.timeRisk ? "time" : ""}`} aria-hidden="true" />
       <span>Needs you</span>
     </div>
-    <CardRow item={item} now={now} open onOrderPage onDecided={decided} />
+    <CaseDetail item={item} now={now} onOrderPage onDecided={decided} />
   </section>
 }

@@ -1,8 +1,8 @@
-// npm run screens -- [--dark] [--both] [--slices 6] [--height 900] [--base http://localhost:3001] [--out ../screens] [shot ...]
+// npm run screens -- [--dark] [--both] [--slices 6] [--height 900] [--width 390] [--base http://localhost:3001] [--out ../screens] [shot ...]
 // Takes full-page screenshots of the running app with Playwright.
 // A shot is a path ("/orders/CD-420322"), optionally named ("for-you=/"),
 // optionally followed by an action: "+expand" opens the first card, "+search" types a search,
-// "+ask" asks the agents a question (live, with an API key), "+approve" approves the first agent
+// "+keys" presses J twice on For you, "+ask" asks the agents a question (live, with an API key), "+approve" approves the first agent
 // card, takes the picture during the undo window and then presses Undo, so nothing is carried out.
 // Each shot is saved full-page and as the first screen ("-fold"). With --slices N, also as up to N
 // screens scrolled one after another ("-1", "-2", …): what a person sees, readable at full size.
@@ -41,7 +41,7 @@ async function main() {
   const base = option(args, "--base", process.env.APP_URL ?? "http://localhost:3001")
   const out = resolve(option(args, "--out", join(process.cwd(), "..", "screens")))
   const slices = Number(option(args, "--slices", "0")) || 0
-  const values = new Set([option(args, "--base", ""), option(args, "--out", ""), option(args, "--slices", ""), option(args, "--height", "")])
+  const values = new Set([option(args, "--base", ""), option(args, "--out", ""), option(args, "--slices", ""), option(args, "--height", ""), option(args, "--width", "")])
   const shots = args.filter((arg) => !arg.startsWith("--") && !values.has(arg))
   const themes: ("light" | "dark")[] = args.includes("--both") ? ["light", "dark"] : args.includes("--dark") ? ["dark"] : ["light"]
   await mkdir(out, { recursive: true })
@@ -49,7 +49,7 @@ async function main() {
   const browser = await chromium.launch()
   try {
     for (const theme of themes) {
-      const context = await browser.newContext({ viewport: { width: 1440, height: Number(option(args, "--height", "960")) || 960 }, colorScheme: theme, deviceScaleFactor: 1 })
+      const context = await browser.newContext({ viewport: { width: Number(option(args, "--width", "1440")) || 1440, height: Number(option(args, "--height", "960")) || 960 }, colorScheme: theme, deviceScaleFactor: 1 })
       const page = await context.newPage()
       const errors: string[] = []
       page.on("pageerror", (error) => errors.push(error.message))
@@ -67,8 +67,15 @@ async function main() {
           await page.waitForTimeout(600)
         }
         if (action === "expand") {
-          await page.locator(".row-head").first().click()
+          // For you is an inbox: a click on a row selects it (and opens it full width on a narrow screen).
+          await page.locator(".inbox-row button").first().click()
           await page.waitForTimeout(150)
+        }
+        if (action === "keys") {
+          // J twice: the selection moves down the list and the detail follows.
+          await page.keyboard.press("j")
+          await page.keyboard.press("j")
+          await page.waitForTimeout(200)
         }
         if (action === "ask") {
           await page.locator(".search-box input").fill("Why is CD-420603 at risk?")
@@ -78,7 +85,7 @@ async function main() {
         const file = join(out, `${name}-${theme}.png`)
         if (action === "approve") {
           // Inside the 8-second undo window: one picture of the first screen, then Undo, so nothing is carried out.
-          await page.locator("article.row .row-actions .btn.primary").first().click()
+          await page.locator(".case-detail .row-actions .btn.primary").first().click()
           await page.locator(".toast").waitFor()
           await page.waitForTimeout(1200)
           await page.screenshot({ path: file, fullPage: false })

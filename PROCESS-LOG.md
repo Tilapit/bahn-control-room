@@ -1829,3 +1829,49 @@ Hannover (caught by the reviewer; that run was recorded again and checked).
 travel stays booked until the records show someone else holding the gig; asking a delivery site that belongs to the
 customer is not treated as customer contact (a policy question for Bahn); messages that arrive while an order is
 taken over are not read by the Classifier afterwards; the How it works legend does not cover every box in its diagram.
+
+## Round 4 (code freeze 11:45): For you as an inbox, team views, decision feedback, learning
+
+Items 2–5 were built in parallel by three forks of this session, each in its own git worktree, while I built item 1
+in the main checkout (the brief has more work than the 80 minutes before the freeze). Only one fork was allowed to
+change the schema (items 3 and 4); none of them was allowed to reset the shared database or use my dev server.
+Their work was merged in the brief's order, and each item has its own commit and log entry below.
+
+### 1. For you as a master-detail inbox (the Apple Mail pattern)
+
+**Built.** `app/ui/queue.tsx` is now an inbox: the list on the left (520 px), the selected case on the right in a
+pane that stays in view while the list scrolls. `app/ui/card-row.tsx` is split into `CaseListRow` (two lines, no
+buttons) and `CaseDetail` (the card's content, unchanged: summary, "If you approve", the words that go out, What we
+know with full-sentence facts, the Verifier's line, the run link). The order page uses the same `CaseDetail`.
+- A row: line 1 the car and the problem with the countdown on the right ("in 27 min", "1 h 58 min ago", red for
+  safety, amber for time risk); line 2, muted, what the agent proposes, with the order number small on the right.
+- Approve, I'll handle this and Reject or reply live only in the pane, right under the "If you approve" box.
+- After a decision the next case below is selected (the one above after the last); Undo selects the card again.
+- Keyboard: J/K move, Enter opens (narrow screens: the case full width), A approves, R opens the reply box with the
+  cursor in it, T takes over, Esc goes back to the list on a narrow screen. Shortcuts never fire while typing or
+  with ⌘/Ctrl/Alt, so ⌘K search still works. Hints are small `kbd` marks beside the buttons and one line under the
+  list; hidden on touch screens.
+- Later is collapsed by default ("Later · 17, nothing lost before today 17:00 EEST"). The sidebar badge counts the
+  Now cases (safety or lost within 4 hours, not taken over) instead of every open card: 7, where it said 24.
+- The header is one line: "7 need you now · 17 can wait · agents are handling 10 · nothing open on 966"; the
+  explanation that was a paragraph is now the line's hover text.
+- Narrow screens (≤ 1000 px): the list only; a case opens full width with "All cases" to go back.
+- `/?case=CD-420299` selects that case first (Later opens if it is there), for links and the footage.
+
+**Checked.** `npm run typecheck`; screenshots at 1440×900 light and dark, 390×844 list and opened, after J J
+(`npm run screens -- "keys=/+keys"`, new action) and during an approval's undo window (`+approve`, which now
+presses the pane's button): the next case was selected and the toast counted down; Undo was pressed, nothing ran.
+
+**Wrong in the first attempt, and changed.**
+- The pane's header used the class `case-head`, which the order page already styles as a two-column grid: the
+  title wrapped into a 120 px column. Renamed to `cd-head`.
+- At a 480 px list, CSS ellipsis cut words in the middle ("stopped on…" was fine, "doctor…" too, but "Sat 24
+  Oct…" had been "Sat 24 Oc…" in between). Now code cuts at a word (`clip()`, which also drops a trailing little
+  word such as "on" or "at"), the list is 520 px, and the CSS fallback wraps inside a one-line box instead of
+  cutting, so if an estimate is off a whole word disappears rather than half of one. Checked in the screenshot:
+  no row at 1440 ends inside a word.
+- On a 390 px screen a long approve label ("Approve: call Marvellin for their service decision and update the
+  driver") kept the pane wider than the screen; buttons in the pane now wrap and the pane's grid column can shrink.
+
+**Not done.** The address does not follow the selection (no history entry per case): Back leaves For you, as in
+Mail. The footage script still uses the old row selectors; it is updated with the footage (item 7).
