@@ -2,7 +2,9 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { inView, type Team, viewLabel } from "@/lib/teams"
 import { Icon } from "./icons"
+import { useTeamView } from "./view-switcher"
 
 const LINKS = [
   { href: "/", label: "For you", icon: "inbox", match: (path: string) => path === "/" },
@@ -18,13 +20,16 @@ export function DemoLink() {
   return <Link className="rail-demo" href="/demo" aria-current={path.startsWith("/demo") ? "page" : undefined}>Demo controls</Link>
 }
 
-export function Nav({ openCards }: { openCards: number }) {
+/** `nowTeams`: one entry per card that needs someone now; the badge counts those in the person's view. */
+export function Nav({ nowTeams }: { nowTeams: Team[] }) {
   const path = usePathname()
+  const [view] = useTeamView()
+  const openCards = nowTeams.filter((team) => inView(team, view)).length
   return <nav aria-label="Main">
     {LINKS.map((link) => <Link key={link.href} href={link.href} className="nav-link" aria-current={link.match(path) ? "page" : undefined}>
       <Icon name={link.icon} />
       <span>{link.label}</span>
-      {link.href === "/" && openCards > 0 && <span className="count num" aria-label={`${openCards} need you`}>{openCards}</span>}
+      {link.href === "/" && openCards > 0 && <span className="count num" aria-label={`${openCards} need you now`} title={`${openCards} need you now: ${viewLabel(view)}`}>{openCards}</span>}
     </Link>)}
   </nav>
 }

@@ -10,6 +10,8 @@ import type { CardOption, CardStep } from "@/lib/schema"
 import { clock, long, relative, zoneShort } from "@/lib/time"
 import { Icon } from "./icons"
 import { TakenOverBar, TakeOverButton } from "./takeover"
+import { CrossBorder, useTeamView } from "./view-switcher"
+import { passesThrough } from "@/lib/teams"
 import { SourceChip } from "./when"
 
 /** A decision in its undo window. `reference` names the order, so two quick approvals never share one anonymous toast. */
@@ -123,6 +125,9 @@ function proposalLine(item: QueueItem): string {
 export function CaseListRow({ item, selected, onSelect }: { item: QueueItem; selected: boolean; onSelect: () => void }) {
   const { card, order, urgency } = item
   const tone = urgency.safety ? "safety" : urgency.timeRisk ? "time" : ""
+  const [view] = useTeamView()
+  // A row says "Cross-border" when it is in this view only because its route passes through the view's country.
+  const through = passesThrough(item.team, view)
   return <li className="inbox-row" data-selected={selected} data-card={card.id}>
     <button type="button" onClick={onSelect} aria-current={selected ? "true" : undefined} title={card.headline}>
       <span className={`mark ${tone}`} aria-hidden="true" />
@@ -133,7 +138,8 @@ export function CaseListRow({ item, selected, onSelect }: { item: QueueItem; sel
         <span className={`when ${tone}`}>{urgency.relative}</span>
       </span>
       <span className="inbox-line2">
-        <span className="inbox-proposal">{clip(proposalLine(item), 54)}</span>
+        <span className="inbox-proposal">{clip(proposalLine(item), through ? 42 : 54)}</span>
+        {through && <CrossBorder team={item.team} />}
         <span className="row-ref">{card.group ? "" : order.reference}</span>
       </span>
     </button>
@@ -209,6 +215,7 @@ export function CaseDetail({ item, now, onOrderPage = false, keys = false, onDec
       <h2>{problemLine(order.car, card.headline, card.group?.length ?? null)}{urgency.safety && <span className="tag safety">Safety</span>}{item.takenOver && <span className="tag yours">Yours</span>}</h2>
       <p className="cd-when"><span className={`when ${tone}`}>{urgency.sentence}</span></p>
       <p className="cd-meta">{card.group ? `${card.group.length} orders, one cause` : <>{order.reference} · {order.route} · {customer}</>}
+        {!card.group && <CrossBorder team={item.team} />}{item.team.desk && <span>{item.team.desk} desk</span>}
         {!card.group && <Link className="cd-open" href={orderHref(order.reference)}>Open order<Icon name="arrow" size={14} /></Link>}</p>
     </header>}
 

@@ -10,7 +10,9 @@ import { orders } from "@/lib/schema"
 import { liveSignals } from "@/lib/signals"
 import { type Holder, listStatus, problemPhrase } from "@/lib/status"
 import { compareUrgency, urgency, withProposalDeadline } from "@/lib/urgency"
+import { orderRoutes, teamOf } from "@/lib/team-data"
 import { Marked } from "../ui/marked"
+import { CrossBorder, TeamTable, ViewSwitcher } from "../ui/view-switcher"
 
 export const metadata: Metadata = { title: "Orders" }
 
@@ -64,6 +66,8 @@ export default async function Orders({ searchParams }: Props) {
   const known = new Map(held.files.map((file) => [file.order.id, file]))
   const files = [...ids.filter((id) => known.has(id)).map((id) => known.get(id)!), ...await getCases(ids.filter((id) => !known.has(id)))]
   const snippets = new Map((hits ?? []).map((hit) => [hit.orderId, hit.snippet] as const))
+  // Market, route countries and desk per row, so the person's view can filter the list in the browser.
+  const routes = await orderRoutes(files.map((file) => file.order.id))
   const rows = files.map((file) => {
     const id = file.order.id
     const card = cardOf.get(id) ?? null
@@ -97,6 +101,7 @@ export default async function Orders({ searchParams }: Props) {
       <div>
         <h1>Orders</h1>
         <p className="page-sub">{hits ? <>{rows.length} order{rows.length === 1 ? "" : "s"} match “{query}”</> : <>All {total.toLocaleString("en-GB")} orders, open ones first, then what is lost first</>}</p>
+        <ViewSwitcher />
       </div>
       <form action="/orders" role="search" className="search" style={{ maxWidth: 360 }}>
         {show && <input type="hidden" name="show" value={show} />}
@@ -114,25 +119,23 @@ export default async function Orders({ searchParams }: Props) {
       <h2>{query ? `No order matches “${query}”${show ? " in this filter" : ""}.` : "No orders here right now."}</h2>
       <p>{query ? "Search covers references, plates, VINs, cars, customers, drivers, cities and every record on an order." : "Pick another filter, or All."}</p>
     </div>}
-    {rows.length > 0 && <div className="orders-table" role="table" aria-label="Orders">
-      <div className="ot-row ot-head" role="row">
+    {rows.length > 0 && <TeamTable className="orders-table" label="Orders" hint="Pick another view, or another filter above." head={<div className="ot-row ot-head" role="row">
         {["Car", "Reference", "Route", "Customer", "Status", "Who has it"].map((label) => <span role="columnheader" key={label}>{label}</span>)}
-      </div>
-      {rows.map(({ file, snippet, urgency: u, open: isOpen, holder, status }) => {
+      </div>} rows={rows.map(({ file, card, snippet, urgency: u, open: isOpen, holder, status }) => {
         const tone = isOpen && u.safety ? "safety" : isOpen && u.timeRisk ? "time" : ""
-        return <Link className="ot-row" role="row" href={`/orders/${file.order.reference}`} key={file.order.id}>
+        const team = teamOf(routes.get(file.order.id), card, file)
+        return { key: file.order.id, team, node: <Link className="ot-row" role="row" href={`/orders/${file.order.reference}`}>
           <span role="cell" className="ot-car" title={file.order.car.label}><span className={`mark ${tone || (isOpen ? "" : "none")}`} aria-hidden="true" />{file.order.car.label}</span>
           <span role="cell" className="ot-ref">{file.order.reference}</span>
-          <span role="cell" title={orderView(file).route}>{orderView(file).route}</span>
+          <span role="cell" className="ot-route" title={orderView(file).route}><span className="ot-route-text">{orderView(file).route}</span><CrossBorder team={team} /></span>
           <span role="cell" title={file.order.customer.name}>{file.order.customer.name}</span>
           <span role="cell" className="ot-status" title={isOpen && u.relative ? `${status}. ${u.sentence}, ${u.relative}` : status}>
             <span className="ot-text">{status}</span>{isOpen && u.relative && <span className={`when ${tone}`}>{u.relative}</span>}
           </span>
           <span role="cell" className={`ot-who ${holder}`} title={takenOver.has(file.order.id) ? "You took this order over" : holder === "you" ? "A proposal or an open item waits for a person" : holder === "agent" ? "An agent works on it or looks again later" : "Nothing is open on it"}>{takenOver.has(file.order.id) ? "You, taken over" : WHO[holder]}</span>
           {snippet && <span className="ot-snippet">{snippet.source} · {snippet.when}: “<Marked text={snippet.text} />”</span>}
-        </Link>
-      })}
-    </div>}
+        </Link> }
+      })} />}
     {!hits && paged && pageTotal > shownRest && <p className="queue-end">
       Showing {shownRest.toLocaleString("en-GB")} of {pageTotal.toLocaleString("en-GB")} {show === "delivered" ? "delivered orders" : "orders with nothing open"}. <Link className="link" href={href({ n: shown + PAGE })}>Show {PAGE} more</Link>
     </p>}

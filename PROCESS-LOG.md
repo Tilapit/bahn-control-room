@@ -1875,3 +1875,63 @@ presses the pane's button): the next case was selected and the toast counted dow
 
 **Not done.** The address does not follow the selection (no history entry per case): Back leaves For you, as in
 Mail. The footage script still uses the old row selectors; it is updated with the footage (item 7).
+
+### 2. Team views: market and desk
+
+Built in a parallel worktree by a fork (data, Orders, Agents, the rail badge), then wired into For you by me.
+
+**Built.** `lib/teams.ts` holds the rules as pure code, with no model. Market is the customer's country
+(`customers.country`): Finland, Denmark, Germany, or Other (France, the Netherlands). An order is
+**Cross-border** when its route touches another country. `lib/team-data.ts` finds the route's countries, in a few
+queries for any number of orders: the pickup and delivery addresses, every stop of the active plan, and the
+terminals of a booked ferry (matched by name: "West Baltic terminal" is Hamburg, DE). A quote is not part of a
+route, and the driver's own trains move the driver, not the car. Every card gets **exactly one desk**, from the
+first of these that applies:
+- a person's safety (On the road);
+- the card's action type (`book_ferry` → Crossings & travel, `switch_driver` → Dispatch, `change_pickup_time` →
+  Readiness, `book_tow` → On the road, …);
+- the most telling step of the option it leads with;
+- the desk the records already gave the order's open work item or alert (`ops-dispatch`, `ops-evidence`, … from
+  operators.jsonl);
+- the alert's signal;
+- customer contact (Support);
+- the order's stage.
+
+On the 24 open cards that gives On the road 2, Readiness 6, Dispatch 6, Crossings & travel 4, Handover 3,
+Support 3. The view (market; desks; "Include orders passing through my country") is saved per browser under
+`bahn.teamView.v1`, with every storage access in try/catch, and shared by every component on the page. Orders and
+Agents filter their rows by it and Agents' groups count after the filter. Each page has an empty state ("Nothing in
+Other · Handover right now." with Show everyone). The rail badge counts the Now cases in the view.
+
+**For you** (`app/ui/queue.tsx`, `app/page.tsx`): the switcher sits at the top right, "Finland · All desks ▾". The
+header line is now built in the browser, because the view lives there: "4 need you now in Finland · 3 in other
+countries · 9 can wait · agents are handling 10 · nothing open on 966". The other countries are one muted row under
+Now, "3 more in other countries: Germany 2, Denmark 1 · Show everyone", so nothing is hidden silently, and Later
+says "+8 in other countries". Cases a person took over stay under Yours whatever the view: they are theirs. In the
+pane, the meta line names the desk ("Readiness desk") and says Cross-border. In the list, a row says Cross-border only
+when it is in the view because it passes through the view's country: most routes here cross a border, and a tag on
+nearly every row says nothing. Orders tags every cross-border route, because that table is where routes are read.
+
+**Checked.** `tests/teams.test.ts` (5 tests): every one of the 41 recorded cards gets exactly one desk and one market
+(from `fixtures/agent-runs.json` and the dataset files, so no database is needed), and the cards reach at least 4
+desks. There are unit cases for each desk rule, for cross-border, and for passing through: a domestic Finnish order
+never shows in Germany's view, while a Finnish order picked up in Germany does once passing through is on.
+`npm run typecheck` passes. Screenshots at 1440×900, with a new `+view-Finland` action in `scripts/screens.ts` that
+saves a view and reloads:
+- For you in Finland (badge 4, 3 more elsewhere) and in Germany with passing through (two rows tagged Cross-border);
+- Orders in Finland ("Showing 76 of the 134 orders on this page");
+- Agents in Finland.
+
+**Wrong in the first attempt, and changed.**
+- In the fork, the desk came only from the action type and then the stage. CD-420992 ("Driver denies today's
+  Düsseldorf pickup") landed in Readiness although its work item belongs to `ops-dispatch`. The records' own owner
+  now comes before the alert's signal and the stage.
+- On Orders, the route cell's ellipsis cut the Cross-border tag to "Cros…". The route text now shortens first.
+- On For you, the muted row first read "3 more need someone now in other countries: Germany 2, Denmark 1" and wrapped
+  to two lines at 1440. It is now "3 more in other countries: …"; the section heading already says Now.
+
+**Not done.** The Orders chips (Needs you 24, Quiet 704 …) still count every market; only the rows follow the view,
+and a line says how many are shown. Two cards land at a debatable desk because their orders have no open alert or
+task and the stage decides: CD-420405 (a driver's flight request) and CD-420089 (a gig the driver cannot see), both
+Readiness. A road leg through a third country is not in the records, so a drive through Sweden cannot make an order
+cross-border.

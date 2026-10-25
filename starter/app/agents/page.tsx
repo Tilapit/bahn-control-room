@@ -3,7 +3,12 @@ import Link from "next/link"
 import { connection } from "next/server"
 import { hasApiKey } from "@/lib/agents/llm"
 import { agentsView, dollars, type RunFilter, tokenWords } from "@/lib/agents-view"
+import { now as clockNow } from "@/lib/clock"
+import { holdings } from "@/lib/queue"
+import { orderRoutes, teamOf } from "@/lib/team-data"
+import type { Team } from "@/lib/teams"
 import { Icon } from "../ui/icons"
+import { AnyInView, CountInView, CrossBorder, NoneInView, TeamGroup, TeamList, type TeamRow, ViewSwitcher } from "../ui/view-switcher"
 import { When } from "../ui/when"
 
 export const metadata: Metadata = { title: "Agents" }
@@ -23,11 +28,11 @@ const EMPTY: Record<RunFilter, { title: string; text: string }> = {
   quiet: { title: "No quiet checks yet.", text: "Orders with nothing open are checked by code, without a model, and show here." },
 }
 
-type Row = Awaited<ReturnType<typeof agentsView>>["rows"][number]
+type Row = Awaited<ReturnType<typeof agentsView>>["rows"][number] & { team: Team }
 
+/** One run as a list row; the list around it decides whether the person's view shows it. */
 function RunRow({ row, now, label = true }: { row: Row; now: string; label?: boolean }) {
-  return <li>
-    <Link className="run-row" href={`/agents/${row.id}`}>
+  return <Link className="run-row" href={`/agents/${row.id}`}>
       <span className={`run-state ${row.status}`}><span className="dot" aria-hidden="true" /></span>
       <span className="run-main">
         <span className="run-top">
@@ -35,6 +40,7 @@ function RunRow({ row, now, label = true }: { row: Row; now: string; label?: boo
           <span className="run-agent">{row.agent}</span>
           {row.reference && <span className="run-order">{row.reference}{row.car ? ` · ${row.car}` : ""}</span>}
           {row.safety && <span className="tag safety">Safety</span>}
+          <CrossBorder team={row.team} />
           {row.replay && <span className="replay-tag">Replay</span>}
         </span>
         <span className="run-sentence">{row.sentence}</span>
@@ -45,8 +51,9 @@ function RunRow({ row, now, label = true }: { row: Row; now: string; label?: boo
         </span>
       </span>
     </Link>
-  </li>
 }
+
+const teamRows = (rows: Row[], now: string, label = true): TeamRow[] => rows.map((row) => ({ key: row.id, team: row.team, node: <RunRow row={row} now={now} label={label} /> }))
 
 /**
  * Active runs in three groups: the agents' own work, what waits for a person (also on For you), and
@@ -64,40 +71,41 @@ function RunGroups({ filter, rows, now }: { filter: RunFilter; rows: Row[]; now:
     const forYou = rows.filter((row) => row.status === "waiting_person")
     const watching = rows.filter((row) => row.statusLabel === "Watching")
     return <>
-      {groups.map((item) => <section key={item.key}>
-        <p className="runs-group">{item.title} ({item.rows.length}){item.note ? `: ${item.note}` : ""}</p>
-        <ol className="runs">{item.rows.map((row) => <RunRow key={row.id} row={row} now={now} label={item.label} />)}</ol>
-      </section>)}
-      {forYou.length > 0 && <Link className="runs-collapsed" href="/">
+      {groups.map((item) => <TeamGroup key={item.key} title={item.title} note={item.note} rows={teamRows(item.rows, now, item.label)} />)}
+      <AnyInView teams={forYou.map((row) => row.team)}><Link className="runs-collapsed" href="/">
         <span className="run-state waiting_person"><span className="dot" aria-hidden="true" /></span>
-        <span><b>Waiting for you ({forYou.length})</b> each is a proposal in your For you list</span>
+        <span><b>Waiting for you (<CountInView teams={forYou.map((row) => row.team)} />)</b> each is a proposal in your For you list</span>
         <span className="link">Open For you<Icon name="arrow" size={14} /></span>
-      </Link>}
-      {watching.length > 0 && <section>
-        <p className="runs-group">Watching ({watching.length}): agents are handling these without you and look again at the next check</p>
-        <ol className="runs">{watching.map((row) => <RunRow key={row.id} row={row} now={now} label={false} />)}</ol>
-      </section>}
+      </Link></AnyInView>
+      <TeamGroup title="Watching" note="agents are handling these without you and look again at the next check" rows={teamRows(watching, now, false)} />
+      <NoneInView teams={rows.map((row) => row.team)} hint="Agents may be working on orders in other markets or at other desks." />
     </>
   }
   if (filter === "done") {
     const reading = rows.filter((row) => row.agent === "Classifier")
     const work = rows.filter((row) => row.agent !== "Classifier")
     return <>
-      <ol className="runs">{work.map((row) => <RunRow key={row.id} row={row} now={now} />)}</ol>
-      {reading.length > 0 && <details className="runs-fold">
-        <summary className="runs-group">Messages read by the Classifier ({reading.length})</summary>
-        <ol className="runs">{reading.map((row) => <RunRow key={row.id} row={row} now={now} />)}</ol>
-      </details>}
+      <TeamList rows={teamRows(work, now)} hint="Finished runs in other markets or at other desks are not shown." />
+      <AnyInView teams={reading.map((row) => row.team)}><details className="runs-fold">
+        <summary className="runs-group">Messages read by the Classifier (<CountInView teams={reading.map((row) => row.team)} />)</summary>
+        <TeamList rows={teamRows(reading, now)} />
+      </details></AnyInView>
     </>
   }
-  return <ol className="runs">{rows.map((row) => <RunRow key={row.id} row={row} now={now} />)}</ol>
+  return <TeamList rows={teamRows(rows, now)} hint="Quiet checks look over orders with nothing open, so they sit at no desk: pick All desks to see them." />
 }
 
 export default async function Agents({ searchParams }: Props) {
   await connection()
   const { show } = await searchParams
   const filter: RunFilter = show === "done" || show === "quiet" ? show : "active"
-  const { now, rows, counts, today, more } = await agentsView(filter)
+  const [{ now, rows: runRows, counts, today, more }, held] = await Promise.all([agentsView(filter), clockNow().then(holdings)])
+  // Each run's order: its market and route, and the desk of its open card (none when nothing is open on it).
+  const routes = await orderRoutes([...new Set(runRows.map((row) => row.orderId).filter((id): id is string => !!id))])
+  const files = new Map(held.files.map((file) => [file.order.id, file]))
+  const rows: Row[] = runRows.map((row) => ({
+    ...row, team: teamOf(row.orderId ? routes.get(row.orderId) : undefined, row.orderId ? held.cardOf.get(row.orderId) ?? null : null, row.orderId ? files.get(row.orderId) ?? null : null),
+  }))
   const nothingYet = counts.active + counts.done + counts.quiet === 0
   return <main className="content narrow">
     <div className="page-head">
@@ -108,6 +116,7 @@ export default async function Agents({ searchParams }: Props) {
         </p>
         <p className="page-explain">The Classifier reads every message, the Investigator looks into an order with a problem, Driver support answers drivers,
           the Monitor&apos;s rules watch the feeds and the cars, and quiet checks look over orders with nothing open. Open a row to see every step.</p>
+        <ViewSwitcher />
       </div>
     </div>
     {nothingYet ? <div className="empty">

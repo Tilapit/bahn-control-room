@@ -822,3 +822,11 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 /* A long button label wraps instead of widening the pane. */
 .case-detail { grid-template-columns: minmax(0, 1fr); }
 .case-detail .row-actions .btn { height: auto; min-height: 32px; padding-top: 4px; padding-bottom: 4px; white-space: normal; text-align: left; }
+
+/* ---------- For you follows the team view ---------- */
+
+.inbox-head { align-items: flex-start; }
+.inbox-outside { all: unset; box-sizing: border-box; cursor: pointer; display: flex; gap: 16px; align-items: baseline; width: 100%; padding: 8px 12px 8px 32px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--text-3); }
+.inbox-outside:hover { background: var(--hover); color: var(--text-2); }
+.inbox-outside-show { margin-left: auto; flex: none; color: var(--accent-text); font-weight: 500; }
+.later-toggle .faint { color: var(--text-3); }

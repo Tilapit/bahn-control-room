@@ -2,7 +2,7 @@
 // Takes full-page screenshots of the running app with Playwright.
 // A shot is a path ("/orders/CD-420322"), optionally named ("for-you=/"),
 // optionally followed by an action: "+expand" opens the first card, "+search" types a search,
-// "+keys" presses J twice on For you, "+ask" asks the agents a question (live, with an API key), "+approve" approves the first agent
+// "+keys" presses J twice on For you, "+reply" presses R, "+view-Finland" saves that team view and reloads, "+ask" asks the agents a question (live, with an API key), "+approve" approves the first agent
 // card, takes the picture during the undo window and then presses Undo, so nothing is carried out.
 // Each shot is saved full-page and as the first screen ("-fold"). With --slices N, also as up to N
 // screens scrolled one after another ("-1", "-2", …): what a person sees, readable at full size.
@@ -70,6 +70,17 @@ async function main() {
           // For you is an inbox: a click on a row selects it (and opens it full width on a narrow screen).
           await page.locator(".inbox-row button").first().click()
           await page.waitForTimeout(150)
+        }
+        if (action?.startsWith("view-")) {
+          // "+view-Finland" or "+view-Finland-through": the team view a person saved, then the page again.
+          const [, market, through] = action.split("-")
+          await page.evaluate((view) => localStorage.setItem("bahn.teamView.v1", JSON.stringify(view)), { market, desks: [], passingThrough: through === "through" })
+          await page.reload({ waitUntil: "networkidle" })
+        }
+        if (action === "reply") {
+          // R opens the reply box under the selected case's buttons.
+          await page.keyboard.press("r")
+          await page.waitForTimeout(200)
         }
         if (action === "keys") {
           // J twice: the selection moves down the list and the detail follows.

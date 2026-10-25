@@ -2,12 +2,13 @@ import type { Metadata, Viewport } from "next"
 import { connection } from "next/server"
 import { hasApiKey } from "@/lib/agents/llm"
 import { now } from "@/lib/clock"
-import { openCardCount } from "@/lib/queue"
+import { nowTeams } from "@/lib/queue"
 import { at } from "@/lib/time"
 import { LiveRefresh } from "./ui/live-refresh"
 import { DemoLink, Nav } from "./ui/nav"
 import { TopSearch } from "./ui/top-search"
 import "./globals.css"
+import "./teams.css"
 
 export const metadata: Metadata = {
   title: { default: "Control Room", template: "%s · Control Room" },
@@ -24,13 +25,14 @@ const DESK_ZONE = "Europe/Helsinki"
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   await connection()
-  const [openCards, clock] = await Promise.all([openCardCount(), now()])
+  // The badge counts what needs someone now, in the person's own view: Nav filters it in the browser.
+  const [teams, clock] = await Promise.all([nowTeams(), now()])
   return <html lang="en">
     <body>
       <div className="app">
         <aside className="rail">
           <div className="brand"><span className="brand-mark" aria-hidden="true">B</span>Bahn Control Room</div>
-          <Nav openCards={openCards} />
+          <Nav nowTeams={teams} />
           <div className="rail-foot"><b>Fictional data</b>No real people, cars or bookings.<DemoLink /></div>
         </aside>
         <div className="main">

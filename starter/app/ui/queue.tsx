@@ -1,13 +1,15 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import type { QueueItem, YoursWithoutCard } from "@/lib/queue"
+import { inView, type TeamView, viewWords } from "@/lib/teams"
 import { dayClockZone } from "@/lib/time"
 import { CaseDetail, CaseListRow, type Decided } from "./card-row"
 import { useDecisionToast } from "./decision-toast"
 import { Icon } from "./icons"
+import { useTeamView, ViewSwitcher } from "./view-switcher"
 
 /** Now: a person's safety, or something lost within 4 hours or already lost. Everything else waits under Later. */
 export const isNow = (item: QueueItem) => item.urgency.safety || item.urgency.timeRisk
@@ -26,8 +28,15 @@ function typing(event: KeyboardEvent): boolean {
  * A decision removes the case at once, the next one is selected, and the toast counts down the undo window.
  * Keyboard: J/K move, Enter opens, A approves, R replies, T takes over. Narrow screens show the list, then the case full width.
  */
-export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], initial = null }: {
+export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], initial = null, tail, title = "For you", hint, children }: {
   items: QueueItem[]; now: string; emptyLine: string; endLine?: string; yoursWithoutCard?: YoursWithoutCard[]
+  /** The header line after the counts this view decides: "agents are handling 10 · nothing open on 966". */
+  tail: string[]
+  title?: string
+  /** The header line's hover text. */
+  hint?: string
+  /** Shown under the header (the autonomy suggestion). */
+  children?: ReactNode
   /** An order number from the address (?case=CD-420299) to select first. */
   initial?: string | null
 }) {
@@ -43,12 +52,24 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
     setSelectedId(cardId)
   })
 
+  const [view, setView] = useTeamView()
   const visible = items.filter((item) => !hidden.has(item.card.id))
-  // Orders a person took over come first, under Yours: the agent's findings stay visible, and no agent acts on them.
+  // Orders a person took over come first, under Yours, whatever the view: they are this person's own.
   const yours = visible.filter((item) => item.takenOver)
-  const rest = visible.filter((item) => !item.takenOver)
+  // The view (market and desks) decides what is listed; what it leaves out is counted in one muted row, never hidden silently.
+  const rest = visible.filter((item) => !item.takenOver && inView(item.team, view))
+  const outside = visible.filter((item) => !item.takenOver && !inView(item.team, view))
   const nowItems = rest.filter(isNow)
   const later = rest.filter((item) => !isNow(item))
+  const outsideNow = outside.filter(isNow)
+  const where = viewWords(view)
+  const elsewhere = otherWords(view)
+  const line = [
+    `${nowItems.length} need${nowItems.length === 1 ? "s" : ""} you now${where ? ` ${where}` : ""}`,
+    outsideNow.length ? `${outsideNow.length} in ${elsewhere}` : null,
+    `${later.length} can wait`,
+    ...tail,
+  ].filter(Boolean).join(" · ")
   // The rows J and K move through, in the order they are shown.
   const order = [...yours, ...nowItems, ...(showLater ? later : [])]
   const selected = order.find((item) => item.card.id === selectedId) ?? visible.find((item) => item.card.id === selectedId) ?? order[0] ?? null
@@ -94,13 +115,27 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
     return () => window.removeEventListener("keydown", onKey)
   }, [order, selected, opened, select])
 
+  const head = <div className="page-head inbox-head">
+    <div>
+      <h1>{title}</h1>
+      <p className="page-sub" title={hint}>{line}</p>
+    </div>
+    <ViewSwitcher />
+  </div>
+  // What the view leaves out of Now, by country (or desk), as one muted row: "3 more in other countries: Germany 2, Denmark 1".
+  const outsideRow = outsideNow.length > 0 && <button type="button" className="inbox-outside" onClick={() => setView({ ...view, market: "Everyone", desks: [] })}>
+    <span>{outsideNow.length} more in {elsewhere}: {groupWords(outsideNow, view)}</span>
+    <span className="inbox-outside-show">Show everyone</span>
+  </button>
+
   if (visible.length === 0 && yoursWithoutCard.length === 0) return <>
+    {head}{children}
     <div className="empty"><h2>Nothing needs you right now.</h2><p>{emptyLine}</p></div>
     {toast.view}
   </>
 
   const row = (item: QueueItem) => <CaseListRow key={item.card.id} item={item} selected={selected?.card.id === item.card.id} onSelect={() => select(item.card.id, true)} />
-  return <div className="inbox" data-opened={opened}>
+  return <>{head}{children}<div className="inbox" data-opened={opened}>
     <div className="inbox-list">
       {(yours.length > 0 || yoursWithoutCard.length > 0) && <section aria-label="Yours">
         <h2 className="queue-section">Yours <span className="faint">· agents are paused on these</span></h2>
@@ -115,12 +150,13 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
       </section>}
       <section aria-label="Now">
         <h2 className="queue-section">Now <span className="faint">· safety, or lost within 4 hours</span></h2>
-        {nowItems.length === 0 ? <p className="note queue-note">Nothing is at risk in the next 4 hours.</p> : <ul className="inbox-rows">{nowItems.map(row)}</ul>}
+        {nowItems.length === 0 ? <p className="note queue-note">Nothing is at risk in the next 4 hours{where ? ` ${where}` : ""}.</p> : <ul className="inbox-rows">{nowItems.map(row)}</ul>}
+        {outsideRow}
       </section>
       {later.length > 0 && <section aria-label="Later">
         <button type="button" className="later-toggle" aria-expanded={showLater} onClick={() => setShowLater((value) => !value)}>
           <Icon name="chevron" size={14} className="row-chevron" />
-          <b>Later · {later.length}</b>
+          <b>Later · {later.length}</b>{outside.length - outsideNow.length > 0 && <span className="faint">+{outside.length - outsideNow.length} in {elsewhere}</span>}
           <span>{firstLater ? `nothing lost before ${dayClockZone(firstLater, now, DESK)}` : "no deadline in the records"}</span>
         </button>
         {showLater && <ul className="inbox-rows">{later.map(row)}</ul>}
@@ -135,5 +171,21 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
         : <div className="empty"><h2>Nothing needs you now.</h2><p>{later.length ? `${later.length} more can wait under Later.` : emptyLine}</p></div>}
     </div>
     {toast.view}
-  </div>
+  </div></>
+}
+
+/** "other countries", "other desks": what a view leaves out, in the header and the muted row. */
+function otherWords(view: TeamView): string {
+  if (view.market !== "Everyone") return view.desks.length ? "other countries or desks" : "other countries"
+  return "other desks"
+}
+
+/** "Denmark 1, Germany 1": the cases outside the view, by the customer's country, or by desk when only desks filter. */
+function groupWords(items: QueueItem[], view: TeamView): string {
+  const counts = new Map<string, number>()
+  for (const item of items) {
+    const key = view.market !== "Everyone" && item.team.market !== view.market ? (item.team.market === "Other" ? "other countries" : item.team.market) : item.team.desk ?? "no desk"
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  return [...counts].map(([key, count]) => `${key} ${count}`).join(", ")
 }

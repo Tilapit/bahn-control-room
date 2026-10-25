@@ -20,6 +20,8 @@ const QUIET_ROWS = 100
 
 export type RunRow = {
   id: string
+  /** The order the run is about, for the team views; null for a run on no order. */
+  orderId: string | null
   agent: string
   status: string
   statusLabel: string
@@ -99,7 +101,7 @@ export async function agentsView(filter: RunFilter) {
     const order = run.orderId ? byOrder.get(run.orderId) : null
     return {
       // A finished run that looks again later is watching, not done; a quiet check only checked.
-      id: run.id, agent: run.agent, status: run.status,
+      id: run.id, orderId: run.orderId, agent: run.agent, status: run.status,
       statusLabel: quiet(run) ? "Checked" : watching(run) ? "Watching" : RUN_STATUS[run.status] ?? run.status,
       sentence: run.status === "running" ? `${latest.get(run.id) ?? "Reading the order's records"}…`
         : run.narration ?? (run.status === "waiting_person" && run.outcomeSummary ? `Wrote a proposal for a person: ${run.outcomeSummary.replace(/\.?$/, ".")}` : run.outcomeSummary ?? run.trigger),

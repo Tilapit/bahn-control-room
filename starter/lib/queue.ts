@@ -9,6 +9,8 @@ import { agentRuns, agentSteps, cards, decisions, timelineEntries } from "./sche
 import type { CardFinding, CardGroupItem, CardOption, CardProposal, VerifierNote } from "./schema"
 import { liveSignals } from "./signals"
 import { openTakeovers } from "./takeover"
+import { orderRoutes, teamOf } from "./team-data"
+import type { Team } from "./teams"
 import { compareUrgency, type Urgency, urgency, withProposalDeadline } from "./urgency"
 
 const HANDLING_AGENTS = ["Investigator", "Driver support"]
@@ -43,8 +45,14 @@ export type QueueOrder = {
   zones: { pickup: string | null; delivery: string | null }
 }
 
-/** `takenOver`: Ops is handling the order themselves; agents are paused on it until it is handed back. */
-export type QueueItem = { card: QueueCard; order: QueueOrder; urgency: Urgency; takenOver: { at: string; by: string } | null }
+/**
+ * `takenOver`: Ops is handling the order themselves; agents are paused on it until it is handed back.
+ * `team`: the customer's market, the countries the route touches and the card's desk, for the team views (lib/teams.ts).
+ */
+export type QueueItem = { card: QueueCard; order: QueueOrder; urgency: Urgency; takenOver: { at: string; by: string } | null; team: Team }
+
+/** Now: a person's safety, or something lost within 4 hours or already lost. Everything else waits under Later. */
+export const isNowItem = (item: Pick<QueueItem, "urgency">) => item.urgency.safety || item.urgency.timeRisk
 
 export type QueueCounts = {
   needYou: number
@@ -141,10 +149,11 @@ export async function getQueue(): Promise<{ now: string; items: QueueItem[]; cou
   for (const row of openCards) {
     const file = byOrder.get(row.orderId)
     if (!file) continue
-    items.push({ card: toQueueCard(row, runs), order: orderView(file), urgency: withProposalDeadline(urgency(file, at), primaryOption(row.options), at), takenOver: takenOver.get(row.orderId) ?? null })
+    items.push({ card: toQueueCard(row, runs), order: orderView(file), urgency: withProposalDeadline(urgency(file, at), primaryOption(row.options), at), takenOver: takenOver.get(row.orderId) ?? null, team: teamOf(undefined, row, file) })
   }
   items.sort((a, b) => compareUrgency(a.urgency, b.urgency))
   await withChannels(items)
+  await withTeams(items, byOrder)
 
   const withCard = new Set(items.flatMap((item) => [item.order.id, ...(item.card.group ?? []).map((member) => member.order_id)]))
   const withRun = new Set(ordersWithRun.map((run) => run.orderId))
@@ -214,10 +223,10 @@ async function withChannels(items: QueueItem[]): Promise<QueueItem[]> {
 }
 
 /** Open cards for the rail badge. */
-/** The rail's badge: the cases under Now on For you (a person's safety, or lost within 4 hours), not the ones taken over. */
-export async function openCardCount(): Promise<number> {
+/** The rail badge: the team of every card that needs someone now (not taken over), so the badge can follow a view. */
+export async function nowTeams(): Promise<Team[]> {
   const { items } = await getQueue()
-  return items.filter((item) => !item.takenOver && (item.urgency.safety || item.urgency.timeRisk)).length
+  return items.filter((item) => !item.takenOver && isNowItem(item)).map((item) => item.team)
 }
 
 /** Open cards on one order, as queue items, for the order page. */
@@ -226,5 +235,24 @@ export async function cardsForOrder(file: CaseFile, at: Date): Promise<QueueItem
   const rowsFound = (await db.select().from(cards).where(and(eq(cards.status, "open"), or(eq(cards.orderId, file.order.id), sql`${cards.group} @> ${JSON.stringify([{ order_id: file.order.id }])}::jsonb`))))
   const [runs, [taken]] = await Promise.all([runInfo(rowsFound.map((row) => row.runId)), openTakeovers([file.order.id])])
   const takenOver = taken ? { at: taken.takenAt.toISOString(), by: taken.takenBy } : null
-  return withChannels(rowsFound.map((row) => ({ card: toQueueCard(row, runs), order: orderView(file), urgency: withProposalDeadline(urgency(file, at), primaryOption(row.options), at), takenOver })))
+  const items = rowsFound.map((row) => ({ card: toQueueCard(row, runs), order: orderView(file), urgency: withProposalDeadline(urgency(file, at), primaryOption(row.options), at), takenOver, team: teamOf(undefined, row, file) }))
+  return withTeams(await withChannels(items), new Map([[file.order.id, file]]))
+}
+
+/**
+ * Each card's market and route, from the records: the lead order's customer, and every country any of its orders
+ * passes through (one card can cover several orders). The desk was set from the card when the item was built.
+ */
+async function withTeams(items: QueueItem[], files: Map<string, CaseFile>): Promise<QueueItem[]> {
+  const ids = [...new Set(items.flatMap((item) => [item.order.id, ...(item.card.group ?? []).map((member) => member.order_id)]))]
+  if (!ids.length) return items
+  const routes = await orderRoutes(ids)
+  for (const item of items) {
+    const lead = routes.get(item.order.id)
+    const members = (item.card.group ?? []).map((member) => routes.get(member.order_id)).filter((route) => !!route)
+    const countries = [...new Set([...(lead?.countries ?? []), ...members.flatMap((route) => route.countries)])]
+    const team = teamOf(lead, null, files.get(item.order.id) ?? null)
+    item.team = { ...team, countries, crossBorder: team.crossBorder || members.some((route) => route.crossBorder || route.market !== team.market), desk: item.team.desk }
+  }
+  return items
 }
