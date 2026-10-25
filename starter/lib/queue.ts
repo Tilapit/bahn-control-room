@@ -5,7 +5,7 @@ import { and, count, eq, gte, inArray, isNull, notInArray, or, sql } from "drizz
 import { type CaseFile, getCases, orderCount, ordersWithOpenItems } from "./case"
 import { now as clockNow } from "./clock"
 import { db } from "./db"
-import { agentRuns, agentSteps, cards, decisions } from "./schema"
+import { agentRuns, agentSteps, cards, decisions, timelineEntries } from "./schema"
 import type { CardFinding, CardGroupItem, CardOption, CardProposal, VerifierNote } from "./schema"
 import { liveSignals } from "./signals"
 import { openTakeovers } from "./takeover"
@@ -144,6 +144,7 @@ export async function getQueue(): Promise<{ now: string; items: QueueItem[]; cou
     items.push({ card: toQueueCard(row, runs), order: orderView(file), urgency: withProposalDeadline(urgency(file, at), primaryOption(row.options), at), takenOver: takenOver.get(row.orderId) ?? null })
   }
   items.sort((a, b) => compareUrgency(a.urgency, b.urgency))
+  await withChannels(items)
 
   const withCard = new Set(items.flatMap((item) => [item.order.id, ...(item.card.group ?? []).map((member) => member.order_id)]))
   const withRun = new Set(ordersWithRun.map((run) => run.orderId))
@@ -202,6 +203,16 @@ export async function holdings(at: Date): Promise<{ files: CaseFile[]; cardOf: M
   return { files, cardOf, holding }
 }
 
+/** Each finding's channel (driver chat, GPS, a booking…), from the record it cites, so the card shows its source icon. */
+async function withChannels(items: QueueItem[]): Promise<QueueItem[]> {
+  const ids = [...new Set(items.flatMap((item) => item.card.findings.map((finding) => finding.source_entry_id)))]
+  if (!ids.length) return items
+  const rows = await db.select({ id: timelineEntries.id, source: timelineEntries.source }).from(timelineEntries).where(inArray(timelineEntries.id, ids))
+  const channel = new Map(rows.map((row) => [row.id, row.source]))
+  for (const item of items) item.card.findings = item.card.findings.map((finding) => ({ ...finding, channel: channel.get(finding.source_entry_id) ?? null }))
+  return items
+}
+
 /** Open cards for the rail badge. */
 export async function openCardCount(): Promise<number> {
   const [row] = await db.select({ n: count() }).from(cards).where(eq(cards.status, "open"))
@@ -214,5 +225,5 @@ export async function cardsForOrder(file: CaseFile, at: Date): Promise<QueueItem
   const rowsFound = (await db.select().from(cards).where(and(eq(cards.status, "open"), or(eq(cards.orderId, file.order.id), sql`${cards.group} @> ${JSON.stringify([{ order_id: file.order.id }])}::jsonb`))))
   const [runs, [taken]] = await Promise.all([runInfo(rowsFound.map((row) => row.runId)), openTakeovers([file.order.id])])
   const takenOver = taken ? { at: taken.takenAt.toISOString(), by: taken.takenBy } : null
-  return rowsFound.map((row) => ({ card: toQueueCard(row, runs), order: orderView(file), urgency: withProposalDeadline(urgency(file, at), primaryOption(row.options), at), takenOver }))
+  return withChannels(rowsFound.map((row) => ({ card: toQueueCard(row, runs), order: orderView(file), urgency: withProposalDeadline(urgency(file, at), primaryOption(row.options), at), takenOver })))
 }

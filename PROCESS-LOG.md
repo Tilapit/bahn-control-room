@@ -1577,3 +1577,43 @@ pictures again. Driver chat and People had the same icon; People has its own now
 
 **Checked:** typecheck; `/sources`, `/sources?source=driver`, `/sources?source=internal` and order pages render;
 screenshots `sources-*`, `sources-driver-*`, `order-everything-*` in light and dark, looked at.
+
+### 4. Cards redesigned for scanning
+
+**Collapsed, one line per card** (For you is now the wide layout so the line fits at 1440 px): severity dot; a short
+headline built by code, car · problem, at most about 50 characters ("BMW M4 · car not at Helsinki pickup", from the
+card's headline through the same `problemPhrase` the Orders page uses); the countdown in its colour with the
+consequence sentence; the proposed action in one line; and the primary button. Every cell is cut with an ellipsis
+and the full headline, consequence and button words are one hover away, so nothing wraps.
+- **A decision against CLAUDE.md's button rule, logged on purpose.** CLAUDE.md asks that buttons say exactly what
+  happens ("Approve: book the 18:00 ferry"). On a one-line row that label does not fit beside the rest, so the
+  collapsed button says "Approve", the action line right before it says what ("book Sat 24 Oct 14:00 ferry (€387)
+  and Norderkai Lodge Hamburg (€96)"), and the button's accessible name and hover text are the full label. Opened,
+  the card's button keeps the full "Approve: …" label.
+
+**Opened**, in the order asked: (1) one sentence: the first sentence of what happened; (2) an "If you approve" box
+with the effects as a short list, built by code from the steps (`stepList` in `lib/present/steps.ts`: "The Sat 24
+Oct 14:00 CEST sailing from Hamburg to Helsinki is booked if it still has space (€387)", "Norderkai Lodge Hamburg is
+booked for the driver (€96)", "The driver gets the message below"), with the cost and why it needs approval;
+(3) the buttons: Approve (full label), I'll handle this, Reject or reply (which opens the other options, the reject
+button and the reply box); (4) What we know as a compact list: one line per fact, the source icon and the time on
+the left (with the weekday when it is not today), the full sentence on click, the icon and time linking to the
+record on the timeline; (5) the call script and the message to the driver behind "Show call script" and "Show
+message to driver" (an email to a customer stays open: approving sends exactly those words); (6) "See every step the
+agent took".
+- Each finding's icon comes from the record it cites: the queue looks up the cited timeline entries' channels in one
+  query when it reads the cards (`withChannels` in `lib/queue.ts`), so a finding citing driver chat shows the driver
+  mark and one citing GPS the pin, the same icons as the timeline and the Sources page.
+
+**Now and Later.** For you shows Yours, then **Now** (safety, or lost within 4 hours, or already missed), then one
+row for the rest: "17 more · nothing lost before today 17:00 EEST · Show". The time is the earliest real deadline
+among them in desk time (an alert's response time sorts a card but is not a deadline, so it does not count). The
+header leads with it: "7 need you now · 17 later · agents are handling 10 more without you · 966 have nothing open".
+
+**What was wrong first.** The red Safety tag sat inside the headline's ellipsis and was cut off on the Bentley; the
+title is now the text plus tags that never shrink. Facts from earlier days showed only a clock time ("15:37" was
+Monday): they show the weekday now.
+
+**Checked:** typecheck; `npm run smoke`; screenshots `for-you-*`, `for-you-open-*`, `order-CD-420299-*`,
+`order-CD-420603-*` in light and dark, looked at. The footage script's selectors for the old card are updated with
+the footage itself (see the end).

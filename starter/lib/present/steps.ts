@@ -55,6 +55,16 @@ export function stepWords(step: CardStep, zones: StepZones, shown = false): stri
   }
 }
 
+/** The same clauses as a list, for the card's "If you approve" box: "You call Calverin Car Centre", "The driver gets a message". */
+export function stepList(option: CardOption, zones: StepZones, shown = false): string[] {
+  if (option.kind === "answer") return ["The agent carries on from your answer; nothing is booked or sent"]
+  const steps = option.steps?.length ? option.steps : [{ action: option.action, params: option.params }]
+  const ordered = [...steps.filter((step) => step.action !== "note"), ...steps.filter((step) => step.action === "note")]
+  const words = ordered.map((step) => stepWords(step, zones, shown)).filter((text): text is string => !!text)
+  if (!words.length && steps.every((step) => step.action === "note")) return ["Nothing changes; the plan stays as it is"]
+  return words.map((text) => text.charAt(0).toUpperCase() + text.slice(1))
+}
+
 /** "you call Calverin Car Centre, the driver gets the message below and the agent checks again in 45 min" */
 export function optionWords(option: CardOption, zones: StepZones, shown = false): string | null {
   if (option.kind === "answer") return "the agent carries on from your answer; nothing is booked or sent"

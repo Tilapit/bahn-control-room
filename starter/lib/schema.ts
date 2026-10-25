@@ -228,6 +228,8 @@ export const agentSteps = pgTable("agent_steps", {
 }, (table) => [index("agent_steps_run_idx").on(table.runId, table.idx)])
 
 export type CardFinding = {
+  /** The cited record's channel (driver_chat, gps, booking…), filled in when the card is read, for its icon. */
+  channel?: string | null
   text: string; source_entry_id: string; source_label: string; at: string
   /** On a card for several orders: the order the cited entry belongs to, when it is not the card's own. */
   reference?: string
