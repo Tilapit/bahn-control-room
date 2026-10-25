@@ -4,7 +4,7 @@
 // long it is. Each clip starts from the recorded morning with scale mode on (1,000 orders); the recorded morning is
 // put back at the end. A recording has no mouse pointer, so the page draws one.
 // Clips: for-you, scenario-1, scenario-2, scenario-6, scenario-7, autonomy, case-view, how-it-works, take-over,
-// backup-driver, playbook.
+// backup-driver, playbook, todo-call.
 // Scenario 2 and 7 are replays of recorded live runs (real speed); with an API key, scenario 2 also sends the reply.
 
 import "dotenv/config"
@@ -136,7 +136,7 @@ function clips(base: string): Clip[] {
       run: async (page, beat) => {
         await go(page, base, "/")
         beat("For you opens: the header counts what needs a person, what agents are handling, and the orders with nothing open")
-        await point(page, page.locator(".page-sub"))
+        await point(page, page.locator(".fy-sub"))
         await wait(page, 4500)
         beat("The safety case is first and already open on the right; then the earliest consequence")
         await point(page, page.locator(".inbox-row").first())
@@ -145,6 +145,13 @@ function clips(base: string): Clip[] {
         for (let index = 0; index < 4; index += 1) { await page.keyboard.press("j"); await wait(page, 2600) }
         await page.keyboard.press("k")
         await wait(page, 2000)
+        beat("Who has what: Unclaimed, Anna L. is on one, and Mikko P.'s claim has gone quiet (no activity for over 30 minutes)")
+        await point(page, page.locator(".claim.stale").first())
+        await wait(page, 3500)
+        await click(page, page.locator(".fy-tabs button", { hasText: "Unclaimed" }))
+        await wait(page, 2500)
+        await click(page, page.locator(".fy-tabs button", { hasText: "All" }))
+        await wait(page, 1500)
         beat("Later is folded: nothing there is lost before the time it names")
         await click(page, page.locator(".later-toggle"))
         await wait(page, 3500)
@@ -161,7 +168,7 @@ function clips(base: string): Clip[] {
         beat("What is left out is one muted row, never hidden; the sidebar count follows the view")
         await point(page, page.locator(".inbox-outside"))
         await wait(page, 3500)
-        await point(page, page.locator("nav[aria-label='Main'] .count"))
+        await point(page, page.locator("nav[aria-label='Main'] .badge"))
         await wait(page, 2500)
         await click(page, page.locator(".inbox-outside"))
         await wait(page, 2000)
@@ -437,31 +444,34 @@ function clips(base: string): Clip[] {
       },
     },
     {
-      id: "take-over", file: "09-take-over.webm", title: "Take over: I'll handle this, then hand back",
-      about: "CD-420593, the car that is not at the Helsinki pickup. From its card the person takes the order over: it moves to Yours at the top of For you, no agent or Monitor rule acts on it, and what the agent found stays. They write what they did, which goes on the order's timeline, and hand it back; the agent continues with their note.",
+      id: "take-over", file: "09-take-over.webm", title: "Claims: take this, take over a quiet claim, hand back",
+      about: "CD-420593, the car that is not at the Helsinki pickup: nobody has it, so the person takes it. It is theirs (\"You have this\"); agents and Monitor rules leave it alone, and what the agent found stays. What they did goes on the order's timeline, and Hand back gives the agent their note. Then CD-420071: a fictional colleague's claim with no activity for over 30 simulated minutes, shown in amber, which the person takes over.",
       run: async (page, beat) => {
         await go(page, base, "/")
-        beat("A case under Now: the car is not at the Helsinki pickup")
+        beat("Nobody has this one yet: the car is not at the Helsinki pickup")
         await point(page, row(page, "CD-420593"))
         await wait(page, 3000)
         const card = await openCase(page, "CD-420593")
-        await wait(page, 4000)
-        beat("I'll handle this: the order is yours, and agents and Monitor rules stop acting on it")
-        await click(page, card.locator(".row-actions button", { hasText: "I'll handle this" }))
-        await until(page, page.locator("section[aria-label='Yours']"), 15)
-        await page.evaluate(() => window.scrollTo({ top: 0, behavior: "smooth" }))
-        await wait(page, 2500)
-        beat("Yours, first on For you, with everything the agent found")
-        await click(page, page.locator("section[aria-label='Yours'] .inbox-row button").first())
-        const yours = pane(page)
-        await wait(page, 4000)
+        await wait(page, 3500)
+        beat("Take this: the order is yours, and agents and Monitor rules stop acting on it")
+        await click(page, card.locator(".claim-banner button", { hasText: "Take this" }))
+        await until(page, page.locator(".claim-banner.you"), 15)
+        await wait(page, 3000)
+        const mine = pane(page)
         beat("What the person did goes on the order's timeline, in their name")
-        await type(page, yours.locator(".takeover-bar input"), "Called the Vantaa yard: they release the car at 13:00 once the customer confirms by email.")
-        await click(page, yours.locator(".takeover-bar button", { hasText: "Add to timeline" }))
+        await type(page, mine.locator(".takeover-bar input"), "Called the Vantaa yard: they release the car at 13:00 once the customer confirms by email.")
+        await click(page, mine.locator(".takeover-bar button", { hasText: "Add to timeline" }))
         await wait(page, 3000)
         beat("Hand back to agent: the agent continues from the note")
-        await click(page, yours.locator(".takeover-bar button", { hasText: "Hand back to agent" }))
-        await wait(page, 3000)
+        await click(page, mine.locator(".takeover-bar button", { hasText: "Hand back to agent" }))
+        await wait(page, 3500)
+        beat("A colleague's claim gone quiet: Mikko P. took this 41 minutes ago and has done nothing since")
+        const quiet = await openCase(page, "CD-420071")
+        await wait(page, 4000)
+        beat("Take over: Mikko's claim ends in the records and the order is yours")
+        await click(page, quiet.locator(".claim-banner button", { hasText: "Take over" }))
+        await until(page, page.locator(".claim-banner.you"), 15)
+        await wait(page, 3500)
         await go(page, base, "/orders/CD-420593")
         beat("On the order: the takeover, the note and the hand-back, each by the person, on one timeline")
         await scrollTo(page, page.locator("section[aria-label='Timeline']"), 7000)
@@ -519,6 +529,42 @@ function clips(base: string): Clip[] {
         await scrollBy(page, 420, 5000)
         await scrollBy(page, 520, 5000)
         await reset()
+      },
+    },
+    {
+      id: "todo-call", file: "12-to-do-call.webm", title: "A call you make stays as a to-do until you log it",
+      about: "CD-420322, the Bentley stopped on a red warning light. Approving the proposal hands the call to the person: after the 8-second undo window it stays under Mine as \"To do: call Marvellin Motorhandel\". A simulated, scripted call (labelled as such) plays; on End call Haiku writes it to the order's timeline as a call and files what was agreed, the to-do is done, the agent continues, and For you moves on.",
+      run: async (page, beat) => {
+        const file = await getCase("CD-420322")
+        if (file) await resetOrderDecisions(file.order.id)
+        await go(page, base, "/")
+        beat("The safety case: the agent suggests calling the owner's service desk; approving hands that call to you")
+        const card = await openCase(page, "CD-420322")
+        await wait(page, 4000)
+        await point(page, card.locator(".row-actions .btn.primary"))
+        await page.keyboard.press("a")
+        beat("Approved with A: the undo window runs out, and the next order is selected")
+        await wait(page, 10_500)
+        await go(page, base, "/")
+        beat("Mine: \"To do: call Marvellin Motorhandel\" stays until you log what happened")
+        await click(page, page.locator(".fy-tabs button", { hasText: "Mine" }))
+        await wait(page, 2000)
+        await click(page, page.locator(".todo-row button").first())
+        await wait(page, 3500)
+        beat("A simulated call, labelled as one: the service desk's answers appear line by line")
+        await click(page, page.locator("article.todo button", { hasText: "Call " }))
+        await page.locator(".todo-typing").waitFor({ state: "detached", timeout: 90_000 }).catch(() => undefined)
+        await wait(page, 2500)
+        beat("End call: Haiku writes it to the timeline as a call and files what was agreed; the agent continues")
+        await click(page, page.locator("article.todo button", { hasText: "End call" }))
+        await until(page, page.locator(".todo-done"), 150)
+        await wait(page, 4000)
+        beat("The to-do is done; back to All, the next order")
+        await go(page, base, "/")
+        await wait(page, 3500)
+        await go(page, base, "/orders/CD-420322")
+        beat("On the order: the call in the timeline, source Call, and what was agreed")
+        await scrollTo(page, page.locator("section[aria-label='Timeline']"), 7000)
       },
     },
   ]
