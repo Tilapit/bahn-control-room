@@ -31,8 +31,10 @@ npm run dev -- -p 3001
 ```
 
 Open http://localhost:3001 (any port works; the screenshot and footage scripts use 3001). Start on
-**For you**. **Agents** shows what every agent did and is doing, **Orders** has every order, **Settings**
-holds what agents may do on their own, what they learned from your corrections and **How it works**.
+**For you** (what needs you now, then later; "I'll handle this" takes an order over, and no agent acts on it until
+you hand it back). **Agents** shows what every agent did and is doing, **Orders** has every order with who has it,
+**Sources** shows every channel that feeds the order timelines, **Settings** holds what agents may do on their own,
+what they learned from your corrections and **How it works**.
 **Demo controls** (foot of the left rail) moves the simulated clock, plays the scenarios and switches
 scale mode.
 
@@ -50,7 +52,7 @@ If port 5438 or 9009 is taken, change it in `starter/compose.yaml` and the match
 ## Tests and evals
 
 ```sh
-npm test                     # 38 unit tests (urgency, routing, policies, the undo window) + the evals on recorded runs
+npm test                     # 46 unit tests (urgency, routing, policies, taking an order over, the undo window) + the evals on recorded runs
 npm run evals                # the eval cases and prompt-injection checks: recorded without a key, live with one
 npm run evals -- --live      # play every case on the live models first, then check (about $2)
 npm run eval:injection       # the prompt-injection test alone; its result shows on Settings → Learning

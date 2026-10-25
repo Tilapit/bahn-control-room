@@ -1781,3 +1781,51 @@ scenario-2`), and the recorded morning loaded back.
 - **Checked:** the recorded evals, all 11 groups pass on the new fixtures and recordings (scenario 1 and 2 from their
   new recordings, scenario 4 and 6 from the new morning runs). Traces of the new runs are in `traces/`; the old ones
   stay, because this log cites some of them.
+
+### Footage, recorded again
+
+`npm run footage` recorded all eight clips again against the new screens and the re-recorded runs, plus a ninth,
+`09-take-over.webm` (0:49): CD-420593's card, I'll handle this, the card under Yours with its findings, a note added
+to the timeline, Hand back to agent, and the order's timeline with the takeover, the note and the hand-back by the
+person. `demo-footage/SHOTLIST.md` was rewritten by the script with each clip's beats and length.
+
+| Clip | Length (was) |
+|---|---|
+| 01 For you with 1,000 orders | 0:41 (0:44) |
+| 02 Scenario 1, approve with undo | 1:10 (1:08) |
+| 03 Scenario 2, replay of the live run | 3:15 (3:11) |
+| 04 Scenario 6, the driver's words against GPS | 0:51 (0:53) |
+| 05 Scenario 7, strike and Lille protest | 2:27 (2:29) |
+| 06 Autonomy suggestion | 1:13 (1:12) |
+| 07 The order page, every fact with its source | 0:53 (0:52) |
+| 08 How it works | 0:56 (0:55) |
+| 09 Take over (new) | 0:49 |
+
+**What was wrong first.** The script's selectors followed the old card: headlines with ":" where the row now says
+"car · problem", cards under the collapsed Later row, source chips that are now icon-and-time links, the reply box
+behind "Reject or reply". Those were updated before recording. Two waits were missed: scenario 2 and 7 waited on the
+Agents page for a row saying "Waiting for you", which item 5 folded into one row, so they sat out their full timeouts
+(the first scenario 2 clip ran 9:52 and said "Still working"). They wait for the card on For you now, and both clips
+were recorded again. As before, the scenario 2 clip ends on the safety card without the live reply: the replay
+replaces the card under the open row. **How it was checked:** every clip ran without a stop, its beats and length
+read from the shot list and the files; no frame was looked at this time (Playwright's ffmpeg cannot decode the VP9
+video, and a browser page could not open the local file within two minutes, so I stopped trying).
+
+## Summary of this round (before the 11:30 freeze)
+
+All six items of the round's brief and both parts of the earlier request are done, each committed and logged:
+the Orders 404 (a stale dev server) and the Orders table; take over with the rule in code and its test; the Sources
+page and "Everything we know"; cards built for scanning with Now and Later; the Agents view and every recorded
+narration in ops words; the polish pass and a fresh reviewer's findings; the code precondition that keeps the current
+driver's travel booked until a backup accepts (the live eval passes, and its trace shows the code sending the
+agent's first card back); the four orders and two replays recorded again; and the footage. `npm test` (46 tests and
+the recorded evals) passes.
+
+**Found on the way, not asked for:** the card builder treated every Monitor run as resting on a disruption notice,
+so a silent car could never become a card (fixed, item 5); Haiku's re-narration put a car on the wrong side of
+Hannover (caught by the reviewer; that run was recorded again and checked).
+
+**Left open:** nothing in the demo makes a backup driver accept, so after an approved offer the current driver's
+travel stays booked until the records show someone else holding the gig; asking a delivery site that belongs to the
+customer is not treated as customer contact (a policy question for Bahn); messages that arrive while an order is
+taken over are not read by the Classifier afterwards; the How it works legend does not cover every box in its diagram.

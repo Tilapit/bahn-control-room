@@ -3,7 +3,7 @@
 // every card), into ../demo-footage/, and writes ../demo-footage/SHOTLIST.md with what each clip shows, when, and how
 // long it is. Each clip starts from the recorded morning with scale mode on (1,000 orders); the recorded morning is
 // put back at the end. A recording has no mouse pointer, so the page draws one.
-// Clips: for-you, scenario-1, scenario-2, scenario-6, scenario-7, autonomy, case-view, how-it-works.
+// Clips: for-you, scenario-1, scenario-2, scenario-6, scenario-7, autonomy, case-view, how-it-works, take-over.
 // Scenario 2 and 7 are replays of recorded live runs (real speed); with an API key, scenario 2 also sends the reply.
 
 import "dotenv/config"
@@ -98,6 +98,12 @@ async function until(page: Page, target: Locator, seconds: number): Promise<bool
 
 const row = (page: Page, text: string) => page.locator("article.row", { hasText: text }).first()
 
+/** For you shows Now; the rest waits under one "N more" row. Open it so a card further down can be found. */
+async function showLater(page: Page): Promise<void> {
+  const toggle = page.locator(".later-toggle")
+  if (await toggle.count() && await toggle.getAttribute("aria-expanded") !== "true") await click(page, toggle)
+}
+
 // ---------------------------------------------------------------------------
 // The clips
 // ---------------------------------------------------------------------------
@@ -137,7 +143,8 @@ function clips(base: string): Clip[] {
         const file = await getCase("CD-420299")
         if (file) await resetOrderDecisions(file.order.id)
         await go(page, base, "/")
-        const card = row(page, "BMW M4: ferry sold out")
+        await showLater(page)
+        const card = row(page, "BMW M4 · ferry sold out")
         beat("The ferry card in For you: what is lost and when, and the proposal in one line")
         await point(page, card)
         await wait(page, 3000)
@@ -152,7 +159,8 @@ function clips(base: string): Clip[] {
         beat("Undo inside the window: nothing was booked and the card comes back")
         await click(page, page.locator(".toast button", { hasText: "Undo" }))
         await wait(page, 2500)
-        const again = row(page, "BMW M4: ferry sold out")
+        await showLater(page)
+        const again = row(page, "BMW M4 · ferry sold out")
         await again.scrollIntoViewIfNeeded()
         if (await again.getAttribute("data-open") !== "true") await click(page, again.locator(".row-head"))
         beat("Approve again and let the window run out")
@@ -186,10 +194,12 @@ function clips(base: string): Clip[] {
         await go(page, base, "/demo")
         await scrollTo(page, page.locator(".demo-grid"), 7000)
         await go(page, base, "/agents")
-        const waiting = await until(page, page.locator(".run-row", { hasText: "Waiting for you" }), 200)
-        beat(waiting ? "The card is ready: Waiting for you" : "Still working")
-        await wait(page, 4000)
+        await wait(page, 6000)
+        // Agents lists what waits for a person as one row now; the card itself shows on For you when it is ready.
         await go(page, base, "/")
+        const waiting = await until(page, row(page, "Bentley Continental GT"), 200)
+        beat(waiting ? "The card is ready: it waits for a person" : "Still working")
+        await wait(page, 2000)
         const card = row(page, "Bentley Continental GT")
         beat("The safety card is first in For you")
         await point(page, card)
@@ -200,18 +210,21 @@ function clips(base: string): Clip[] {
         await scrollBy(page, 330, 6000)
         await scrollBy(page, 330, 5000)
         if (!hasApiKey()) return
-        // The reply box is there only while the replayed card is open and current; if it was replaced, the clip ends here.
-        if (!(await card.locator(".row-reply input").isVisible().catch(() => false))) return
+        // The reply box opens from "Reject or reply" while the replayed card is current; if it was replaced, the clip ends here.
+        const replyButton = card.locator(".row-actions button", { hasText: "Reject or reply" })
+        if (!(await replyButton.isVisible().catch(() => false))) return
         beat("A person writes one sentence back instead of choosing an option")
-        await type(page, card.locator(".row-reply input"), "call the seller first")
-        await click(page, card.locator(".row-reply button", { hasText: "Send to agent" }))
+        await click(page, replyButton)
+        await type(page, card.locator(".answer-box input"), "call the seller first")
+        await click(page, card.locator(".answer-box button", { hasText: "Send to agent" }))
         await wait(page, 10_000)
         beat("After the undo window the same agent continues with the reply, live")
         await go(page, base, "/agents")
-        const next = await until(page, page.locator(".run-row", { hasText: "Waiting for you" }), 180)
-        await wait(page, 3000)
-        if (!next) return
+        await until(page, page.locator(".run-row", { hasText: "Bentley" }).first(), 20)
+        await wait(page, 4000)
         await go(page, base, "/")
+        const next = await until(page, row(page, "Bentley Continental GT"), 180)
+        if (!next) return
         const updated = row(page, "Bentley Continental GT")
         beat("Its next card, after the reply")
         await click(page, updated.locator(".row-head"))
@@ -237,7 +250,7 @@ function clips(base: string): Clip[] {
         await point(page, card.locator(".run-line"))
         await wait(page, 4000)
         beat("A source chip opens the GPS record on the order's timeline")
-        const gps = card.locator("a.chip", { hasText: "GPS" }).first()
+        const gps = card.locator('a.fact-src[title^="GPS"]').first()
         await point(page, gps)
         await wait(page, 2500)
         await gps.click()
@@ -248,7 +261,7 @@ function clips(base: string): Clip[] {
         await wait(page, 1500)
         const back = row(page, "Volkswagen Golf")
         if (await back.getAttribute("data-open") !== "true") await click(page, back.locator(".row-head"))
-        const driver = back.locator("a.chip", { hasText: "Driver" }).first()
+        const driver = back.locator('a.fact-src[title^="Driver"]').first()
         await point(page, driver)
         await driver.click()
         await page.waitForLoadState("networkidle")
@@ -260,6 +273,7 @@ function clips(base: string): Clip[] {
       about: "Two disruption notices, noticed before any driver says anything. The rail strike card (CD-420123) cites the rail operator's notice and says the driver has not confirmed it. Then the Lille protest is published on the Demo page and replayed: one card covers both orders it touches.",
       run: async (page, beat) => {
         await go(page, base, "/")
+        await showLater(page)
         const strike = row(page, "rail strike")
         beat("The rail strike card: the Monitor matched the notice to the driver's booked train")
         await point(page, strike)
@@ -279,9 +293,10 @@ function clips(base: string): Clip[] {
         beat("Agents: one Investigator run for both orders")
         await go(page, base, "/agents")
         await wait(page, 6000)
-        await until(page, page.locator(".run-row", { hasText: "Waiting for you" }).filter({ hasText: "CD-420692" }), 150)
-        await wait(page, 3000)
         await go(page, base, "/")
+        await showLater(page)
+        await until(page, row(page, "2 orders"), 150)
+        await showLater(page)
         const group = row(page, "2 orders")
         beat("One card, two orders, one cause: each order's effect, and the source")
         await point(page, group)
@@ -303,9 +318,10 @@ function clips(base: string): Clip[] {
         await threshold.selectOption("2")
         await wait(page, 2500)
         await go(page, base, "/")
-        for (const text of ["BMW M4: ferry sold out", "Audi Q8 e-tron: ferry sold out"]) {
+        for (const text of ["BMW M4 · ferry sold out", "Audi Q8 e-tron · ferry sold out"]) {
+          await showLater(page)
           const card = row(page, text)
-          beat(`Approve the ferry card as proposed (${text.split(":")[0]})`)
+          beat(`Approve the ferry card as proposed (${text.split(" · ")[0]})`)
           await click(page, card.locator(".row-head"))
           await wait(page, 3500)
           await click(page, card.locator(".row-actions .btn.primary"))
@@ -376,6 +392,38 @@ function clips(base: string): Clip[] {
         await scrollTo(page, page.locator("section[aria-label='What agents may do alone']"), 6000)
         beat("Measured on the recorded morning: runs, model mix, cost and time")
         await scrollTo(page, page.locator("section[aria-label='Measured']"), 9000)
+      },
+    },
+    {
+      id: "take-over", file: "09-take-over.webm", title: "Take over: I'll handle this, then hand back",
+      about: "CD-420593, the car that is not at the Helsinki pickup. From its card the person takes the order over: it moves to Yours at the top of For you, no agent or Monitor rule acts on it, and what the agent found stays. They write what they did, which goes on the order's timeline, and hand it back; the agent continues with their note.",
+      run: async (page, beat) => {
+        await go(page, base, "/")
+        const card = row(page, "BMW M4 · car not at Helsinki pickup")
+        beat("A card under Now: the car is not at the Helsinki pickup")
+        await point(page, card)
+        await wait(page, 3000)
+        await click(page, card.locator(".row-head"))
+        await wait(page, 4000)
+        beat("I'll handle this: the order is yours, and agents and Monitor rules stop acting on it")
+        await click(page, card.locator(".row-actions button", { hasText: "I'll handle this" }))
+        await until(page, page.locator("section[aria-label='Yours']"), 15)
+        await page.evaluate(() => window.scrollTo({ top: 0, behavior: "smooth" }))
+        await wait(page, 2500)
+        const yours = page.locator("section[aria-label='Yours'] article.row").first()
+        beat("Yours, first on For you, with everything the agent found")
+        if (await yours.getAttribute("data-open") !== "true") await click(page, yours.locator(".row-head"))
+        await wait(page, 4000)
+        beat("What the person did goes on the order's timeline, in their name")
+        await type(page, yours.locator(".takeover-bar input"), "Called the Vantaa yard: they release the car at 13:00 once the customer confirms by email.")
+        await click(page, yours.locator(".takeover-bar button", { hasText: "Add to timeline" }))
+        await wait(page, 3000)
+        beat("Hand back to agent: the agent continues from the note")
+        await click(page, yours.locator(".takeover-bar button", { hasText: "Hand back to agent" }))
+        await wait(page, 3000)
+        await go(page, base, "/orders/CD-420593")
+        beat("On the order: the takeover, the note and the hand-back, each by the person, on one timeline")
+        await scrollTo(page, page.locator("section[aria-label='Timeline']"), 7000)
       },
     },
   ]
