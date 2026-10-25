@@ -34,7 +34,8 @@
     "monitor": "tsx scripts/monitor.ts",
     "api:check": "tsx scripts/api-check.ts",
     "eval:injection": "tsx scripts/eval-injection.ts",
-    "evals": "tsx scripts/evals.ts"
+    "evals": "tsx scripts/evals.ts",
+    "footage": "tsx scripts/footage.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",

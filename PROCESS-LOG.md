@@ -1405,3 +1405,37 @@ driver may not also cancel the current driver's travel) plus another live run to
 add it within this task. Every other check passed live, including the injection test (no booking,
 no payment, no flight on a card, only the agents' own tools), the policy layer, and "every finding
 on all 8 cards cites its source". The recording was loaded back afterwards.
+
+## After phase 8, task 5: demo footage
+
+**What it is.** `npm run footage` (`scripts/footage.ts`) drives the app with Playwright and records
+one 1440×900 video per clip into `demo-footage/`, at human speed: a visible cursor dot moves to what
+it clicks, every card and page section is held long enough to read, and each clip starts from a fresh
+recorded morning (`fixtures:load`, then scale mode on, so For you is shown with 1,000 orders).
+`demo-footage/SHOTLIST.md` says, per clip, what it shows, its length, and what is on screen at each
+timestamp. `npm run footage -- scenario-2 case-view` re-records only the clips named.
+
+| Clip | Length |
+|---|---|
+| `01-for-you-1000-orders.webm`: the header and list with 1,000 orders, search, Orders | 0:44 |
+| `02-scenario-1-ferry-sold-out.webm`: the card, its sources, approve, the undo window | 1:08 |
+| `03-scenario-2-red-warning-light-replay.webm`: the recorded live run replayed, the driver phone, the safety card | 3:11 |
+| `04-scenario-6-conflicting-evidence.webm`: CD-420603, the driver's words against the GPS, both with times | 0:53 |
+| `05-scenario-7-strike-and-lille-protest.webm`: the rail strike card, then the Lille notice and one card for two orders | 2:29 |
+| `06-autonomy-suggestion.webm`: approvals unchanged, the suggestion, Yes, the change logged in Settings | 1:12 |
+| `07-case-view-with-sources.webm`: an order's key times, statements and timeline, each with its source | 0:52 |
+| `08-how-it-works.webm`: the How it works page | 0:55 |
+
+**How it was checked.** Each clip's length and size were read from the files (99 MB in all, the
+largest 20 MB, so they are committed as they are), the shot list was read through, and frames were
+pulled out with Playwright's own ffmpeg and looked at (1440×900, cursor visible, "966 have nothing
+open" in the For you header).
+
+**What was wrong first.** Two clips stopped on a 30-second timeout in the first full run: the case
+view looked for the "Agreed" section, which task 1 renamed "Agreed and stated"; scenario 2 tried to
+type a reply into a card that the replay had replaced. The selector was updated and the reply step
+now ends the clip when the reply box is not there; both clips were recorded again. So the scenario 2
+clip shows the replay and the safety card but not a person's one-sentence reply to the agent (that
+step needs the live agent and was not recorded). The Agents rows lost their "Waiting for you" text in
+task 1 (the group heading says it); the text is back as screen-reader text, which the script also
+matches on.

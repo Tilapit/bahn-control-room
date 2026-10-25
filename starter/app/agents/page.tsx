@@ -27,7 +27,7 @@ type Row = Awaited<ReturnType<typeof agentsView>>["rows"][number]
 function RunRow({ row, now, label = true }: { row: Row; now: string; label?: boolean }) {
   return <li>
     <Link className="run-row" href={`/agents/${row.id}`}>
-      <span className={`run-state ${row.status}`}><span className="dot" aria-hidden="true" />{label ? row.statusLabel : ""}</span>
+      <span className={`run-state ${row.status}`}><span className="dot" aria-hidden="true" />{label ? row.statusLabel : <span className="sr-only">{row.statusLabel}</span>}</span>
       <span className="run-main">
         <span className="run-top">
           <span className="run-agent">{row.agent}</span>
