@@ -49,16 +49,24 @@ function nextCheck(file: CaseFile, now: Date): Date | null {
   return new Date(Math.min(now.getTime() + 4 * HOUR, ...upcoming))
 }
 
+export const QUIET_TRIGGER = "Routine check by code: no live signal on this order"
+export const QUIET_STEP = "Checked alerts, tasks, incidents, handover claims, earlier agent proposals, the support inbox and conversations: nothing open."
+
+/** What a quiet check records for an order: its one sentence, when to look again, and the step's input and output. */
+export function quietOutcome(file: CaseFile, now: Date) {
+  return {
+    line: sentence(file, now), nextCheckAt: nextCheck(file, now),
+    input: { zone: orderView(file).zone },
+    output: { stage: file.order.stage.key, keyTimes: file.keyTimes.map((item) => ({ key: item.key, start: item.start })) },
+  }
+}
+
 /** Record a quiet check for an order without live signals. Returns null when the order has one (it needs an agent). */
 export async function quietCheck(file: CaseFile, now: Date): Promise<string | null> {
   if (liveSignals(file).length) return null
-  const line = sentence(file, now)
-  const runId = await createRun({ orderId: file.order.id, agent: QUIET_AGENT, model: null, trigger: "Routine check by code: no live signal on this order", at: now })
-  await addStep(runId, 0, {
-    at: now, type: "tool_result", tool: "quiet_check", input: { zone: orderView(file).zone },
-    output: { stage: file.order.stage.key, keyTimes: file.keyTimes.map((item) => ({ key: item.key, start: item.start })) },
-    summary: "Checked alerts, tasks, incidents, handover claims, earlier agent proposals, the support inbox and conversations: nothing open.",
-  })
-  await updateRun(runId, { status: "done", finishedAt: now, outcomeSummary: line, narration: line, nextCheckAt: nextCheck(file, now) })
+  const outcome = quietOutcome(file, now)
+  const runId = await createRun({ orderId: file.order.id, agent: QUIET_AGENT, model: null, trigger: QUIET_TRIGGER, at: now })
+  await addStep(runId, 0, { at: now, type: "tool_result", tool: "quiet_check", input: outcome.input, output: outcome.output, summary: QUIET_STEP })
+  await updateRun(runId, { status: "done", finishedAt: now, outcomeSummary: outcome.line, narration: outcome.line, nextCheckAt: outcome.nextCheckAt })
   return runId
 }

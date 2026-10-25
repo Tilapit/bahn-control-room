@@ -110,6 +110,53 @@ async function attended(files: CaseFile[]): Promise<Set<string>> {
   return new Set([...files.filter((file) => file.open.cards.length).map((file) => file.order.id), ...runs.map((run) => run.orderId ?? "")])
 }
 
+/**
+ * What the silent-car rule sees on one order at this time: a deviation, a car not moving, no GPS and no word, or a
+ * pickup slot passing with no collection. Null when nothing. `horizon` is where the recorded GPS data ends.
+ */
+export function silentSignal(file: CaseFile, now: Date, horizon: number): { id: string; seen: string } | null {
+  if (!file.order.driver || file.order.driver.state === "cancelled") return null
+  const zone = orderView(file).zone
+  // The driver's last message (an expense claim or a photo upload is not a word about the car's progress).
+  const driverSpoke = file.timeline.filter((item) => item.authorType === "driver" && item.kind === "message").map((item) => new Date(item.at).getTime()).sort((a, b) => b - a)[0] ?? 0
+  let id: string | null = null
+  let seen = ""
+  if (file.order.stage.key === "moving") {
+    const [last] = file.plan.positions
+    const silentSince = last ? new Date(last.at).getTime() : file.order.pickedUpAt ? new Date(file.order.pickedUpAt).getTime() : null
+    // The oldest fix in the latest run of fixes at (nearly) the same distance: no progress since then.
+    let previous = last
+    for (const fix of file.plan.positions.slice(1)) {
+      if (last?.kmToGo == null || fix.kmToGo == null || Math.abs(fix.kmToGo - last.kmToGo) > 2) break
+      previous = fix
+    }
+    const stuck = last && previous && previous !== last && new Date(last.at).getTime() - new Date(previous.at).getTime() >= 60 * 60_000
+    // Heading away: km to go rose by 8 km or more against a fix from the last 90 minutes.
+    const lower = file.plan.positions.slice(1).find((fix) => last?.kmToGo != null && fix.kmToGo != null && last.kmToGo - fix.kmToGo >= 8
+      && new Date(last.at).getTime() - new Date(fix.at).getTime() <= 90 * 60_000)
+    if (last && lower) {
+      id = `monitor:deviation:${file.order.id}:${last.at}`
+      seen = `GPS shows km to go rising from ${lower.kmToGo} km at ${at(lower.at, zone)} to ${last.kmToGo} km at ${at(last.at, zone)}: the car is moving away from ${file.order.route.to?.city ?? "the delivery address"}.`
+    } else if (stuck && driverSpoke < new Date(previous.at).getTime()) {
+      id = `monitor:not-moving:${file.order.id}:${last.at}`
+      seen = `The car has not moved: GPS showed ${previous.kmToGo} km to go at ${at(previous.at, zone)} and ${last.kmToGo} km at ${at(last.at, zone)}, and the driver has not written since.`
+    } else if (silentSince != null && horizon - silentSince >= SILENT_GPS_HOURS * HOUR && driverSpoke < silentSince) {
+      id = `monitor:silent-car:${file.order.id}:${last?.at ?? "none"}`
+      seen = last
+        ? `The car is on the road, but the driver app has sent no position since ${at(last.at, zone)}${last.kmToGo != null ? `, when it had ${last.kmToGo} km to go` : ""}, and the driver has not written since.`
+        : `The car was collected ${at(file.order.pickedUpAt, zone)}, but the driver app has sent no position since, and the driver has not written.`
+    }
+  } else if (file.order.stage.key === "driver_booked") {
+    const slot = file.keyTimes.find((item) => item.key === "pickup_slot")
+    if (!slot || file.order.pickedUpAt) return null
+    const late = now.getTime() - new Date(slot.start).getTime()
+    if (late < LATE_PICKUP_MINUTES * 60_000 || driverSpoke > new Date(slot.start).getTime()) return null
+    id = `monitor:pickup-late:${file.order.id}:${slot.start}`
+    seen = `The pickup slot in ${slot.place ?? "the pickup city"} started ${at(slot.start, slot.zone)}, ${Math.round(late / 60_000)} min ago. No collection is recorded and the driver has not written since.`
+  }
+  return id ? { id, seen } : null
+}
+
 async function silentCarRule(files: CaseFile[], now: Date, options: Options): Promise<MonitorHit[]> {
   const busy = await attended(files)
   // The records are a snapshot: no new GPS arrives as the demo clock moves. Silence is judged up to where the recorded
@@ -117,46 +164,10 @@ async function silentCarRule(files: CaseFile[], now: Date, options: Options): Pr
   const horizon = Math.min(now.getTime(), (await demoStart()).getTime())
   const hits: MonitorHit[] = []
   for (const file of files) {
-    if (busy.has(file.order.id) || !file.order.driver || file.order.driver.state === "cancelled") continue
-    const zone = orderView(file).zone
-    // The driver's last message (an expense claim or a photo upload is not a word about the car's progress).
-    const driverSpoke = file.timeline.filter((item) => item.authorType === "driver" && item.kind === "message").map((item) => new Date(item.at).getTime()).sort((a, b) => b - a)[0] ?? 0
-    let id: string | null = null
-    let seen = ""
-    if (file.order.stage.key === "moving") {
-      const [last] = file.plan.positions
-      const silentSince = last ? new Date(last.at).getTime() : file.order.pickedUpAt ? new Date(file.order.pickedUpAt).getTime() : null
-      // The oldest fix in the latest run of fixes at (nearly) the same distance: no progress since then.
-      let previous = last
-      for (const fix of file.plan.positions.slice(1)) {
-        if (last?.kmToGo == null || fix.kmToGo == null || Math.abs(fix.kmToGo - last.kmToGo) > 2) break
-        previous = fix
-      }
-      const stuck = last && previous && previous !== last && new Date(last.at).getTime() - new Date(previous.at).getTime() >= 60 * 60_000
-      // Heading away: km to go rose by 8 km or more against a fix from the last 90 minutes.
-      const lower = file.plan.positions.slice(1).find((fix) => last?.kmToGo != null && fix.kmToGo != null && last.kmToGo - fix.kmToGo >= 8
-        && new Date(last.at).getTime() - new Date(fix.at).getTime() <= 90 * 60_000)
-      if (last && lower) {
-        id = `monitor:deviation:${file.order.id}:${last.at}`
-        seen = `GPS shows km to go rising from ${lower.kmToGo} km at ${at(lower.at, zone)} to ${last.kmToGo} km at ${at(last.at, zone)}: the car is moving away from ${file.order.route.to?.city ?? "the delivery address"}.`
-      } else if (stuck && driverSpoke < new Date(previous.at).getTime()) {
-        id = `monitor:not-moving:${file.order.id}:${last.at}`
-        seen = `The car has not moved: GPS showed ${previous.kmToGo} km to go at ${at(previous.at, zone)} and ${last.kmToGo} km at ${at(last.at, zone)}, and the driver has not written since.`
-      } else if (silentSince != null && horizon - silentSince >= SILENT_GPS_HOURS * HOUR && driverSpoke < silentSince) {
-        id = `monitor:silent-car:${file.order.id}:${last?.at ?? "none"}`
-        seen = last
-          ? `The car is on the road, but the driver app has sent no position since ${at(last.at, zone)}${last.kmToGo != null ? `, when it had ${last.kmToGo} km to go` : ""}, and the driver has not written since.`
-          : `The car was collected ${at(file.order.pickedUpAt, zone)}, but the driver app has sent no position since, and the driver has not written.`
-      }
-    } else if (file.order.stage.key === "driver_booked") {
-      const slot = file.keyTimes.find((item) => item.key === "pickup_slot")
-      if (!slot || file.order.pickedUpAt) continue
-      const late = now.getTime() - new Date(slot.start).getTime()
-      if (late < LATE_PICKUP_MINUTES * 60_000 || driverSpoke > new Date(slot.start).getTime()) continue
-      id = `monitor:pickup-late:${file.order.id}:${slot.start}`
-      seen = `The pickup slot in ${slot.place ?? "the pickup city"} started ${at(slot.start, slot.zone)}, ${Math.round(late / 60_000)} min ago. No collection is recorded and the driver has not written since.`
-    }
-    if (!id || (await existing([id])).size) continue
+    if (busy.has(file.order.id)) continue
+    const signal = silentSignal(file, now, horizon)
+    if (!signal || (await existing([signal.id])).size) continue
+    const { id, seen } = signal
     await writeEntry({
       id, orderId: file.order.id, at: now, source: "alert", channel: "monitor", authorType: "system", authorLabel: "Monitor (code)",
       kind: "alert", status: "signal", visibility: "internal", summary: seen, body: "Noticed by a rule in code. Nobody has reported a problem; this is a reason to ask, not a diagnosis.",

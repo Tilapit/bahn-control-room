@@ -16,6 +16,7 @@ export const RUN_STATUS: Record<string, string> = {
 }
 const ACTIVE = ["running", "waiting_driver", "waiting_site", "waiting_person"]
 const DESK_ZONE = "Europe/Helsinki"
+const QUIET_ROWS = 100
 
 export type RunRow = {
   id: string
@@ -92,7 +93,9 @@ export async function agentsView(filter: RunFilter) {
       || b.startedAt.getTime() - a.startedAt.getTime() || (a.orderId ?? "").localeCompare(b.orderId ?? ""))
   const todayAll = runs.filter((run) => dayKey(run.startedAt) === dayKey(at))
   const today = todayAll.filter((run) => run.model)
-  const rows: RunRow[] = shown.map((run) => {
+  // Quiet checks are one per quiet order: 968 of them in scale mode. The newest page is enough to see what they say.
+  const limit = filter === "quiet" ? QUIET_ROWS : shown.length
+  const rows: RunRow[] = shown.slice(0, limit).map((run) => {
     const order = run.orderId ? byOrder.get(run.orderId) : null
     return {
       // A finished run that looks again later is watching, not done; a quiet check only checked.
@@ -106,7 +109,7 @@ export async function agentsView(filter: RunFilter) {
     }
   })
   return {
-    now: at.toISOString(), rows, counts,
+    now: at.toISOString(), rows, counts, more: shown.length - rows.length,
     today: {
       runs: today.length, codeRuns: todayAll.length - today.length, quietRuns: todayAll.filter(quiet).length,
       tokens: today.reduce((sum, run) => sum + tokensOf(run), 0), costUsd: today.reduce((sum, run) => sum + run.costUsd, 0),

@@ -20,12 +20,13 @@ import { createRun, exportTrace, updateRun } from "@/lib/agents/runs"
 import { getCase, getCases } from "@/lib/case"
 import { now, resetClock, setDemoStart } from "@/lib/clock"
 import { closeDb, db } from "@/lib/db"
+import { scaleState } from "@/lib/scale"
 import { exportFixtures } from "@/lib/fixtures"
 import { MODELS, modelName, ROLE_MODEL } from "@/lib/models"
 import { ensurePolicies } from "@/lib/policies"
 import { runMonitor } from "@/lib/monitor"
 import { quietCheck } from "@/lib/quiet-check"
-import { agentRuns, cards, timelineEntries } from "@/lib/schema"
+import { agentRuns, agentSteps, cards, timelineEntries } from "@/lib/schema"
 import { liveSignals } from "@/lib/signals"
 
 function option(args: string[], name: string, fallback: number): number {
@@ -78,6 +79,8 @@ async function classifyAll(concurrency: number, only: Set<string> | null) {
 }
 
 async function main() {
+  // The backfill is the recorded morning of the 100 dataset orders. With scale mode on it would send 900 copies to the models.
+  if ((await scaleState()).synthetic) throw new Error("Scale mode is on. Turn it off first: npm run seed:scale -- --off")
   const args = process.argv.slice(2)
   // --report-only: no agents; write the report and the fixtures from what the database holds.
   const reportOnly = args.includes("--report-only")
@@ -98,6 +101,8 @@ async function main() {
     const tried = new Set((await db.select().from(agentRuns).where(eq(agentRuns.agent, "Investigator"))).map((run) => run.orderId))
     todo = files.filter((file) => !ok.has(file.order.id) && (tried.has(file.order.id) || liveSignals(file).length))
     for (const file of todo) await resetOrderLiveState(file.order.id, { allFacts: true })
+    // The quiet checks are done again at the end; their steps go with them.
+    await db.delete(agentSteps).where(inArray(agentSteps.runId, db.select({ id: agentRuns.id }).from(agentRuns).where(eq(agentRuns.agent, "Quiet check"))))
     await db.delete(agentRuns).where(eq(agentRuns.agent, "Quiet check"))
     console.log(`Resuming: ${todo.length} orders to do again (${todo.map((file) => file.order.reference).join(", ") || "none"}); ${ok.size} are done.`)
     files = await getCases()

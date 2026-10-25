@@ -7,8 +7,10 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts && tsx scripts/evals.ts --recorded",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx scripts/seed.ts",
+    "seed:scale": "tsx scripts/scale.ts",
     "attachments:seed": "tsx scripts/seed-attachments.ts",
     "attachments:smoke": "tsx scripts/smoke-attachments.ts",
     "smoke": "tsx scripts/smoke.ts",
@@ -31,7 +33,8 @@
     "disruptions:seed": "tsx scripts/seed-disruptions.ts",
     "monitor": "tsx scripts/monitor.ts",
     "api:check": "tsx scripts/api-check.ts",
-    "eval:injection": "tsx scripts/eval-injection.ts"
+    "eval:injection": "tsx scripts/eval-injection.ts",
+    "evals": "tsx scripts/evals.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",

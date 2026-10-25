@@ -13,16 +13,23 @@ import { disruptions } from "./schema"
 
 export const FIXTURE_FILE = join(process.cwd(), "..", "fixtures", "agent-runs.json")
 
-/** Each table, and which of its rows are live work (the dataset's own rows are rebuilt by timeline:build). */
-const TABLES: { table: string; where: string }[] = [
-  { table: "agent_runs", where: "true" },
-  { table: "agent_steps", where: "true" },
-  { table: "cards", where: "true" },
+/** Scale mode's synthetic orders are not part of the recorded morning: their rows are never exported, and a load keeps them. */
+const REAL = "order_id is null or order_id not in (select id from orders where details ? 'synthetic_of')"
+
+/**
+ * Each table, and which of its rows are live work (the dataset's own rows are rebuilt by timeline:build). `clear` is
+ * what a load deletes first when it differs from what an export writes: a step whose run is gone is never exported,
+ * and is always cleared.
+ */
+const TABLES: { table: string; where: string; clear?: string }[] = [
+  { table: "agent_runs", where: REAL },
+  { table: "agent_steps", where: `run_id in (select id from agent_runs where ${REAL})`, clear: `run_id not in (select id from agent_runs where not (${REAL}))` },
+  { table: "cards", where: REAL },
   { table: "decisions", where: "true" },
   { table: "eval_cases", where: "true" },
-  { table: "timeline_entries", where: "origin = 'live'" },
-  { table: "facts", where: "origin in ('classifier', 'agent')" },
-  { table: "demo_events", where: "true" },
+  { table: "timeline_entries", where: `origin = 'live' and (${REAL})` },
+  { table: "facts", where: `origin in ('classifier', 'agent') and (${REAL})` },
+  { table: "demo_events", where: REAL },
   { table: "policies", where: "true" },
   { table: "policy_changes", where: "true" },
 ]
@@ -48,7 +55,7 @@ export async function loadFixtures(file = FIXTURE_FILE): Promise<Record<string, 
   const fixture = JSON.parse(await readFile(file, "utf8")) as Fixture
   const counts: Record<string, number> = {}
   await db.transaction(async (tx) => {
-    for (const { table, where } of [...TABLES].reverse()) await tx.execute(sql.raw(`delete from ${table} where ${where}`))
+    for (const { table, where, clear } of [...TABLES].reverse()) await tx.execute(sql.raw(`delete from ${table} where ${clear ?? where}`))
     for (const { table } of TABLES) {
       const rows = fixture.tables[table] ?? []
       counts[table] = rows.length

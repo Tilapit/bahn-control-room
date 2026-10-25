@@ -1245,3 +1245,61 @@ still found:
 - Every change to the recording is in `fixtures/agent-runs.json` and can be seen in its diff: the 68
   quiet-check sentences (twice: window wording, then stage words), and the two Monitor-started runs
   with their steps, timeline entries and demo events. Nothing an agent wrote was edited by hand.
+
+## After phase 8, task 2: scale mode, 1,000 orders
+
+**What it is.** `npm run seed:scale` (or "Add 900 synthetic orders" on the Demo page) copies the
+dataset's quiet orders 900 times so the app runs with 1,000 orders; `-- --off` (or the same button)
+removes them; `-- --dry` lists the templates. `lib/scale.ts` copies each template's rows (order,
+items, car, private addresses, conversations, messages, alerts, events, related records) with ids
+suffixed `-s001`…`-s900`, new references CD-430001…CD-430900 handed round-robin over the templates,
+customer references `PO-…-S001`, plates `DEMO-FI-…` and VINs `SYN…` from a hash, and
+`details.synthetic_of` naming the template. It builds their timeline, facts and search documents
+with the same `buildTimeline` as the dataset, and records a quiet check for each, so the Agents
+view has 968 quiet checks. All of it is fictional and marked: an order page of a copy says "Scale
+mode: a made-up copy of CD-420004". Adding takes 5.6 s (19,707 timeline entries, 4,526 facts), and
+removing takes 0.2 s.
+
+**Which orders are copied: 59 of the 68 quiet ones.** A copy must stay quiet, or 900 copies would
+wake 900 agent runs and flood For you. Left out: orders a demo scenario or test plays with; two
+whose related records name other orders (their copies would point at the template's neighbours);
+any order a Monitor rule or a published disruption notice would notice within 24 hours (checked
+hourly with the Monitor's own `silentSignal`, pulled out of the silent-car rule as a pure function
+for this); and, since task 1, the two orders an agent has worked on (CD-420806 and CD-421013 are
+quiet only because the simulated driver answered in a live chat; a copy gets the dataset records,
+not that chat, and would look silent).
+
+**What had to change for 1,000 orders.**
+- For you compiled every case file. `ordersWithOpenItems()` (SQL, in `lib/case.ts`) finds the
+  orders that can need anyone (open alerts, work items, incidents, claims, proposals, conversations,
+  support threads, cards and their group members); For you compiles only those, plus orders an agent
+  is watching and orders decided in the last day, and counts the rest with `orderCount()`. Checked:
+  the prefilter covers every order with a signal or a card (40 candidates for the 32 that have one).
+- Orders compiled all 1,000 (2.0 s, 1.5 MB). It now compiles the open orders and one page of 100
+  quiet ones ("Showing 100 of 966 orders with nothing open. Show 100 more"); a filter compiles only
+  its matches.
+- The Quiet checks tab rendered 968 rows (2.3 s, 2.3 MB). It shows the newest 100 and "And 868 more
+  quiet checks, older; each order is on the Orders page".
+- The Demo page's driver phone lists only the dataset's orders; `npm run agents:backfill` refuses to
+  run in scale mode (it would send 900 copies' messages to the models).
+- The recording (`fixtures/agent-runs.json`) never holds synthetic rows: export and load use one
+  predicate for "real" rows, and loading leaves the synthetic orders' rows alone.
+
+**Measured at 1,000 orders** (dev server, warm, `curl` total time): For you 0.09–0.11 s; search API
+0.04–0.10 s ("Hamburg ferry", "Volvo Turku", a synthetic reference); Orders 0.52 s; Orders filtered
+by "Hamburg" 0.39 s; Agents 0.31 s; Quiet checks 0.30 s; Demo 0.33 s. For you's header stays the
+same size: "24 orders need you · agents are handling 10 more without you · 966 have nothing open".
+
+**What was wrong first.**
+- `fixtures:load` failed after I changed it to keep synthetic rows: the committed recording held 73
+  agent steps whose runs no longer existed (a resumed backfill had deleted Quiet check runs but not
+  their steps), and the old loader had hidden that by deleting every step. The loader now clears
+  steps by the run they belong to, the backfill deletes steps with their runs, and the recording was
+  exported again: 2,337 → 2,264 steps, exactly those 73.
+- The first template list (61) still held CD-420806 and CD-421013 (see above); caught by reading the
+  `--dry` list after the task 1 Monitor run.
+
+**Not done.** Synthetic copies share their template's drivers, customers and managed sites, so a
+driver can appear on 16 orders at once; that is fine for timing and for calm, not for realism. The
+Agents Done tab is not paged (it grows with model work, not with quiet orders). Scale mode is not
+part of the recording: it is generated on the machine in seconds.

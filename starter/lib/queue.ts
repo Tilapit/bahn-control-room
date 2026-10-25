@@ -2,7 +2,7 @@
 // sorts it. Urgency is computed now, against the simulated clock, not stored.
 
 import { and, count, eq, gte, inArray, isNull, notInArray, or, sql } from "drizzle-orm"
-import { type CaseFile, getCases } from "./case"
+import { type CaseFile, getCases, orderCount, ordersWithOpenItems } from "./case"
 import { now as clockNow } from "./clock"
 import { db } from "./db"
 import { agentRuns, agentSteps, cards, decisions } from "./schema"
@@ -110,15 +110,23 @@ async function runInfo(runIds: (string | null)[]): Promise<Map<string, RunInfo>>
 
 export async function getQueue(): Promise<{ now: string; items: QueueItem[]; counts: QueueCounts }> {
   const at = await clockNow()
-  const [openCards, files, ordersWithRun, ruleRows, decidedRows] = await Promise.all([
+  // Only orders with something open, an agent still watching or a decision of the last day can need anyone;
+  // the rest are counted, not compiled (1,000 orders in scale mode).
+  const [openCards, openIds, total, ordersWithRun, ruleRows, decidedRows] = await Promise.all([
     db.select().from(cards).where(eq(cards.status, "open")),
-    getCases(),
+    ordersWithOpenItems(),
+    orderCount(),
     // Only agents that work a case count as handling it: not the Classifier reading messages, not a quiet check.
     db.selectDistinct({ orderId: agentRuns.orderId, nextCheckAt: agentRuns.nextCheckAt, status: agentRuns.status }).from(agentRuns).where(inArray(agentRuns.agent, HANDLING_AGENTS)),
     db.select({ n: count() }).from(decisions).where(eq(decisions.actor, "Agent, under your rule")),
     db.select({ orderId: cards.orderId, group: cards.group }).from(decisions).innerJoin(cards, eq(cards.id, decisions.cardId))
       .where(and(isNull(decisions.undoneAt), gte(decisions.decidedAt, new Date(at.getTime() - 24 * 3600_000)), sql`${decisions.actor} <> 'Agent, under your rule'`)),
   ])
+  // An agent that finished but looks again later is still handling the order, signal or not (Agents shows it as "Watching").
+  const watching = new Set(ordersWithRun.filter((run) => run.status === "done" && run.nextCheckAt && run.nextCheckAt > at).map((run) => run.orderId))
+  const decidedByYou = new Set(decidedRows.flatMap((row) => [row.orderId, ...(row.group ?? []).map((member) => member.order_id)]))
+  const ids = [...new Set([...openIds, ...watching, ...decidedByYou].filter((id): id is string => !!id))]
+  const files = ids.length ? await getCases(ids) : []
   const byOrder = new Map(files.map((file) => [file.order.id, file]))
   const runs = await runInfo(openCards.map((row) => row.runId))
   const items: QueueItem[] = []
@@ -131,9 +139,6 @@ export async function getQueue(): Promise<{ now: string; items: QueueItem[]; cou
 
   const withCard = new Set(items.flatMap((item) => [item.order.id, ...(item.card.group ?? []).map((member) => member.order_id)]))
   const withRun = new Set(ordersWithRun.map((run) => run.orderId))
-  // An agent that finished but looks again later is still handling the order, signal or not (Agents shows it as "Watching").
-  const watching = new Set(ordersWithRun.filter((run) => run.status === "done" && run.nextCheckAt && run.nextCheckAt > at).map((run) => run.orderId))
-  const decidedByYou = new Set(decidedRows.flatMap((row) => [row.orderId, ...(row.group ?? []).map((member) => member.order_id)]))
   let handling = 0
   let unattended = 0
   let decided = 0
@@ -148,7 +153,7 @@ export async function getQueue(): Promise<{ now: string; items: QueueItem[]; cou
   return {
     now: at.toISOString(),
     items,
-    counts: { needYou, handling, unattended, decided, quiet: files.length - needYou - handling - unattended - decided, total: files.length, byRule: ruleRows[0]?.n ?? 0 },
+    counts: { needYou, handling, unattended, decided, quiet: total - needYou - handling - unattended - decided, total, byRule: ruleRows[0]?.n ?? 0 },
   }
 }
 

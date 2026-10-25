@@ -55,6 +55,7 @@ export default async function OrderPage({ params }: Props) {
           <span><Icon name="route" />{placeName(order.route.from)} → {order.route.via ? `${placeName(order.route.via)} → ` : ""}{placeName(order.route.to)}{order.route.distanceKm ? ` · ${order.route.distanceKm.toLocaleString("en-GB")} km` : ""}{order.route.ferry ? " with ferry" : ""}</span>
           <span><Icon name="driver" />{order.driver ? `${order.driver.name}, ${order.driver.state === "driving" ? "on the gig" : order.driver.state === "finished" ? "finished" : order.driver.state === "cancelled" ? "cancelled the gig" : "driver, booked"}` : "No driver booked"}</span>
           <span><Icon name="building" />{order.customer.name}</span>
+          {order.synthetic && <span className="faint">Scale mode: a made-up copy of <Link className="link" href={`/orders/${order.synthetic}`}>{order.synthetic}</Link></span>}
           {(order.car.registration || order.tradeIn) && <span><Icon name="car" />{[order.car.registration, order.tradeIn ? `with trade-in ${order.tradeIn.label}` : null].filter(Boolean).join(" · ")}</span>}
         </div>
       </div>

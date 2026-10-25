@@ -95,6 +95,8 @@ export type CaseFile = {
     id: string
     reference: string
     customerReference: string | null
+    /** Scale mode: a synthetic copy of this dataset order (its reference), made to see the app with 1,000 orders. */
+    synthetic: string | null
     stage: { key: StageKey; label: string }
     customer: { id: string; name: string; tier: string | null }
     car: { make: string; model: string; year: number | null; registration: string | null; vin: string | null; fuel: string | null; label: string; image: string | null }
@@ -198,12 +200,23 @@ async function loadBundles(orderIds: string[] | null) {
   const siteMap = new Map(siteRows.map((row) => [row.id, { id: row.id, name: row.name, city: row.city, country: row.country, kind: row.kind, details: row.details }]))
   const customerMap = new Map(customerRows.map((row) => [row.id, row]))
   const inbox = shared.filter((row) => row.collection === "support_inbox_threads").map((row) => ({ id: row.id, details: row.details }))
+  // Each table grouped by order once, so a thousand case files cost a thousand lookups, not a thousand scans.
+  const group = <T,>(list: T[], keys: (row: T) => (string | null | undefined)[]) => {
+    const map = new Map<string, T[]>()
+    for (const row of list) for (const key of new Set(keys(row))) if (key) { const bucket = map.get(key); if (bucket) bucket.push(row); else map.set(key, [row]) }
+    return map
+  }
+  const relatedBy = group(relatedRows, (row) => [row.orderId])
+  // A thread filed on one order can concern another; it belongs to both case files.
+  const threadsBy = group(threadRows, (thread) => [thread.orderId, ...strings(thread.details.related_order_ids)])
+  const itemsBy = group(itemRows, (row) => [row.item.orderId])
+  const alertsBy = group(alertRows, (row) => [row.orderId])
+  const eventsBy = group(eventRows, (row) => [row.orderId])
 
   const bundles: Bundle[] = orderRows.map((order) => {
     const related: Record<string, RelatedRow[]> = {}
-    for (const row of relatedRows) if (row.orderId === order.id) (related[row.collection] ??= []).push({ id: row.id, details: row.details })
-    // A thread filed on one order can concern another; it belongs to both case files.
-    const threads = threadRows.filter((thread) => thread.orderId === order.id || strings(thread.details.related_order_ids).includes(order.id))
+    for (const row of relatedBy.get(order.id) ?? []) (related[row.collection] ??= []).push({ id: row.id, details: row.details })
+    const threads = threadsBy.get(order.id) ?? []
     const customer = customerMap.get(order.customerId)
     return {
       snapshotAt: null,
@@ -214,18 +227,18 @@ async function loadBundles(orderIds: string[] | null) {
         pickupSiteId: order.pickupSiteId, deliverySiteId: order.deliverySiteId,
       },
       customer: { id: order.customerId, name: customer?.name ?? "Unknown customer", tier: customer?.accountTier ?? null, country: customer?.country ?? null },
-      items: itemRows.filter((row) => row.item.orderId === order.id).map(({ item, vehicle }) => ({
+      items: (itemsBy.get(order.id) ?? []).map(({ item, vehicle }) => ({
         id: item.id, role: item.role, details: item.details,
         vehicle: { id: vehicle.id, make: vehicle.make, model: vehicle.model, year: vehicle.modelYear, fuel: vehicle.fuel, registration: vehicle.registration, vin: vehicle.syntheticVin },
       })),
-      alerts: alertRows.filter((alert) => alert.orderId === order.id).map((alert) => ({
+      alerts: (alertsBy.get(order.id) ?? []).map((alert) => ({
         id: alert.id, status: alert.status, severity: alert.severity, signal: alert.signal, summary: alert.summary, triggeredAt: iso(alert.triggeredAt), details: alert.details,
       })),
       conversations: threads.map((thread) => ({
         id: thread.id, orderId: thread.orderId, status: thread.status, category: thread.category, channel: thread.channel, updatedAt: iso(thread.updatedAt), details: thread.details,
       })),
       messages: [],
-      events: eventRows.filter((event) => event.orderId === order.id).map((event) => ({
+      events: (eventsBy.get(order.id) ?? []).map((event) => ({
         id: event.id, orderId: event.orderId, command: event.command, targetType: event.targetType, targetId: event.targetId, recordedAt: iso(event.recordedAt), details: event.details,
       })),
       related,
@@ -608,6 +621,7 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
     asOf: asOf.toISOString(),
     order: {
       id: bundle.order.id, reference: bundle.order.reference, customerReference: str(bundle.order.details.customer_reference),
+      synthetic: str(bundle.order.details.synthetic_of),
       stage: { key: stage, label: stageLabel },
       customer: { id: bundle.customer.id, name: bundle.customer.name, tier: bundle.customer.tier },
       car: car ? {
@@ -696,6 +710,36 @@ export async function getCases(orderIds?: string[]): Promise<CaseFile[]> {
       inboxEntries: inboxEntryRows.filter((entry) => threadIds.has(threadOfInbox.get(entry.evidence.id) ?? "")),
     })
   })
+}
+
+/**
+ * Orders that may have a live signal or an open card: an open or taken alert, an open task, an unresolved incident or
+ * handover claim, an earlier agent proposal still open, an open support inbox thread or conversation, or an open card.
+ * A superset, from the raw records; liveSignals() on the case file decides. Every other order has nothing open, so the
+ * queue does not need to compile its case file to know that.
+ */
+export async function ordersWithOpenItems(): Promise<string[]> {
+  const result = await db.execute<{ id: string }>(sql`
+    select distinct id from (
+      select order_id as id from alerts where status in ('OPEN', 'ACKNOWLEDGED')
+      union all select order_id from related_records where collection = 'work_items' and details->>'status' in ('OPEN', 'NEEDS_EXTERNAL_INPUT')
+      union all select order_id from related_records where collection = 'incidents' and coalesce(details->>'resolved_at', '') = ''
+      union all select order_id from related_records where collection = 'endpoint_claims' and details->>'resolution_status' = 'OPEN'
+      union all select order_id from related_records where collection = 'agent_proposals' and details->>'status' in ('PENDING_REVIEW', 'APPROVED_AWAITING_EXECUTION', 'FAILED')
+      union all select order_id from conversations where status = 'OPEN'
+      union all select jsonb_array_elements_text(coalesce(details->'related_order_ids', '[]'::jsonb)) from conversations where status = 'OPEN'
+      union all select jsonb_array_elements_text(coalesce(details->'candidate_order_ids', '[]'::jsonb) || coalesce(details->'linked_order_ids', '[]'::jsonb))
+        from related_records where collection = 'support_inbox_threads' and details->>'status' = 'OPEN'
+      union all select order_id from cards where status = 'open'
+      union all select jsonb_array_elements("group")->>'order_id' from cards where status = 'open' and "group" is not null and jsonb_typeof("group") = 'array'
+    ) open where id is not null and id in (select id from orders)`)
+  return [...result].map((row) => row.id)
+}
+
+/** How many orders there are. */
+export async function orderCount(): Promise<number> {
+  const [row] = await db.execute<{ n: number }>(sql`select count(*)::int as n from orders`)
+  return row?.n ?? 0
 }
 
 /** One compiled case file, by order id or reference. */

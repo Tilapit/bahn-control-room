@@ -81,7 +81,7 @@ export default async function Agents({ searchParams }: Props) {
   await connection()
   const { show } = await searchParams
   const filter: RunFilter = show === "done" || show === "quiet" ? show : "active"
-  const { now, rows, counts, today } = await agentsView(filter)
+  const { now, rows, counts, today, more } = await agentsView(filter)
   const nothingYet = counts.active + counts.done + counts.quiet === 0
   return <main className="content narrow">
     <div className="page-head">
@@ -106,6 +106,7 @@ export default async function Agents({ searchParams }: Props) {
       {filter === "quiet" && rows.length > 0 && <p className="note runs-note">Checked by code only, no model: these orders have no open alert, task, incident, claim or unanswered message.</p>}
       {rows.length === 0 ? <div className="empty"><h2>{EMPTY[filter].title}</h2><p>{EMPTY[filter].text}</p></div>
         : <RunGroups filter={filter} rows={rows} now={now} />}
+      {more > 0 && <p className="queue-end">And {more.toLocaleString("en-GB")} more quiet checks, older; each order is on the Orders page.</p>}
       {rows.length > 0 && filter === "active" && <p className="queue-end">Finished runs are under Done; the checks code makes on quiet orders are under Quiet checks.</p>}
     </>}
   </main>
