@@ -1,0 +1,43 @@
+/* Sources: grouped tables in rounded cards, each group with the rule the screens follow for it. Colours come only
+   from the theme's variables, so light and dark both follow the tokens in globals.css. */
+
+.srcs .page-head { margin-bottom: 12px; }
+.srcs-jump { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 16px; margin-bottom: 24px; border-bottom: 1px solid var(--line); }
+.srcs-chip { display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line-2); background: var(--surface); color: var(--text-2); font-size: 13px; font-weight: 500; text-decoration: none; }
+.srcs-chip:hover { color: var(--text); background: var(--hover); }
+
+.srcs-info { display: flex; gap: 12px; align-items: flex-start; padding: 16px 20px; margin-bottom: 32px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; font-size: 14px; color: var(--text); }
+.srcs-info p { margin: 0; max-width: none; }
+.srcs-info b { font-weight: 650; }
+.srcs-info-icon { flex: none; margin-top: 2px; color: var(--text-2); }
+
+.srcs-group { margin-bottom: 32px; scroll-margin-top: 72px; }
+.srcs-group h2 { font-size: 18px; font-weight: 650; letter-spacing: -0.01em; }
+.srcs-rule { margin-top: 2px; margin-bottom: 12px; font-size: 14px; color: var(--text-2); }
+
+.srcs-card { background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; }
+.srcs-row { display: grid; grid-template-columns: minmax(0, 1fr) 80px 72px 112px; gap: 16px; align-items: baseline; padding: 12px 16px; color: inherit; text-decoration: none; }
+.srcs-row + .srcs-row { border-top: 1px solid var(--line); }
+a.srcs-row:hover, .srcs-row[aria-current="true"] { background: var(--hover); }
+.srcs-head { padding-top: 8px; padding-bottom: 8px; font-size: 12px; font-weight: 600; color: var(--text-2); border-bottom: 1px solid var(--line-2); }
+.srcs-head + .srcs-row { border-top: 0; }
+.srcs-row .num { text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; }
+.srcs-source { display: grid; gap: 2px; min-width: 0; }
+.srcs-name { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: var(--text); }
+.srcs-name .icon { color: var(--text-3); }
+.srcs-about { font-size: 13px; color: var(--text-2); }
+.srcs-prod { font-size: 12px; color: var(--text-3); }
+.srcs-latest { white-space: nowrap; color: var(--text-2); }
+.srcs-latest.recent { color: var(--accent-text); font-weight: 600; }
+
+.srcs-entries-box { margin-top: 16px; }
+.srcs-entries-box .section-label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+
+.srcs-foot { display: grid; justify-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; font-size: 13px; color: var(--text-2); text-align: center; }
+.srcs-foot p { margin: 0; }
+.srcs-foot a { color: var(--accent-text); font-weight: 500; }
+
+@media (max-width: 760px) {
+  .srcs-row { grid-template-columns: minmax(0, 1fr) 64px 88px; }
+  .srcs-row > :nth-child(3) { display: none; }
+}

@@ -2392,3 +2392,31 @@ Screenshots light and dark (fork) and after the merge with the theme (me).
 
 **Not done.** The quiet tiles count every quiet check in the recording, not only today's; in the recorded morning
 they are the same 968 runs.
+
+### 5. Sources, after the mock
+
+Built by a fork in its worktree, then merged.
+
+**Built.** `app/sources/page.tsx` follows `design/sources.jpg` in structure, every number from our data:
+- the title and its line, and chips that jump to the four groups;
+- an info box with the Classifier's real counts, from `facts` with origin classifier, not superseded: "53 facts and 44
+  agreements across 41 orders. Each one is marked as said, not confirmed, and links back to the message it came
+  from." The mock's "Today" was dropped, because the Classifier read messages from several days;
+- four groups in white rounded cards, each with its rule:
+  - What people say: "Messages are treated as statements: 'the driver says', never proof on their own."
+  - Where the cars are: "An old position is shown as old, not as where the car is now."
+  - Bookings, quotes and alerts: "A quote is a price, not a booking. A booking is a plan, not proof the car moved."
+  - Inside the control room.
+- Each row shows the name, a muted line saying what the record is in this demo (GPS: "km to go, progress and an ETA
+  from the driver app; no map position", because the dataset has no coordinates), the "In production: …" line, and
+  records, orders and latest. Latest is relative to the demo clock, in the accent colour when under an hour old, with
+  the absolute Helsinki time on hover. An empty source shows 0 and "—";
+- a footer and Back to top.
+
+**Checked.** `npm run typecheck`; `npm test` 71/71 and all 11 eval groups. Screenshots light and dark (fork) and after
+the merge with the theme (me).
+
+**Wrong first, and changed.** "Latest" used ≤ 60 minutes, so "1 h ago" showed in the accent colour next to an
+uncoloured "1 h 7 min ago"; it is strictly under an hour now.
+
+**Not done.** The People and Agents counts include scale mode's synthetic orders, straight from the timeline.
