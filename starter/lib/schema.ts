@@ -288,7 +288,42 @@ export const decisions = pgTable("decisions", {
   executeAfter: timestamp("execute_after", { withTimezone: true }),
   // Set when the decision was carried out: the Executor ran, the agent got the reply, or the rejection was filed.
   finalizedAt: timestamp("finalized_at", { withTimezone: true }),
+  // Why a person rejected or changed the proposal: one reason, required in code (lib/outcomes.ts REASONS), and their words.
+  reason: text("reason"),
+  reasonText: text("reason_text"),
+  // positive: the agent's proposal approved unchanged; negative: rejected or changed. Null for an answer to a question.
+  label: text("label"),
 }, (table) => [index("decisions_card_idx").on(table.cardId)])
+
+/**
+ * Past decisions on agent proposals, what agents learn from without fine-tuning (lib/learning.ts): the dataset's own
+ * reviewed proposals (origin dataset, `npm run learning:seed`) and every decision carried out here (origin live).
+ * The outcome is checked in code after the deadline on the simulated clock, from the records (lib/outcomes.ts).
+ */
+export const pastDecisions = pgTable("past_decisions", {
+  id: text("id").primaryKey(),
+  origin: text("origin").notNull(), // dataset | live
+  orderId: text("order_id"),
+  cardId: text("card_id"),
+  // The action type in the policies' words (book_ferry, switch_driver, …) and what the card was about, by code.
+  action: text("action").notNull(),
+  situation: text("situation"),
+  proposal: text("proposal").notNull(),
+  costEur: doublePrecision("cost_eur"),
+  country: text("country"),
+  decidedAt: timestamp("decided_at", { withTimezone: true }).notNull(),
+  actor: text("actor").notNull(),
+  decision: text("decision").notNull(), // approved | changed | rejected
+  reason: text("reason"),
+  reasonText: text("reason_text"),
+  label: text("label"), // positive | negative
+  // When the outcome can be checked: the card's deadline, or 2 hours after the decision when it had none.
+  dueAt: timestamp("due_at", { withTimezone: true }),
+  outcome: text("outcome"), // worked | partly | didnt_work; null until checked, or when nothing was carried out
+  outcomeNote: text("outcome_note"),
+  outcomeSource: jsonb("outcome_source").$type<{ label: string; at: string; table: string; id: string } | null>(),
+  outcomeCheckedAt: timestamp("outcome_checked_at", { withTimezone: true }),
+}, (table) => [index("past_decisions_action_idx").on(table.action)])
 
 /** What the Executor did for one approved option, step by step. */
 export type ExecutedEffect = {

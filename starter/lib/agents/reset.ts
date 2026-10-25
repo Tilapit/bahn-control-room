@@ -4,7 +4,7 @@
 
 import { and, eq, inArray, sql } from "drizzle-orm"
 import { db } from "../db"
-import { agentRuns, agentSteps, cards, decisions, demoEvents, evalCases, facts, policies, takeovers, timelineEntries } from "../schema"
+import { agentRuns, agentSteps, cards, decisions, demoEvents, evalCases, facts, pastDecisions, policies, takeovers, timelineEntries } from "../schema"
 
 export async function resetOrderLiveState(orderId: string, options: { allFacts?: boolean } = {}): Promise<void> {
   const runs = await db.select({ id: agentRuns.id }).from(agentRuns).where(eq(agentRuns.orderId, orderId))
@@ -16,6 +16,7 @@ export async function resetOrderLiveState(orderId: string, options: { allFacts?:
     if (runIds.length) await tx.delete(agentRuns).where(inArray(agentRuns.id, runIds))
     if (cardIds.length) {
       await tx.delete(decisions).where(inArray(decisions.cardId, cardIds))
+      await tx.delete(pastDecisions).where(inArray(pastDecisions.cardId, cardIds))
       await tx.delete(evalCases).where(inArray(evalCases.cardId, cardIds))
     }
     await tx.delete(cards).where(and(eq(cards.orderId, orderId), eq(cards.origin, "agent")))
@@ -42,6 +43,7 @@ export async function resetOrderDecisions(orderId: string): Promise<void> {
     if (decisionIds.length) {
       await tx.delete(timelineEntries).where(and(eq(timelineEntries.orderId, orderId), sql`${timelineEntries.evidence}->>'table' = 'decisions'`))
       await tx.delete(decisions).where(inArray(decisions.id, decisionIds))
+      await tx.delete(pastDecisions).where(inArray(pastDecisions.id, decisionIds))
       await tx.delete(evalCases).where(inArray(evalCases.cardId, cardIds))
     }
     await tx.update(cards).set({ status: "open" }).where(eq(cards.id, newest.id))
@@ -55,6 +57,7 @@ export async function resetAllLiveState(): Promise<void> {
     await tx.delete(agentSteps)
     await tx.delete(agentRuns)
     await tx.delete(decisions)
+    await tx.delete(pastDecisions).where(eq(pastDecisions.origin, "live"))
     await tx.delete(evalCases)
     await tx.delete(cards).where(eq(cards.origin, "agent"))
     await tx.update(cards).set({ status: "open" }).where(eq(cards.origin, "alert"))
@@ -80,6 +83,7 @@ export async function forgetInvestigations(orderId: string): Promise<void> {
     if (runIds.length) await tx.delete(agentRuns).where(inArray(agentRuns.id, runIds))
     if (cardIds.length) {
       await tx.delete(decisions).where(inArray(decisions.cardId, cardIds))
+      await tx.delete(pastDecisions).where(inArray(pastDecisions.cardId, cardIds))
       await tx.delete(evalCases).where(inArray(evalCases.cardId, cardIds))
       await tx.delete(cards).where(inArray(cards.id, cardIds))
     }

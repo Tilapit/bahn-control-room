@@ -12,6 +12,7 @@ import { db } from "./db"
 import { execute } from "./executor"
 import { writeEntry } from "./agents/entries"
 import { hasApiKey } from "./agents/llm"
+import { checkOutcomes, feedbackError, feedbackRule, recordPastDecision, type Feedback } from "./outcomes"
 import { countDecision } from "./policies"
 import { agentRuns, cards, decisions, evalCases, timelineEntries } from "./schema"
 import type { CardOption } from "./schema"
@@ -50,7 +51,7 @@ function pendingWord(kind: Kind, option: CardOption): string {
   return "Carrying it out"
 }
 
-export async function decide(cardId: string, optionId: string, replyText: string | null, actor = "Ops") {
+export async function decide(cardId: string, optionId: string, replyText: string | null, feedback: Feedback = {}, actor = "Ops") {
   const [card] = await db.select().from(cards).where(eq(cards.id, cardId)).limit(1)
   if (!card) throw new DecisionError("This card no longer exists.", 404)
   if (card.status !== "open") throw new DecisionError("Someone already decided this card.", 409)
@@ -60,6 +61,13 @@ export async function decide(cardId: string, optionId: string, replyText: string
   if (!option) throw new DecisionError("That option is not on this card.")
   const kind = kindOf(option)
   if (kind === "reply" && !replyText?.trim()) throw new DecisionError("Write the reply first.")
+  // Rejecting or changing the proposal needs one reason; approving the agent's own first option is a positive label.
+  const primaryOption = card.options.find((candidate) => candidate.kind !== "reject" && candidate.action !== "reject")
+  const rule = feedbackRule(kind, option.id === primaryOption?.id)
+  const refused = feedbackError(rule, feedback)
+  if (refused) throw new DecisionError(refused)
+  const reason = rule.needsReason ? feedback.reason ?? null : null
+  const reasonText = rule.needsReason ? feedback.reasonText?.trim() || null : null
 
   const at = await clockNow()
   const decisionId = `dec_${randomUUID()}`
@@ -69,7 +77,7 @@ export async function decide(cardId: string, optionId: string, replyText: string
     : kind === "reject" ? `Rejected: ${card.headline.replace(/^[^:]+:\s*/, "")}${replyText ? `. “${replyText}”` : ""}`
     : `Approved: ${option.label.replace(/^Approve:\s*/i, "")}`
   await db.transaction(async (tx) => {
-    await tx.insert(decisions).values({ id: decisionId, cardId, decidedAt: at, actor, choice: option.id, replyText: replyText ?? null, executedEffect: null, executeAfter })
+    await tx.insert(decisions).values({ id: decisionId, cardId, decidedAt: at, actor, choice: option.id, replyText: replyText ?? null, executedEffect: null, executeAfter, reason, reasonText, label: rule.label })
     await tx.update(cards).set({ status: STATUS[kind] }).where(eq(cards.id, cardId))
     await tx.insert(timelineEntries).values({
       id: `decision:${decisionId}`, orderId: card.orderId, occurredAt: at, receivedAt: at, source: "person", channel: "control_room",
@@ -134,6 +142,7 @@ export async function finalizeDecision(decisionId: string): Promise<{ done: bool
   if (kind === "approve") {
     const effect = await execute({ decisionId, orderId: card.orderId, option, actor: decision.actor })
     await db.update(decisions).set({ executedEffect: effect }).where(eq(decisions.id, decisionId))
+    await recordPastDecision(decisionId)
     // "Approved unchanged" means the agent's own first proposal went through as written.
     for (const step of option.steps ?? []) await countDecision(step.action, option.id === primary?.id)
     const summary = effect.ok ? effect.steps.map((step) => step.summary).join("; ") : effect.steps.find((step) => !step.ok)?.summary ?? "Not carried out"
@@ -151,12 +160,13 @@ export async function finalizeDecision(decisionId: string): Promise<{ done: bool
 
   // Reject, reply and answer: the agent's proposal was not taken as written. That is a lesson worth keeping.
   for (const action of primaryActions) await countDecision(action, false)
+  await recordPastDecision(decisionId)
   if (kind === "reject" || kind === "reply") {
     const file = await getCase(card.orderId)
     await db.insert(evalCases).values({
       id: `eval_${randomUUID().slice(0, 12)}`, cardId: card.id, createdAt: await clockNow(),
       caseSnapshot: file ?? {}, agentProposal: { headline: card.headline, whatHappened: card.whatHappened, findings: card.findings, options: card.options },
-      humanCorrection: { choice: kind, reply: decision.replyText, rejected: primary?.label ?? null },
+      humanCorrection: { choice: kind, reply: decision.replyText, rejected: primary?.label ?? null, reason: decision.reason, reasonText: decision.reasonText },
     })
   }
   if (card.runId) {
@@ -174,6 +184,8 @@ export async function sweepDecisions(): Promise<void> {
   const overdue = await db.select({ id: decisions.id }).from(decisions)
     .where(and(isNull(decisions.finalizedAt), isNull(decisions.undoneAt), lt(decisions.executeAfter, new Date())))
   for (const row of overdue) await finalizeDecision(row.id)
+  // Decisions whose deadline has passed on the simulated clock get their outcome from the records.
+  await checkOutcomes().catch((error) => console.error("outcomes", error))
 }
 
 async function resumeAgent(runId: string, content: string): Promise<void> {

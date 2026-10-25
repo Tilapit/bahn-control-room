@@ -1935,3 +1935,42 @@ and a line says how many are shown. Two cards land at a debatable desk because t
 task and the stage decides: CD-420405 (a driver's flight request) and CD-420089 (a gig the driver cannot see), both
 Readiness. A road leg through a third country is not in the records, so a drive through Sweden cannot make an order
 cross-border.
+
+### 3. Decision feedback: a reason for every reject or change, outcomes checked in code
+
+Built by the fork that owns the schema (items 3 and 4), in its worktree; the case pane's part was wired in by me.
+The fork's own account of its first attempt comes with item 4's entry, where its report arrives.
+
+**Built.**
+- **A reason is required, in code.** `lib/reasons.ts` defines `feedbackRule`: approving the agent's own first
+  option is a positive label and needs no reason. Rejecting, replying with other instructions, or choosing another
+  option is negative and needs exactly one of five reasons (`too_expensive`, `wrong_facts`,
+  `customer_must_decide`, `too_early`, `other`) plus optional words. An answer to the agent's question, or marking a
+  code-built alert handled, carries no label. `decide()` in `lib/decisions.ts` refuses a decision without a valid
+  reason before anything is written: HTTP 400, "Pick one reason first: Too expensive, Wrong facts, Customer must
+  decide, Too early or Other." `decisions` has three new nullable columns, `reason`, `reason_text` and `label`
+  (pushed additively).
+- **In the pane.** "Reject or reply" (or R) opens "Why not as proposed? Pick one; the agents learn from it." with
+  the five chips (`app/ui/decision-reason.tsx`), then the other options, Reject, and the reply box. Every button
+  there stays disabled until a chip is picked, and the reason goes with the decision. A question card shows no chips.
+- **Outcomes.** Every decision carried out (after its undo window; undone ones never count) is kept in a new
+  `past_decisions` table with its action type, its situation (read from the card's words by code), cost, the
+  customer's country, the verdict (approved / changed / rejected), the reason, and a due time (the card's deadline,
+  or 2 h after the decision when there was none). `checkOutcomes()` runs from the existing decision sweep. Once the
+  simulated clock passes the due time, it reads the records and sets Worked / Partly / Didn't work, with the record
+  the outcome rests on (source and time). It never uses `Date.now()`.
+- **The recorded morning.** `npm run learning:seed` (added to `setup`) keeps the dataset's reviewed agent proposals
+  the same way (origin `dataset`), with outcomes from their execution records where the snapshot has them: 10
+  past decisions (6 approved, 3 changed, 1 rejected). 5 have an outcome (4 worked, 1 didn't work); the other 5 are
+  not due yet or have no record that settles them. `fixtures:load` keeps them, and resets only the live ones.
+
+**Checked.** `tests/feedback.test.ts` and `tests/decisions.test.ts`: 12 tests pass. They cover the rule (positive
+without a reason; negative needs one; an answer has no label), situations from a card's words, and, against the
+database, a reject refused without a reason and kept with one. On the running app a POST of a reply with no reason
+returned 400 with that sentence, and nothing was written. A screenshot with R pressed shows the chips above the
+reject and reply, with both disabled until a chip is picked. The table counts above were read from the database.
+`npm run typecheck` passes.
+
+**Wrong first (mine).** Merging hit a conflict in `app/layout.tsx`: item 2 and item 3 each added a stylesheet import
+on the same line. Both are kept. R still puts the cursor in the reply box; the reasons sit above it and Send stays
+disabled until one is picked, which the placeholder does not say yet.

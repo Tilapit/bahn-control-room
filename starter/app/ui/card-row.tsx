@@ -8,6 +8,7 @@ import { problemPhrase } from "@/lib/status"
 import { optionWords, stepList, type StepZones } from "@/lib/present/steps"
 import type { CardOption, CardStep } from "@/lib/schema"
 import { clock, long, relative, zoneShort } from "@/lib/time"
+import { DecisionReason, EMPTY_REASON, type ReasonValue } from "./decision-reason"
 import { Icon } from "./icons"
 import { TakenOverBar, TakeOverButton } from "./takeover"
 import { CrossBorder, useTeamView } from "./view-switcher"
@@ -165,6 +166,8 @@ export function CaseDetail({ item, now, onOrderPage = false, keys = false, onDec
   const [error, setError] = useState<string | null>(null)
   const [reply, setReply] = useState("")
   const [answering, setAnswering] = useState(false)
+  // Rejecting or changing the proposal needs one reason (the decision API refuses it without one).
+  const [reason, setReason] = useState<ReasonValue>(EMPTY_REASON)
   const replyRef = useRef<HTMLInputElement>(null)
   const { card, order, urgency } = item
   const customer = order.customer
@@ -184,13 +187,13 @@ export function CaseDetail({ item, now, onOrderPage = false, keys = false, onDec
   // "R" opens the reply box and puts the cursor in it.
   useEffect(() => { if (answering) replyRef.current?.focus() }, [answering])
 
-  async function decide(optionId: string, label: string, replyText?: string) {
+  async function decide(optionId: string, label: string, replyText?: string, withReason = false) {
     setBusy(optionId)
     setError(null)
     try {
       const response = await fetch(`/api/cards/${encodeURIComponent(card.id)}/decision`, {
         method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ optionId, replyText: replyText ?? null }),
+        body: JSON.stringify({ optionId, replyText: replyText ?? null, reason: withReason ? reason.reason : null, reasonText: withReason ? reason.text.trim() || null : null }),
       })
       const result = await response.json() as { decisionId?: string; message?: string; executesAt?: string | null; error?: string }
       if (!response.ok || !result.decisionId) throw new Error(result.error ?? "The decision was not saved.")
@@ -259,16 +262,17 @@ export function CaseDetail({ item, now, onOrderPage = false, keys = false, onDec
     </div>
 
     {answering && <div className="answer-box">
+      {!question && <DecisionReason value={reason} onChange={setReason} disabled={!!busy} />}
       {others.map((option) => <div className="other-option" key={option.id}>
-        <button type="button" className="btn small" disabled={!!busy} onClick={() => decide(option.id, option.label)}>{busy === option.id ? "Saving…" : buttonLabel(option)}</button>
+        <button type="button" className="btn small" disabled={!!busy || (!question && !reason.reason)} onClick={() => decide(option.id, option.label, undefined, !question)}>{busy === option.id ? "Saving…" : buttonLabel(option)}</button>
         <span className="note">If you choose it: {optionWords(option, order.zones) ?? option.effect_text}.</span>
       </div>)}
       <div className="answer-row">
-        {rejects.map((option) => <button key={option.id} type="button" className="btn small" disabled={!!busy} onClick={() => decide(option.id, option.label)}>{busy === option.id ? "Saving…" : buttonLabel(option)}</button>)}
+        {rejects.map((option) => <button key={option.id} type="button" className="btn small" disabled={!!busy || !reason.reason} onClick={() => decide(option.id, option.label, undefined, true)}>{busy === option.id ? "Saving…" : buttonLabel(option)}</button>)}
       </div>
-      {fromAgent && !fromMonitor && <form className="reply" onSubmit={(event) => { event.preventDefault(); if (reply.trim()) decide("reply", "Reply sent to the agent", reply.trim()) }}>
+      {fromAgent && !fromMonitor && <form className="reply" onSubmit={(event) => { event.preventDefault(); if (reply.trim() && reason.reason) decide("reply", "Reply sent to the agent", reply.trim(), true) }}>
         <input ref={replyRef} value={reply} onChange={(event) => setReply(event.target.value)} placeholder="Or tell the agent what to do instead" aria-label="Reply to the agent" />
-        <button type="submit" className="btn small" disabled={!reply.trim() || !!busy}>Send to agent</button>
+        <button type="submit" className="btn small" disabled={!reply.trim() || !reason.reason || !!busy}>Send to agent</button>
       </form>}
     </div>}
 

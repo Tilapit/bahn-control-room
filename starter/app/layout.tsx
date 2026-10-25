@@ -9,6 +9,7 @@ import { DemoLink, Nav } from "./ui/nav"
 import { TopSearch } from "./ui/top-search"
 import "./globals.css"
 import "./teams.css"
+import "./learning.css"
 
 export const metadata: Metadata = {
   title: { default: "Control Room", template: "%s · Control Room" },

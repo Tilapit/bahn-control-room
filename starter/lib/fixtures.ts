@@ -26,6 +26,7 @@ const TABLES: { table: string; where: string; clear?: string }[] = [
   { table: "agent_steps", where: `run_id in (select id from agent_runs where ${REAL})`, clear: `run_id not in (select id from agent_runs where not (${REAL}))` },
   { table: "cards", where: REAL },
   { table: "decisions", where: "true" },
+  { table: "past_decisions", where: "origin = 'live'" },
   { table: "eval_cases", where: "true" },
   { table: "timeline_entries", where: `origin = 'live' and (${REAL})` },
   { table: "facts", where: `origin in ('classifier', 'agent') and (${REAL})` },

@@ -9,7 +9,7 @@ import { after, before, describe, it } from "node:test"
 import { eq, inArray, or, sql } from "drizzle-orm"
 import { closeDb, db } from "@/lib/db"
 import { canUndo, decide, finalizeDecision, isDue, undo, UNDO_SECONDS } from "@/lib/decisions"
-import { cards, decisions, orders, policies, timelineEntries } from "@/lib/schema"
+import { cards, decisions, orders, pastDecisions, policies, timelineEntries } from "@/lib/schema"
 import type { CardOption } from "@/lib/schema"
 
 const T = Date.parse("2026-10-25T10:00:00Z")
@@ -75,6 +75,7 @@ describe("undo window, on the real decision path", async () => {
       await db.delete(decisions).where(inArray(decisions.id, ids))
     }
     await db.delete(cards).where(eq(cards.id, cardId))
+    await db.delete(pastDecisions).where(eq(pastDecisions.cardId, cardId))
     // The approval moved the "approved unchanged" counters; put them back as they were.
     for (const row of policyRows) await db.update(policies).set({ approvedUnchangedCount: row.approvedUnchangedCount, decidedCount: row.decidedCount }).where(eq(policies.action, row.action))
     await closeDb()

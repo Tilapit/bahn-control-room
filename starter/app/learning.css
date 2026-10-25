@@ -1,0 +1,17 @@
+/* Decision feedback and learning (lib/outcomes.ts, lib/learning.ts). Uses the tokens in globals.css. */
+
+.reason { border: 0; padding: 0; margin: 8px 0 0; min-width: 0; }
+.reason legend { padding: 0; margin-bottom: 8px; font-size: 14px; color: var(--text-2); }
+.reason-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.reason-chip {
+  font: inherit; font-size: 14px; line-height: 1.2; padding: 4px 12px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line-2); background: var(--surface); color: var(--text);
+}
+.reason-chip:hover { background: var(--hover); }
+.reason-chip[data-on="true"] { border-color: var(--accent); color: var(--accent-text); background: var(--accent-soft); }
+.reason-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.reason-text {
+  display: block; width: 100%; max-width: 480px; margin-top: 8px; font: inherit; font-size: 14px; padding: 4px 8px;
+  border: 1px solid var(--line-2); border-radius: var(--radius-s); background: var(--surface); color: var(--text);
+}
+.reason:disabled .reason-chip { cursor: default; opacity: 0.6; }
