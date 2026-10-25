@@ -1,0 +1,920 @@
+{
+  "run": {
+    "id": "run_799c4044",
+    "orderId": "ord-00299",
+    "agent": "Investigator",
+    "model": "claude-sonnet-5-5",
+    "trigger": "Open signals on this order: taken alert: ferry sold out; open incident: no ferry space; earlier agent proposal waiting for review; earlier agent proposal failed; unanswered message in case workspace.",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:00:00.000Z",
+    "status": "waiting_person",
+    "outcomeSummary": "overnight ferry sold out; Sat 14:00 sailing quoted, not booked",
+    "nextCheckAt": null,
+    "inputTokens": 5737,
+    "outputTokens": 8226,
+    "cacheReadTokens": 50213,
+    "cacheWriteTokens": 9042,
+    "costUsd": 0.06488163999999999,
+    "escalation": null,
+    "reference": "CD-420299"
+  },
+  "steps": [
+    {
+      "id": "run_799c4044:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_call",
+      "tool": "get_case",
+      "input": {
+        "order": "CD-420299"
+      },
+      "output": null,
+      "summary": "Called get_case"
+    },
+    {
+      "id": "run_799c4044:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "get_case",
+      "input": {
+        "order": "CD-420299"
+      },
+      "output": {
+        "data": null,
+        "content": "CD-420299 · BMW M4 2026 · Driver booked, waiting for pickup\nCustomer (pays; any contact needs a person's approval): Kavellora Car House, their reference PO-003-0299\nRoute: Tavellor Leipzig, Leipzig → private address, Helsinki · 1780 km · with ferry\nDriver: Camille Emberwick, booked, lives in Pori, FI\nNow: Wed 21 Oct, 11:00 in Leipzig, 12:00 in Helsinki (09:00 UTC). Timeline times are Leipzig time; key times are in their own place's time.\n\nKEY TIMES\n- Pickup slot, Leipzig: Fri 23 Oct 11:00–13:00 CEST. Source: Ops, with the route plan [E1]\n- Delivery promise, Helsinki: Tue 27 Oct 13:00–15:00 EET. Source: Kavellora Car House, order form [E2]\n\nAGREED AND STATED\n- Pickup handover: The service desk checks the completed workshop release before giving out the keys. The workshop completion sheet must be signed before the service desk can mark the car ready for collection. (confirmed; Site profile, Tavellor Leipzig) [E3]\n- Pickup contact: Oscar Alderfield, site desk (confirmed; Site profile, Tavellor Leipzig) [E3]\n- Delivery handover: The receiving address has private parking. Confirm the space and who can sign the handover. (stated, not confirmed; Kavellora Car House, order form) [E4]\n- Delivery contact: Phoebe Fallowfield, handoff contact (stated, not confirmed; Kavellora Car House, order form) [E4]\n\nOPEN\n- Alert (high, taken by Driver travel, not resolved), raised Wed 21 Oct 09:26 CEST: Ferry sold out. \"Current crossing is unavailable; alternative and customer promise need a decision.\" A signal, not a diagnosis [E5]\n- Incident (awaiting decision, Driver travel): no ferry space. [E6]\n- Earlier agent proposal (waiting for review): Verify the provider outcome before any retry and review the later crossing with the customer. An earlier booking attempt has no confirmation; the next-day quote is not a reservation. [E7]\n- Earlier agent proposal (failed): Attempt to book the next-day quoted vehicle crossing. Provider request timed out without a confirmation reference. Outcome needs reconciliation; no reservation is recorded. [E8]\n- Not answered yet: Camille Emberwick (case workspace), Wed 21 Oct 10:05 CEST [E9]\n\nROUTE AND TRAVEL\n- Leg: Tavellor Leipzig, Leipzig → Helsinki (private), drive with ferry, 1780 km, assigned, Camille Emberwick\n- Driver gig: taken by a driver, fee €1,277\nBOOKED: nothing is booked for this order\nQUOTES AND AVAILABILITY CHECKS (NOT bookings):\n- Sold out: the Sat 24 Oct 00:00 CEST sailing has no vehicle space, checked Wed 21 Oct 09:00 CEST [E10]\n- Quote: Vela Coast Lines, departs Sat 24 Oct 14:00 CEST, €387, checked Wed 21 Oct 09:00 CEST [E11]\n- Planning estimate (a range from a planning table, not live traffic, not a position): Leipzig to West Baltic terminal in Hamburg is about 400 km, 4 h to 5 h 30 min of driving without breaks or check-in [E12]\n\nTIMELINE (newest first; the 34 most recent entries, stage changes left out; use timeline() for older ones)\nWed 21 Oct\n10:36 Driver travel in #crossing-desk (Internal (Slack), internal): \"Taking the crossing check. Reconcile the timed-out booking before offering a replacement sailing.\" [E13]\n10:36 Driver travel: Driver travel took the alert: ferry sold out [E14]\n10:17 Travel planning agent in #crossing-desk (Internal (Slack), internal): \"A new crossing option is awaiting review; capacity and the receiving window still need checking.\" [E15]\n10:16 Travel planning agent: Proposed: Verify the provider outcome before any retry and review the later crossing with the customer. Waiting for review [E7]\n10:14 Driver travel (Internal (Slack), internal): \"No ferry booking, hotel booking or changed customer promise exists yet. Prepare a reviewable plan with the cost and ETA difference.\" [E16]\n10:05 Camille Emberwick (Driver chat): \"The later sailing can work for me if the overnight stop and return travel are arranged. I have not changed my pickup time.\" [E9]\n09:56 Kavellora Car House (Email): \"Please keep us informed. We need to approve a later delivery date before it is promised to the receiving contact.\" [E17]\n09:47 Support desk (Driver chat): \"The overnight crossing is unavailable. I am checking an alternative and will confirm the revised plan before you start toward the terminal.\" [E18]\n09:38 Driver travel (Internal (Slack), internal): \"The overnight sailing returned sold out. The later sailing has a quote only. Check driver rest and customer promise before purchase.\" [E19]\n09:29 Support desk (Driver chat): \"It is not booked. I am checking capacity against the pickup and delivery windows now.\" [E20]\n09:28 Driver travel in #crossing-desk (Internal (Slack), internal): \"The earlier booking attempt timed out without a confirmation reference. Its outcome needs reconciliation.\" [E21]\n09:27 Alert routing in #crossing-desk (Internal (Slack), internal): \"The intended vehicle sailing has no confirmed space. Do not show the old quote as a booking.\" [E22]\n09:26 Monitoring: Ferry sold out (high alert) (A SIGNAL, NOT A DIAGNOSIS) [E5]\n09:20 Camille Emberwick (Driver chat): \"I have the gig for CD-420299, but I do not have a ferry reference. Is the overnight vehicle crossing booked?\" [E23]\n09:10 Travel planning agent: Attempt failed: attempt to book the next-day quoted vehicle crossing [E24]\n09:06 Driver travel: Approved: attempt to book the next-day quoted vehicle crossing [E25]\n09:02 Travel planning agent: Proposed: Attempt to book the next-day quoted vehicle crossing [E8]\n09:00 Vela Coast Lines: Ferry quote, not booked: Vela Coast Lines, departs Sat 24 Oct 14:00 CEST, €387 (QUOTE, NOT BOOKED) [E11]\n09:00 Vela Coast Lines: Ferry sold out: the Sat 24 Oct 00:00 CEST sailing has no vehicle space (AVAILABILITY CHECK, NOT BOOKED) [E10]\n09:00 Driver travel: Incident opened: no ferry space [E6]\nMon 19 Oct\n18:20 Camille Emberwick: Camille Emberwick took the gig [E26]\n17:48 Dispatch agent: Gig offered to drivers at €1,277 [E27]\n15:37 Ops, with the route plan: Pickup slot: Fri 23 Oct 11:00–13:00 CEST at Tavellor Leipzig, Leipzig [E1]\n15:37 Transport planning: Route plan activated [E28]\n15:19 Readiness desk: Pickup availability confirmed [E29]\n14:49 Transport planning: Route plan drafted [E30]\n14:13 Documents: Digital CMR prepared, not signed yet [E31]\n13:13 Kavellora Car House, order form: Delivery promise: Tue 27 Oct 13:00–15:00 EET at private address in Helsinki [E2]\n13:13 Kavellora Car House, order form: Pickup availability: Fri 23 Oct 09:00–17:00 CEST at Tavellor Leipzig, Leipzig [E32]\n13:13 Route planning table: Planning estimate: Leipzig to West Baltic terminal in Hamburg is about 400 km, 4 h to 5 h 30 min of driving [E12]\n13:13 Kavellora Car House, order form: Delivery handover: The receiving address has private parking. Confirm the space and who can sign the handover. [E4]\n13:13 Kavellora Car House: Order placed by Kavellora Car House [E33]",
+        "isError": false
+      },
+      "summary": "Read the case file of CD-420299"
+    },
+    {
+      "id": "run_799c4044:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_call",
+      "tool": "ferry_booking_status",
+      "input": {},
+      "output": null,
+      "summary": "Called ferry_booking_status"
+    },
+    {
+      "id": "run_799c4044:3",
+      "idx": 3,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "ferry_booking_status",
+      "input": {},
+      "output": {
+        "data": {
+          "text": "The booking request sent Wed 21 Oct 09:10 CEST did not reach the reservation system before it timed out. No booking was created from it, no vehicle space is held and nothing was charged. It is safe to send a new booking request.\nThere is no booking for this car on any sailing.",
+          "summary": "Ferry line has no booking for this car; the timed-out request created none and nothing was charged",
+          "hasBooking": false
+        },
+        "content": "The booking request sent Wed 21 Oct 09:10 CEST did not reach the reservation system before it timed out. No booking was created from it, no vehicle space is held and nothing was charged. It is safe to send a new booking request.\nThere is no booking for this car on any sailing.\nSource: [E34]",
+        "isError": false
+      },
+      "summary": "Asked the ferry line what it has on file: ferry line has no booking for this car; the timed-out request created none and nothing was charged"
+    },
+    {
+      "id": "run_799c4044:4",
+      "idx": 4,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_call",
+      "tool": "ferry_options",
+      "input": {
+        "after": "2026-10-23T00:00:00+02:00"
+      },
+      "output": null,
+      "summary": "Called ferry_options"
+    },
+    {
+      "id": "run_799c4044:5",
+      "idx": 5,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "ferry_options",
+      "input": {
+        "after": "2026-10-23T00:00:00+02:00"
+      },
+      "output": {
+        "data": {
+          "route": "West Baltic to South Finland",
+          "options": [
+            {
+              "id": "ferry:vela-coast-lines:2026-10-22T22:00:00.000Z",
+              "to": "South Finland terminal",
+              "from": "West Baltic terminal",
+              "state": "quote",
+              "provider": "Vela Coast Lines",
+              "arrivalAt": "2026-10-24T02:00:00.000Z",
+              "checkedAt": "2026-10-21T09:00:00.000Z",
+              "priceCents": 47900,
+              "departureAt": "2026-10-22T22:00:00.000Z",
+              "checkInCutoffAt": "2026-10-22T20:00:00.000Z",
+              "datasetOptionId": null
+            },
+            {
+              "id": "ferry:vela-coast-lines:2026-10-23T12:00:00.000Z",
+              "to": "South Finland terminal",
+              "from": "West Baltic terminal",
+              "state": "quote",
+              "provider": "Vela Coast Lines",
+              "arrivalAt": "2026-10-24T16:00:00.000Z",
+              "checkedAt": "2026-10-21T09:00:00.000Z",
+              "priceCents": 49900,
+              "departureAt": "2026-10-23T12:00:00.000Z",
+              "checkInCutoffAt": "2026-10-23T10:00:00.000Z",
+              "datasetOptionId": null
+            },
+            {
+              "id": "ferry:vela-coast-lines:2026-10-23T22:00:00.000Z",
+              "to": "South Finland terminal",
+              "from": "West Baltic terminal",
+              "state": "sold out",
+              "provider": "Vela Coast Lines",
+              "arrivalAt": "2026-10-25T02:00:00Z",
+              "checkedAt": "2026-10-21T09:00:00.000Z",
+              "priceCents": null,
+              "departureAt": "2026-10-23T22:00:00.000Z",
+              "checkInCutoffAt": "2026-10-23T20:00:00Z",
+              "datasetOptionId": "travel-xc1d8163d5443a606"
+            },
+            {
+              "id": "ferry:vela-coast-lines:2026-10-24T12:00:00.000Z",
+              "to": "South Finland terminal",
+              "from": "West Baltic terminal",
+              "state": "quote",
+              "provider": "Vela Coast Lines",
+              "arrivalAt": "2026-10-25T16:00:00Z",
+              "checkedAt": "2026-10-21T09:00:00.000Z",
+              "priceCents": 38700,
+              "departureAt": "2026-10-24T12:00:00.000Z",
+              "checkInCutoffAt": "2026-10-24T10:00:00Z",
+              "datasetOptionId": "travel-xf29ed1732d895f37"
+            },
+            {
+              "id": "ferry:vela-coast-lines:2026-10-24T22:00:00.000Z",
+              "to": "South Finland terminal",
+              "from": "West Baltic terminal",
+              "state": "quote",
+              "provider": "Vela Coast Lines",
+              "arrivalAt": "2026-10-26T02:00:00.000Z",
+              "checkedAt": "2026-10-21T09:00:00.000Z",
+              "priceCents": 45900,
+              "departureAt": "2026-10-24T22:00:00.000Z",
+              "checkInCutoffAt": "2026-10-24T20:00:00.000Z",
+              "datasetOptionId": null
+            },
+            {
+              "id": "ferry:vela-coast-lines:2026-10-25T12:00:00.000Z",
+              "to": "South Finland terminal",
+              "from": "West Baltic terminal",
+              "state": "quote",
+              "provider": "Vela Coast Lines",
+              "arrivalAt": "2026-10-26T16:00:00.000Z",
+              "checkedAt": "2026-10-21T09:00:00.000Z",
+              "priceCents": 36900,
+              "departureAt": "2026-10-25T12:00:00.000Z",
+              "checkInCutoffAt": "2026-10-25T10:00:00.000Z",
+              "datasetOptionId": null
+            }
+          ]
+        },
+        "content": "Sailings West Baltic to South Finland, checked 11:00 Hamburg time. These are quotes and availability checks, not bookings.\n- ferry:vela-coast-lines:2026-10-22T22:00:00.000Z: Vela Coast Lines, West Baltic to South Finland, departs Fri 23 Oct 00:00 CEST, check-in closes 22:00, arrives Sat 24 Oct 05:00 EEST, €479 (quote, not booked)\n- ferry:vela-coast-lines:2026-10-23T12:00:00.000Z: Vela Coast Lines, West Baltic to South Finland, departs Fri 23 Oct 14:00 CEST, check-in closes 12:00, arrives Sat 24 Oct 19:00 EEST, €499 (quote, not booked)\n- ferry:vela-coast-lines:2026-10-23T22:00:00.000Z: Vela Coast Lines, West Baltic to South Finland, departs Sat 24 Oct 00:00 CEST, check-in closes 22:00, arrives Sun 25 Oct 04:00 EET (sold out)\n- ferry:vela-coast-lines:2026-10-24T12:00:00.000Z: Vela Coast Lines, West Baltic to South Finland, departs Sat 24 Oct 14:00 CEST, check-in closes 12:00, arrives Sun 25 Oct 18:00 EET, €387 (quote, not booked)\n- ferry:vela-coast-lines:2026-10-24T22:00:00.000Z: Vela Coast Lines, West Baltic to South Finland, departs Sun 25 Oct 00:00 CEST, check-in closes 22:00, arrives Mon 26 Oct 04:00 EET, €459 (quote, not booked)\n- ferry:vela-coast-lines:2026-10-25T12:00:00.000Z: Vela Coast Lines, West Baltic to South Finland, departs Sun 25 Oct 13:00 CET, check-in closes 11:00, arrives Mon 26 Oct 18:00 EET, €369 (quote, not booked)\nSource: [E35]",
+        "isError": false
+      },
+      "summary": "Checked ferry sailings after Fri 23 Oct 00:00 CEST: Fri 23 Oct 00:00 €479 (quote, not booked); Fri 23 Oct 14:00 €499 (quote, not booked); Sat 24 Oct 00:00 sold out; Sat 24 Oct 14:00 €387 (quote, not booked); Sun 25 Oct 00:00 €459 (quote, not booked); Sun 25 Oct 13:00 €369 (quote, not booked)"
+    },
+    {
+      "id": "run_799c4044:6",
+      "idx": 6,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "thought",
+      "tool": null,
+      "input": null,
+      "output": {
+        "text": "Checking the Friday 14:00 sailing out of Leipzig — that's impossible given the noon check-in, and Saturday midnight is sold out. The Saturday 14:00 sailing works though: pick up Friday, drive the 400km to Hamburg, overnight there, check in Saturday noon, and the ferry arrives Sunday the 25th at 18:00 EET, which comfortably beats the Tuesday 13:00 Helsinki delivery deadline.\n\nI'll book that ferry for €387 plus a Hamburg hotel for Friday night, since the driver needs the overnight stop. The delivery date stays unchanged so no customer update is needed — I just need to find hotel options, and I can skip worrying about return travel from Helsinki to Pori for now.\n\n",
+        "model": "claude-sonnet-5-5"
+      },
+      "summary": "Checking the Friday 14:00 sailing out of Leipzig — that's impossible given the noon check-in, and Saturday midnight is sold out. The Saturday 14:00 sailing works though: pick up Friday, drive the 400km to Hamburg, overnight there, check in Saturday noon, and the ferry arrives Sunday the 25th at 18:00 EET, which comfortably beats the Tuesday 13:00 Helsinki delivery deadline. I'll book that ferry fo"
+    },
+    {
+      "id": "run_799c4044:7",
+      "idx": 7,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_call",
+      "tool": "hotel_options",
+      "input": {
+        "city": "Hamburg",
+        "check_in": "2026-10-23T18:00:00+02:00",
+        "check_out": "2026-10-24T09:00:00+02:00"
+      },
+      "output": null,
+      "summary": "Called hotel_options"
+    },
+    {
+      "id": "run_799c4044:8",
+      "idx": 8,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "hotel_options",
+      "input": {
+        "city": "Hamburg",
+        "check_in": "2026-10-23T18:00:00+02:00",
+        "check_out": "2026-10-24T09:00:00+02:00"
+      },
+      "output": {
+        "data": [
+          {
+            "id": "hotel:norderkai-lodge:hamburg:2026-10-23",
+            "city": "Hamburg",
+            "name": "Norderkai Lodge Hamburg",
+            "note": "2 km from the ferry terminal, secure parking for the car",
+            "checkIn": "2026-10-23T16:00:00.000Z",
+            "checkOut": "2026-10-24T07:00:00.000Z",
+            "priceCents": 9600
+          },
+          {
+            "id": "hotel:old-crane-hotel:hamburg:2026-10-23",
+            "city": "Hamburg",
+            "name": "Old Crane Hotel Hamburg",
+            "note": "city centre, street parking only",
+            "checkIn": "2026-10-23T16:00:00.000Z",
+            "checkOut": "2026-10-24T07:00:00.000Z",
+            "priceCents": 12000
+          },
+          {
+            "id": "hotel:harbour-gate-inn:hamburg:2026-10-23",
+            "city": "Hamburg",
+            "name": "Harbour Gate Inn Hamburg",
+            "note": "9 km out, free parking",
+            "checkIn": "2026-10-23T16:00:00.000Z",
+            "checkOut": "2026-10-24T07:00:00.000Z",
+            "priceCents": 10500
+          }
+        ],
+        "content": "Hotels in Hamburg. Quotes, not bookings.\n- hotel:norderkai-lodge:hamburg:2026-10-23: Norderkai Lodge Hamburg, €96 for Fri 23 Oct 18:00 CEST to Sat 24 Oct 09:00 CEST, 2 km from the ferry terminal, secure parking for the car (quote, not booked)\n- hotel:old-crane-hotel:hamburg:2026-10-23: Old Crane Hotel Hamburg, €120 for Fri 23 Oct 18:00 CEST to Sat 24 Oct 09:00 CEST, city centre, street parking only (quote, not booked)\n- hotel:harbour-gate-inn:hamburg:2026-10-23: Harbour Gate Inn Hamburg, €105 for Fri 23 Oct 18:00 CEST to Sat 24 Oct 09:00 CEST, 9 km out, free parking (quote, not booked)\nSource: [E36]",
+        "isError": false
+      },
+      "summary": "Looked up hotels in Hamburg"
+    },
+    {
+      "id": "run_799c4044:9",
+      "idx": 9,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_call",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [],
+        "findings": "\n<parameter name=\"findings\">[]",
+        "headline": "overnight ferry sold out; Sat 14:00 sailing quoted, not booked",
+        "reject_label": "x",
+        "what_happened": "The Sat 24 Oct 00:00 sailing is sold out, and the earlier booking attempt never reached the ferry line, so nothing is booked. The Sat 24 Oct 14:00 sailing has space (quote) and still arrives in time for the Tue 27 Oct Helsinki promise."
+      },
+      "output": null,
+      "summary": "Called propose"
+    },
+    {
+      "id": "run_799c4044:10",
+      "idx": 10,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [],
+        "findings": "\n<parameter name=\"findings\">[]",
+        "headline": "overnight ferry sold out; Sat 14:00 sailing quoted, not booked",
+        "reject_label": "x",
+        "what_happened": "The Sat 24 Oct 00:00 sailing is sold out, and the earlier booking attempt never reached the ferry line, so nothing is booked. The Sat 24 Oct 14:00 sailing has space (quote) and still arrives in time for the Tue 27 Oct Helsinki promise."
+      },
+      "output": {
+        "data": {
+          "problems": [
+            "Give three to six findings (you gave 0)",
+            "Give at least one option"
+          ]
+        },
+        "content": "The card was not shown to anyone. Fix these and call propose again:\n- Give three to six findings (you gave 0)\n- Give at least one option",
+        "isError": true
+      },
+      "summary": "Card sent back by code checks (2 problems)"
+    },
+    {
+      "id": "run_799c4044:11",
+      "idx": 11,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_call",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [
+          {
+            "label": "Approve: book Sat 24 Oct 14:00 ferry (€387) and Norderkai Lodge Hamburg (€96)",
+            "steps": [
+              {
+                "action": "book_ferry",
+                "params": {
+                  "option_id": "ferry:vela-coast-lines:2026-10-24T12:00:00.000Z"
+                }
+              },
+              {
+                "action": "book_hotel",
+                "params": {
+                  "option_id": "hotel:norderkai-lodge:hamburg:2026-10-23"
+                }
+              }
+            ],
+            "effect": "Books the ferry and hotel. Does not book the driver's return travel from Helsinki (to be arranged after delivery) and sends nothing to the customer. The Tue 27 Oct 13:00–15:00 EET delivery promise still holds, so the customer needs no message."
+          }
+        ],
+        "cost_eur": 483,
+        "findings": [
+          {
+            "text": "The ferry line says the 09:10 booking request never reached its reservation system; no booking exists, no space is held, nothing was charged, and a new request is safe.",
+            "source": "E34"
+          },
+          {
+            "text": "The Sat 24 Oct 00:00 CEST sailing has no vehicle space (sold out).",
+            "source": "E10"
+          },
+          {
+            "text": "Quote, not booked: Vela Coast Lines Sat 24 Oct 14:00 CEST, check-in closes 12:00, arrives Sun 25 Oct 18:00 EET, €387.",
+            "source": "E35"
+          },
+          {
+            "text": "Quote, not booked: Norderkai Lodge Hamburg, €96, Fri 23 Oct 18:00 to Sat 24 Oct 09:00, 2 km from the terminal, secure parking.",
+            "source": "E36"
+          },
+          {
+            "text": "Pickup in Leipzig is Fri 23 Oct 11:00–13:00 CEST; Leipzig to the Hamburg terminal is about 400 km, 4 h to 5 h 30 min of driving, so the driver can reach Hamburg Friday evening.",
+            "source": "E12"
+          },
+          {
+            "text": "The driver says the later sailing works if the overnight stop and return travel are arranged, and that their pickup time is unchanged.",
+            "source": "E9"
+          },
+          {
+            "text": "Kavellora Car House wrote that they must approve a later delivery date before it is promised to the receiving contact.",
+            "source": "E17"
+          }
+        ],
+        "headline": "overnight ferry sold out; Sat 14:00 sailing quoted, not booked",
+        "reject_label": "Reject: book nothing, I'll decide",
+        "what_happened": "The Sat 24 Oct 00:00 sailing is sold out, and the earlier booking attempt never reached the ferry line, so nothing is booked. The Sat 24 Oct 14:00 sailing has space (quote) and still arrives before the Tue 27 Oct Helsinki promise."
+      },
+      "output": null,
+      "summary": "Called propose"
+    },
+    {
+      "id": "run_799c4044:12",
+      "idx": 12,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [
+          {
+            "label": "Approve: book Sat 24 Oct 14:00 ferry (€387) and Norderkai Lodge Hamburg (€96)",
+            "steps": [
+              {
+                "action": "book_ferry",
+                "params": {
+                  "option_id": "ferry:vela-coast-lines:2026-10-24T12:00:00.000Z"
+                }
+              },
+              {
+                "action": "book_hotel",
+                "params": {
+                  "option_id": "hotel:norderkai-lodge:hamburg:2026-10-23"
+                }
+              }
+            ],
+            "effect": "Books the ferry and hotel. Does not book the driver's return travel from Helsinki (to be arranged after delivery) and sends nothing to the customer. The Tue 27 Oct 13:00–15:00 EET delivery promise still holds, so the customer needs no message."
+          }
+        ],
+        "cost_eur": 483,
+        "findings": [
+          {
+            "text": "The ferry line says the 09:10 booking request never reached its reservation system; no booking exists, no space is held, nothing was charged, and a new request is safe.",
+            "source": "E34"
+          },
+          {
+            "text": "The Sat 24 Oct 00:00 CEST sailing has no vehicle space (sold out).",
+            "source": "E10"
+          },
+          {
+            "text": "Quote, not booked: Vela Coast Lines Sat 24 Oct 14:00 CEST, check-in closes 12:00, arrives Sun 25 Oct 18:00 EET, €387.",
+            "source": "E35"
+          },
+          {
+            "text": "Quote, not booked: Norderkai Lodge Hamburg, €96, Fri 23 Oct 18:00 to Sat 24 Oct 09:00, 2 km from the terminal, secure parking.",
+            "source": "E36"
+          },
+          {
+            "text": "Pickup in Leipzig is Fri 23 Oct 11:00–13:00 CEST; Leipzig to the Hamburg terminal is about 400 km, 4 h to 5 h 30 min of driving, so the driver can reach Hamburg Friday evening.",
+            "source": "E12"
+          },
+          {
+            "text": "The driver says the later sailing works if the overnight stop and return travel are arranged, and that their pickup time is unchanged.",
+            "source": "E9"
+          },
+          {
+            "text": "Kavellora Car House wrote that they must approve a later delivery date before it is promised to the receiving contact.",
+            "source": "E17"
+          }
+        ],
+        "headline": "overnight ferry sold out; Sat 14:00 sailing quoted, not booked",
+        "reject_label": "Reject: book nothing, I'll decide",
+        "what_happened": "The Sat 24 Oct 00:00 sailing is sold out, and the earlier booking attempt never reached the ferry line, so nothing is booked. The Sat 24 Oct 14:00 sailing has space (quote) and still arrives before the Tue 27 Oct Helsinki promise."
+      },
+      "output": {
+        "data": [
+          {
+            "ok": true,
+            "note": "The lookup says no booking exists, no space is held, nothing was charged, and a new request is safe, which matches the finding.",
+            "finding": 0
+          },
+          {
+            "ok": true,
+            "note": "The availability check says the Sat 24 Oct 00:00 sailing has no vehicle space, and the finding reports it as sold out without calling it a booking.",
+            "finding": 1
+          },
+          {
+            "ok": true,
+            "note": "The Sat 24 Oct 14:00 sailing details, €387 price, 12:00 check-in close, arrival Sun 25 Oct 18:00 EET and quote-not-booked status all match the record.",
+            "finding": 2
+          },
+          {
+            "ok": true,
+            "note": "Norderkai Lodge Hamburg at €96 for Fri 18:00 to Sat 09:00, 2 km from the terminal with secure parking, matches the quote record.",
+            "finding": 3
+          },
+          {
+            "ok": false,
+            "note": "The cited planning estimate gives only the 400 km and 4 h to 5 h 30 min driving range; it contains no Leipzig pickup window of Fri 11:00–13:00, and it excludes breaks and traffic, so 'the driver can reach Hamburg Friday evening' is an unsupported conclusion stated as fact.",
+            "finding": 4
+          },
+          {
+            "ok": true,
+            "note": "The driver's message says the later sailing can work if the overnight stop and return travel are arranged and that the pickup time is unchanged, which matches the finding.",
+            "finding": 5
+          },
+          {
+            "ok": true,
+            "note": "Kavellora's message says they need to approve a later delivery date before it is promised to the receiving contact, which matches the finding.",
+            "finding": 6
+          },
+          {
+            "ok": false,
+            "note": "The Tue 27 Oct 13:00–15:00 EET delivery promise is stated in the headline, the 'what happened' text and the option, but no finding cites a record that holds that promise.",
+            "finding": null
+          },
+          {
+            "ok": true,
+            "note": "Both options match their labels, the Approve action sends nothing to the customer, and the customer is not contacted without an approval option.",
+            "finding": null
+          },
+          {
+            "ok": true,
+            "note": "The card does not state the driver's location as fact or pick between conflicting sources, and it contains no GPS claim that conflicts with the driver's message.",
+            "finding": null
+          },
+          {
+            "ok": true,
+            "note": "The language is plain and contains no internal codes or ids.",
+            "finding": null
+          }
+        ],
+        "content": "The verifier checked each claim against its source and found problems. The card was not shown yet. Fix these and call propose again:\n- Finding 5: The cited planning estimate gives only the 400 km and 4 h to 5 h 30 min driving range; it contains no Leipzig pickup window of Fri 11:00–13:00, and it excludes breaks and traffic, so 'the driver can reach Hamburg Friday evening' is an unsupported conclusion stated as fact.\n- The Tue 27 Oct 13:00–15:00 EET delivery promise is stated in the headline, the 'what happened' text and the option, but no finding cites a record that holds that promise.",
+        "isError": true
+      },
+      "summary": "Card sent back by the verifier (2 problems)"
+    },
+    {
+      "id": "run_799c4044:13",
+      "idx": 13,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_call",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [
+          {
+            "label": "Approve: book Sat 24 Oct 14:00 ferry (€387) and Norderkai Lodge Hamburg (€96)",
+            "steps": [
+              {
+                "action": "book_ferry",
+                "params": {
+                  "option_id": "ferry:vela-coast-lines:2026-10-24T12:00:00.000Z"
+                }
+              },
+              {
+                "action": "book_hotel",
+                "params": {
+                  "option_id": "hotel:norderkai-lodge:hamburg:2026-10-23"
+                }
+              }
+            ],
+            "effect": "Books the ferry and hotel. Does not book the driver's return travel from Helsinki and sends nothing to the customer. The Tue 27 Oct delivery promise still holds, so the customer needs no message."
+          }
+        ],
+        "cost_eur": 483,
+        "findings": [
+          {
+            "text": "The ferry line says the 09:10 booking request never reached its reservation system; no booking exists, no space is held, nothing was charged, and a new request is safe.",
+            "source": "E34"
+          },
+          {
+            "text": "The Sat 24 Oct 00:00 CEST sailing has no vehicle space (sold out).",
+            "source": "E10"
+          },
+          {
+            "text": "Quote, not booked: Vela Coast Lines Sat 24 Oct 14:00 CEST, check-in closes 12:00, arrives Sun 25 Oct 18:00 EET, €387.",
+            "source": "E35"
+          },
+          {
+            "text": "Quote, not booked: Norderkai Lodge Hamburg, €96, Fri 23 Oct 18:00 to Sat 24 Oct 09:00, 2 km from the terminal, secure parking.",
+            "source": "E36"
+          },
+          {
+            "text": "The delivery promise to Kavellora Car House is Tue 27 Oct 13:00–15:00 EET in Helsinki.",
+            "source": "E2"
+          },
+          {
+            "text": "The pickup slot is Fri 23 Oct 11:00–13:00 CEST in Leipzig; the planning estimate to the Hamburg terminal is about 400 km, 4 h to 5 h 30 min driving without breaks.",
+            "source": "E12"
+          },
+          {
+            "text": "The driver says the later sailing works if the overnight stop and return travel are arranged.",
+            "source": "E9"
+          }
+        ],
+        "headline": "overnight ferry sold out; Sat 14:00 sailing quoted, not booked",
+        "reject_label": "Reject: book nothing, I'll decide",
+        "what_happened": "The Sat 24 Oct 00:00 sailing is sold out, and the earlier booking attempt never reached the ferry line, so nothing is booked. The Sat 24 Oct 14:00 sailing has space (quote) and arrives Sun 25 Oct, before the Tue 27 Oct Helsinki promise."
+      },
+      "output": null,
+      "summary": "Called propose"
+    },
+    {
+      "id": "run_799c4044:14",
+      "idx": 14,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [
+          {
+            "label": "Approve: book Sat 24 Oct 14:00 ferry (€387) and Norderkai Lodge Hamburg (€96)",
+            "steps": [
+              {
+                "action": "book_ferry",
+                "params": {
+                  "option_id": "ferry:vela-coast-lines:2026-10-24T12:00:00.000Z"
+                }
+              },
+              {
+                "action": "book_hotel",
+                "params": {
+                  "option_id": "hotel:norderkai-lodge:hamburg:2026-10-23"
+                }
+              }
+            ],
+            "effect": "Books the ferry and hotel. Does not book the driver's return travel from Helsinki and sends nothing to the customer. The Tue 27 Oct delivery promise still holds, so the customer needs no message."
+          }
+        ],
+        "cost_eur": 483,
+        "findings": [
+          {
+            "text": "The ferry line says the 09:10 booking request never reached its reservation system; no booking exists, no space is held, nothing was charged, and a new request is safe.",
+            "source": "E34"
+          },
+          {
+            "text": "The Sat 24 Oct 00:00 CEST sailing has no vehicle space (sold out).",
+            "source": "E10"
+          },
+          {
+            "text": "Quote, not booked: Vela Coast Lines Sat 24 Oct 14:00 CEST, check-in closes 12:00, arrives Sun 25 Oct 18:00 EET, €387.",
+            "source": "E35"
+          },
+          {
+            "text": "Quote, not booked: Norderkai Lodge Hamburg, €96, Fri 23 Oct 18:00 to Sat 24 Oct 09:00, 2 km from the terminal, secure parking.",
+            "source": "E36"
+          },
+          {
+            "text": "The delivery promise to Kavellora Car House is Tue 27 Oct 13:00–15:00 EET in Helsinki.",
+            "source": "E2"
+          },
+          {
+            "text": "The pickup slot is Fri 23 Oct 11:00–13:00 CEST in Leipzig; the planning estimate to the Hamburg terminal is about 400 km, 4 h to 5 h 30 min driving without breaks.",
+            "source": "E12"
+          },
+          {
+            "text": "The driver says the later sailing works if the overnight stop and return travel are arranged.",
+            "source": "E9"
+          }
+        ],
+        "headline": "overnight ferry sold out; Sat 14:00 sailing quoted, not booked",
+        "reject_label": "Reject: book nothing, I'll decide",
+        "what_happened": "The Sat 24 Oct 00:00 sailing is sold out, and the earlier booking attempt never reached the ferry line, so nothing is booked. The Sat 24 Oct 14:00 sailing has space (quote) and arrives Sun 25 Oct, before the Tue 27 Oct Helsinki promise."
+      },
+      "output": {
+        "data": {
+          "cardId": "card_a8bddd15-9b6",
+          "verifier": [
+            {
+              "ok": true,
+              "note": "The ferry line record says no booking exists, no space is held, nothing was charged, and a new request is safe.",
+              "finding": 0
+            },
+            {
+              "ok": true,
+              "note": "The availability check says the Sat 24 Oct 00:00 sailing is sold out with no vehicle space.",
+              "finding": 1
+            },
+            {
+              "ok": true,
+              "note": "The quote record supports the Sat 24 Oct 14:00 sailing at €387, check-in 12:00, arriving Sun 25 Oct 18:00 EET, not booked.",
+              "finding": 2
+            },
+            {
+              "ok": true,
+              "note": "The hotel quote record supports Norderkai Lodge Hamburg at €96 for Fri 18:00 to Sat 09:00, 2 km from the terminal, as a quote not booked.",
+              "finding": 3
+            },
+            {
+              "ok": true,
+              "note": "The order form states the delivery promise as Tue 27 Oct 13:00–15:00 EET at a private address in Helsinki.",
+              "finding": 4
+            },
+            {
+              "ok": false,
+              "note": "The cited route planning table gives the 400 km and 4 h to 5 h 30 min estimate but does not contain the Fri 23 Oct 11:00–13:00 CEST Leipzig pickup slot the finding attributes to it.",
+              "finding": 5
+            },
+            {
+              "ok": true,
+              "note": "The driver's message says the later sailing can work if the overnight stop and return travel are arranged and that the pickup time is unchanged.",
+              "finding": 6
+            },
+            {
+              "ok": true,
+              "note": "The approve option's stated effect of booking the ferry and hotel matches its carried actions, and it does not book the driver's return travel or message the customer.",
+              "finding": null
+            },
+            {
+              "ok": true,
+              "note": "The reject option leaves everything unbooked, matching its label.",
+              "finding": null
+            },
+            {
+              "ok": true,
+              "note": "The card shows the ferry and hotel as quotes not booked and does not contradict the sources on booking status.",
+              "finding": null
+            },
+            {
+              "ok": true,
+              "note": "The plain-language wording contains no internal ids or codes on the card itself.",
+              "finding": null
+            }
+          ]
+        },
+        "content": "The card is in front of a person now. Your run ends here.",
+        "isError": false
+      },
+      "summary": "Proposed to a person: Approve: book Sat 24 Oct 14:00 ferry (€387) and Norderkai Lodge Hamburg (€96)"
+    }
+  ],
+  "cards": [
+    {
+      "id": "card_a8bddd15-9b6",
+      "orderId": "ord-00299",
+      "runId": "run_799c4044",
+      "createdAt": "2026-10-21T09:00:00.000Z",
+      "kind": "decision",
+      "status": "open",
+      "headline": "BMW M4: overnight ferry sold out; Sat 14:00 sailing quoted, not booked",
+      "whatHappened": "The Sat 24 Oct 00:00 sailing is sold out, and the earlier booking attempt never reached the ferry line, so nothing is booked. The Sat 24 Oct 14:00 sailing has space (quote) and arrives Sun 25 Oct, before the Tue 27 Oct Helsinki promise.",
+      "findings": [
+        {
+          "at": "2026-10-21T09:00:00.000Z",
+          "text": "The ferry line says the 09:10 booking request never reached its reservation system; no booking exists, no space is held, nothing was charged, and a new request is safe.",
+          "source_label": "Ferry line lookup",
+          "source_entry_id": "live:b00ab16c-5197-4182-bb4a-8504695166ae"
+        },
+        {
+          "at": "2026-10-21T07:00:00.000Z",
+          "text": "The Sat 24 Oct 00:00 CEST sailing has no vehicle space (sold out).",
+          "source_label": "Availability check",
+          "source_entry_id": "travel_options:travel-xc1d8163d5443a606"
+        },
+        {
+          "at": "2026-10-21T09:00:00.000Z",
+          "text": "Quote, not booked: Vela Coast Lines Sat 24 Oct 14:00 CEST, check-in closes 12:00, arrives Sun 25 Oct 18:00 EET, €387.",
+          "source_label": "Quote, not booked",
+          "source_entry_id": "live:e5a75bde-dd19-4f92-8a2a-81a0d7572c32"
+        },
+        {
+          "at": "2026-10-21T09:00:00.000Z",
+          "text": "Quote, not booked: Norderkai Lodge Hamburg, €96, Fri 23 Oct 18:00 to Sat 24 Oct 09:00, 2 km from the terminal, secure parking.",
+          "source_label": "Quote, not booked",
+          "source_entry_id": "live:859f7ee7-d23f-4cdc-b956-c12b16798b20"
+        },
+        {
+          "at": "2026-10-19T11:13:00.000Z",
+          "text": "The delivery promise to Kavellora Car House is Tue 27 Oct 13:00–15:00 EET in Helsinki.",
+          "source_label": "Kavellora Car House, order form",
+          "source_entry_id": "time_windows:win-xd989292fd4c1ccb9"
+        },
+        {
+          "at": "2026-10-19T11:13:00.000Z",
+          "text": "The pickup slot is Fri 23 Oct 11:00–13:00 CEST in Leipzig; the planning estimate to the Hamburg terminal is about 400 km, 4 h to 5 h 30 min driving without breaks.",
+          "source_label": "Route planning table",
+          "source_entry_id": "terminal_road_estimates:terminal-x6263b7605ebb10ca@ord-00299"
+        },
+        {
+          "at": "2026-10-21T08:05:00.000Z",
+          "text": "The driver says the later sailing works if the overnight stop and return travel are arranged.",
+          "source_label": "Driver",
+          "source_entry_id": "messages:msg-xb315bf2f67bbfb61"
+        }
+      ],
+      "proposal": {
+        "action": "book_ferry",
+        "params": {
+          "lookup": {
+            "kind": "ferry",
+            "label": "Vela Coast Lines, West Baltic to South Finland, departs Sat 24 Oct 14:00 CEST, check-in closes 12:00, arrives Sun 25 Oct 18:00 EET, €387 (quote, not booked)",
+            "details": {
+              "id": "ferry:vela-coast-lines:2026-10-24T12:00:00.000Z",
+              "to": "South Finland terminal",
+              "from": "West Baltic terminal",
+              "state": "quote",
+              "provider": "Vela Coast Lines",
+              "arrivalAt": "2026-10-25T16:00:00Z",
+              "checkedAt": "2026-10-21T09:00:00.000Z",
+              "priceCents": 38700,
+              "departureAt": "2026-10-24T12:00:00.000Z",
+              "checkInCutoffAt": "2026-10-24T10:00:00Z",
+              "datasetOptionId": "travel-xf29ed1732d895f37"
+            },
+            "price_cents": 38700
+          },
+          "option_id": "ferry:vela-coast-lines:2026-10-24T12:00:00.000Z"
+        },
+        "cost_eur": 483,
+        "effect_text": "Books the ferry and hotel. Does not book the driver's return travel from Helsinki and sends nothing to the customer. The Tue 27 Oct delivery promise still holds, so the customer needs no message.",
+        "requires_approval_reason": "it is a booking and a cost"
+      },
+      "options": [
+        {
+          "id": "opt-1",
+          "kind": "approve",
+          "label": "Approve: book Sat 24 Oct 14:00 ferry (€387) and Norderkai Lodge Hamburg (€96)",
+          "steps": [
+            {
+              "action": "book_ferry",
+              "params": {
+                "lookup": {
+                  "kind": "ferry",
+                  "label": "Vela Coast Lines, West Baltic to South Finland, departs Sat 24 Oct 14:00 CEST, check-in closes 12:00, arrives Sun 25 Oct 18:00 EET, €387 (quote, not booked)",
+                  "details": {
+                    "id": "ferry:vela-coast-lines:2026-10-24T12:00:00.000Z",
+                    "to": "South Finland terminal",
+                    "from": "West Baltic terminal",
+                    "state": "quote",
+                    "provider": "Vela Coast Lines",
+                    "arrivalAt": "2026-10-25T16:00:00Z",
+                    "checkedAt": "2026-10-21T09:00:00.000Z",
+                    "priceCents": 38700,
+                    "departureAt": "2026-10-24T12:00:00.000Z",
+                    "checkInCutoffAt": "2026-10-24T10:00:00Z",
+                    "datasetOptionId": "travel-xf29ed1732d895f37"
+                  },
+                  "price_cents": 38700
+                },
+                "option_id": "ferry:vela-coast-lines:2026-10-24T12:00:00.000Z"
+              }
+            },
+            {
+              "action": "book_hotel",
+              "params": {
+                "lookup": {
+                  "kind": "hotel",
+                  "label": "Norderkai Lodge Hamburg, Fri 23 Oct 18:00 CEST to Sat 24 Oct 09:00 CEST",
+                  "details": {
+                    "id": "hotel:norderkai-lodge:hamburg:2026-10-23",
+                    "city": "Hamburg",
+                    "name": "Norderkai Lodge Hamburg",
+                    "note": "2 km from the ferry terminal, secure parking for the car",
+                    "checkIn": "2026-10-23T16:00:00.000Z",
+                    "checkOut": "2026-10-24T07:00:00.000Z",
+                    "priceCents": 9600
+                  },
+                  "price_cents": 9600
+                },
+                "option_id": "hotel:norderkai-lodge:hamburg:2026-10-23"
+              }
+            }
+          ],
+          "action": "book_ferry",
+          "params": {
+            "lookup": {
+              "kind": "ferry",
+              "label": "Vela Coast Lines, West Baltic to South Finland, departs Sat 24 Oct 14:00 CEST, check-in closes 12:00, arrives Sun 25 Oct 18:00 EET, €387 (quote, not booked)",
+              "details": {
+                "id": "ferry:vela-coast-lines:2026-10-24T12:00:00.000Z",
+                "to": "South Finland terminal",
+                "from": "West Baltic terminal",
+                "state": "quote",
+                "provider": "Vela Coast Lines",
+                "arrivalAt": "2026-10-25T16:00:00Z",
+                "checkedAt": "2026-10-21T09:00:00.000Z",
+                "priceCents": 38700,
+                "departureAt": "2026-10-24T12:00:00.000Z",
+                "checkInCutoffAt": "2026-10-24T10:00:00Z",
+                "datasetOptionId": "travel-xf29ed1732d895f37"
+              },
+              "price_cents": 38700
+            },
+            "option_id": "ferry:vela-coast-lines:2026-10-24T12:00:00.000Z"
+          },
+          "effect_text": "Books the ferry and hotel. Does not book the driver's return travel from Helsinki and sends nothing to the customer. The Tue 27 Oct delivery promise still holds, so the customer needs no message."
+        },
+        {
+          "id": "reject",
+          "kind": "reject",
+          "label": "Reject: book nothing, I'll decide",
+          "action": "reject",
+          "params": {}
+        }
+      ],
+      "consequenceAt": "2026-10-23T09:00:00.000Z",
+      "consequenceText": "Pickup in Leipzig starts Fri 23 Oct 11:00",
+      "severity": "high",
+      "verifierNotes": [
+        {
+          "ok": true,
+          "note": "The ferry line record says no booking exists, no space is held, nothing was charged, and a new request is safe.",
+          "finding": 0
+        },
+        {
+          "ok": true,
+          "note": "The availability check says the Sat 24 Oct 00:00 sailing is sold out with no vehicle space.",
+          "finding": 1
+        },
+        {
+          "ok": true,
+          "note": "The quote record supports the Sat 24 Oct 14:00 sailing at €387, check-in 12:00, arriving Sun 25 Oct 18:00 EET, not booked.",
+          "finding": 2
+        },
+        {
+          "ok": true,
+          "note": "The hotel quote record supports Norderkai Lodge Hamburg at €96 for Fri 18:00 to Sat 09:00, 2 km from the terminal, as a quote not booked.",
+          "finding": 3
+        },
+        {
+          "ok": true,
+          "note": "The order form states the delivery promise as Tue 27 Oct 13:00–15:00 EET at a private address in Helsinki.",
+          "finding": 4
+        },
+        {
+          "ok": false,
+          "note": "The cited route planning table gives the 400 km and 4 h to 5 h 30 min estimate but does not contain the Fri 23 Oct 11:00–13:00 CEST Leipzig pickup slot the finding attributes to it.",
+          "finding": 5
+        },
+        {
+          "ok": true,
+          "note": "The driver's message says the later sailing can work if the overnight stop and return travel are arranged and that the pickup time is unchanged.",
+          "finding": 6
+        },
+        {
+          "ok": true,
+          "note": "The approve option's stated effect of booking the ferry and hotel matches its carried actions, and it does not book the driver's return travel or message the customer.",
+          "finding": null
+        },
+        {
+          "ok": true,
+          "note": "The reject option leaves everything unbooked, matching its label.",
+          "finding": null
+        },
+        {
+          "ok": true,
+          "note": "The card shows the ferry and hotel as quotes not booked and does not contradict the sources on booking status.",
+          "finding": null
+        },
+        {
+          "ok": true,
+          "note": "The plain-language wording contains no internal ids or codes on the card itself.",
+          "finding": null
+        }
+      ],
+      "origin": "agent"
+    }
+  ],
+  "decisions": []
+}

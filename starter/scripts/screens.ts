@@ -14,6 +14,8 @@ import { chromium } from "playwright"
 const DEFAULT_SHOTS = [
   "for-you=/",
   "for-you-open=/+expand",
+  "for-you-keys=/+keys",
+  "for-you-reply=/+reply",
   "agents=/agents",
   "agents-done=/agents?show=done",
   "agents-quiet=/agents?show=quiet",
@@ -29,6 +31,8 @@ const DEFAULT_SHOTS = [
   "demo=/demo",
   "search=/+search",
   "not-found=/orders/CD-999999",
+  // Last: a saved view stays in the browser for every shot after it.
+  "for-you-finland=/+view-Finland",
 ]
 
 function option(args: string[], name: string, fallback: string): string {

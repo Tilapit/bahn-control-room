@@ -1,0 +1,184 @@
+{
+  "run": {
+    "id": "run_5c18e4fe",
+    "orderId": "ord-01013",
+    "agent": "Investigator",
+    "model": "claude-sonnet-5-5",
+    "trigger": "Monitor: The car was collected Wed 21 Oct 09:30 EEST, but the driver app has sent no position since, and the driver has not written. Nobody has reported a problem. Ask the driver first what is going on, then decide whether a person needs to act.",
+    "startedAt": "2026-10-21T09:42:00.000Z",
+    "finishedAt": "2026-10-21T09:48:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Driver replied at 12:44 EEST: safe, car fine, GPS dropped past Lohja, near Salo, ETA Turku about 75 minutes (around 14:00 EEST), inside the 11:00–16:00 promise. No action needed.",
+    "nextCheckAt": "2026-10-21T11:18:00.000Z",
+    "inputTokens": 1355,
+    "outputTokens": 632,
+    "cacheReadTokens": 26978,
+    "cacheWriteTokens": 1719,
+    "costUsd": 0.013619700000000002,
+    "escalation": null,
+    "modelUsage": {
+      "claude-haiku-5-5": {
+        "calls": 3,
+        "input": 1347,
+        "output": 234,
+        "costUsd": 0.0002686,
+        "cacheRead": 1690,
+        "cacheWrite": 0
+      },
+      "claude-sonnet-5-5": {
+        "calls": 3,
+        "input": 8,
+        "output": 398,
+        "costUsd": 0.013351100000000001,
+        "cacheRead": 25288,
+        "cacheWrite": 1719
+      }
+    },
+    "narration": "Asked the driver if they and the car are safe; they replied at 12:44 EEST that GPS dropped past Lohja, they are near Salo, and Turku is about 75 minutes away, inside the 11:00–16:00 promise.",
+    "wallMs": 7027,
+    "replay": false,
+    "reference": "CD-421013"
+  },
+  "steps": [
+    {
+      "id": "run_5c18e4fe:0",
+      "idx": 0,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "get_case",
+      "input": {},
+      "output": null,
+      "summary": "Called get_case"
+    },
+    {
+      "id": "run_5c18e4fe:1",
+      "idx": 1,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "get_case",
+      "input": {},
+      "output": {
+        "data": null,
+        "content": "CD-421013 · Ferrari 296 GTB 2026 · plate DEMO-FI-VAJWJA · On the road\nCustomer (pays; any contact needs a person's approval): Meravelio Motorhouse, their reference PO-045-1013\nRoute: Velantora Espoo Keskusta, Espoo → Meravelio Turku, Turku · 168 km\nDriver: Daniel Arelmont, driving, lives in Tampere, FI\nNow: Wed 21 Oct, 12:42 in Turku and Espoo (09:42 UTC). Timeline times are Turku time (EEST); key times are in their own place's time.\n\nKEY TIMES\n- Picked up, Espoo: Wed 21 Oct 09:30 EEST. Source: Daniel Arelmont [E1]\n- Delivery promise, Turku: Wed 21 Oct 11:00–16:00 EEST. Source: Meravelio Motorhouse, order form [E2]\n\nAGREED AND STATED\n- Delivery handover: The named storekeeper must be present to accept the vehicle into secure storage. (confirmed; Site profile, Meravelio Turku) [E3]\n- (2 details from before the pickup are historical, left out)\n\nOPEN\n- nothing open\n\nROUTE AND TRAVEL\n- Leg: Velantora Espoo Keskusta, Espoo → Meravelio Turku, Turku, drive, 168 km, in progress, Daniel Arelmont\n- Driver gig: taken by a driver, fee €103\nBOOKED: nothing is booked for this order\n\nTIMELINE (newest first; the 19 most recent entries, stage changes left out; use timeline() for older ones)\nWed 21 Oct\n12:42 Monitor (code): The car was collected Wed 21 Oct 09:30 EEST, but the driver app has sent no position since, and the driver has not written. (A SIGNAL, NOT A DIAGNOSIS) [E4]\n10:58 Driver expense review: Fuel claim approved (not paid yet): €49.41 [E5]\n09:37 Driver app: Pickup photos sent by the driver (4 files), not reviewed yet [E6]\n09:35 Daniel Arelmont: Fuel cost claimed by the driver: €49.41 at Aster Road Fuel [E7]\n09:30 Daniel Arelmont: Car picked up at Velantora Espoo Keskusta, Espoo [E1]\n07:55 Daniel Arelmont: Daniel Arelmont started the gig [E8]\nFri 16 Oct\n01:03 Daniel Arelmont: Daniel Arelmont took the gig [E9]\nThu 15 Oct\n16:28 Dispatch agent: Gig offered to drivers at €103 [E10]\n13:36 Ops, with the route plan: Pickup slot: Wed 21 Oct 09:00–12:00 EEST at Velantora Espoo Keskusta, Espoo [E11]\n13:36 Transport planning: Route plan activated [E12]\n13:23 Readiness desk: Pickup availability confirmed [E13]\n11:47 Transport planning: Route plan drafted [E14]\n10:28 Meravelio Motorhouse, order form: Delivery promise: Wed 21 Oct 11:00–16:00 EEST at Meravelio Turku, Turku [E2]\n10:28 Meravelio Motorhouse, order form: Pickup availability: Wed 21 Oct 09:00–17:00 EEST at Velantora Espoo Keskusta, Espoo [E15]\n10:28 Meravelio Motorhouse: Order placed by Meravelio Motorhouse [E16]",
+        "isError": false
+      },
+      "summary": "Read the case file of CD-421013"
+    },
+    {
+      "id": "run_5c18e4fe:2",
+      "idx": 2,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "thought",
+      "tool": null,
+      "input": null,
+      "output": {
+        "text": "Asking the driver as instructed.",
+        "model": "claude-sonnet-5-5"
+      },
+      "summary": "Asking the driver as instructed."
+    },
+    {
+      "id": "run_5c18e4fe:3",
+      "idx": 3,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_call",
+      "tool": "ask_driver",
+      "input": {
+        "question": "Hi Daniel, our app shows no position from you since pickup at 09:30. Is everything OK with you and the car? Where are you now, and roughly when do you expect to reach Turku?"
+      },
+      "output": null,
+      "summary": "Called ask_driver"
+    },
+    {
+      "id": "run_5c18e4fe:4",
+      "idx": 4,
+      "at": "2026-10-21T09:42:00.000Z",
+      "type": "tool_result",
+      "tool": "ask_driver",
+      "input": {
+        "question": "Hi Daniel, our app shows no position from you since pickup at 09:30. Is everything OK with you and the car? Where are you now, and roughly when do you expect to reach Turku?"
+      },
+      "output": {
+        "data": null,
+        "content": "",
+        "isError": false
+      },
+      "summary": "Asked the driver: “Hi Daniel, our app shows no position from you since pickup at 09:30. Is everything OK with you and the car? Where are you now, and roughly when do you expect to reach Turku?”"
+    },
+    {
+      "id": "run_5c18e4fe:5",
+      "idx": 5,
+      "at": "2026-10-21T09:44:00.000Z",
+      "type": "message",
+      "tool": "ask_driver",
+      "input": null,
+      "output": {
+        "reply": "Hi, sorry about that, my phone's GPS dropped out after I got on the highway past Lohja. I'm fine and the car is fine, no warning lights. I'm around Salo now and should reach Turku in about 75 minutes if traffic stays normal.",
+        "entryId": "live:e2ddbf1a-dd69-4446-9077-8b1b20cab9b5",
+        "simulated": true
+      },
+      "summary": "Daniel Arelmont replied (simulated): “Hi, sorry about that, my phone's GPS dropped out after I got on the highway past Lohja. I'm fine and the car is fine, no warning lights. I'm around Salo now and should reach Turku in about 75 minutes if traffic stays normal.”"
+    },
+    {
+      "id": "run_5c18e4fe:6",
+      "idx": 6,
+      "at": "2026-10-21T09:48:00.000Z",
+      "type": "thought",
+      "tool": null,
+      "input": null,
+      "output": {
+        "text": "Salo to Turku checks out, roughly 55 km and 75 minutes, landing around 13:59 which keeps it within the promised window. Nothing here requires manual intervention, so I'll move on and verify the rest.\n\n",
+        "model": "claude-sonnet-5-5"
+      },
+      "summary": "Salo to Turku checks out, roughly 55 km and 75 minutes, landing around 13:59 which keeps it within the promised window. Nothing here requires manual intervention, so I'll move on and verify the rest."
+    },
+    {
+      "id": "run_5c18e4fe:7",
+      "idx": 7,
+      "at": "2026-10-21T09:48:00.000Z",
+      "type": "tool_call",
+      "tool": "resolve",
+      "input": {
+        "summary": "Driver replied at 12:44 EEST: safe, car fine, GPS dropped past Lohja, near Salo, ETA Turku about 75 minutes (around 14:00 EEST), inside the 11:00–16:00 promise. No action needed.",
+        "explained_by": [
+          "E17",
+          "E2",
+          "E4"
+        ],
+        "check_again_minutes": 90
+      },
+      "output": null,
+      "summary": "Called resolve"
+    },
+    {
+      "id": "run_5c18e4fe:8",
+      "idx": 8,
+      "at": "2026-10-21T09:48:00.000Z",
+      "type": "tool_result",
+      "tool": "resolve",
+      "input": {
+        "summary": "Driver replied at 12:44 EEST: safe, car fine, GPS dropped past Lohja, near Salo, ETA Turku about 75 minutes (around 14:00 EEST), inside the 11:00–16:00 promise. No action needed.",
+        "explained_by": [
+          "E17",
+          "E2",
+          "E4"
+        ],
+        "check_again_minutes": 90
+      },
+      "output": {
+        "data": {
+          "explainedBy": [
+            "live:e2ddbf1a-dd69-4446-9077-8b1b20cab9b5",
+            "time_windows:win-x66c19f755f6b2f43",
+            "monitor:silent-car:ord-01013:none"
+          ]
+        },
+        "content": "Closed. Your run ends here.",
+        "isError": false
+      },
+      "summary": "Closed without a card: Driver replied at 12:44 EEST: safe, car fine, GPS dropped past Lohja, near Salo, ETA Turku about 75 minutes (around 14:00 EEST), inside the 11:00–16:00 promise. No action needed."
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

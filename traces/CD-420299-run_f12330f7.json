@@ -1,0 +1,70 @@
+{
+  "run": {
+    "id": "run_f12330f7",
+    "orderId": "ord-00299",
+    "agent": "Driver support",
+    "model": "claude-sonnet-5-5",
+    "trigger": "Driver wrote: “Hi, quick one for Friday in Leipzig: who do I ask for at the desk, and can I just take the keys when I arrive?”",
+    "startedAt": "2026-10-21T09:02:00.000Z",
+    "finishedAt": "2026-10-21T09:02:00.000Z",
+    "status": "done",
+    "outcomeSummary": "Answered the driver: “Hi Camille! Ask for Oscar Alderfield at the site desk at Tavellor Leipzig. Not quite just taking the keys: the service desk checks the completed workshop release first. The workshop completion sheet has to be signed before they mark the car ready and hand over the keys. Your pickup slot is Fri 23 Oct, 11:00–13:00.”",
+    "nextCheckAt": null,
+    "inputTokens": 6,
+    "outputTokens": 194,
+    "cacheReadTokens": 1249,
+    "cacheWriteTokens": 5038,
+    "costUsd": 0.014796799999999999,
+    "escalation": null,
+    "reference": "CD-420299"
+  },
+  "steps": [
+    {
+      "id": "run_f12330f7:0",
+      "idx": 0,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_call",
+      "tool": "get_case",
+      "input": {},
+      "output": null,
+      "summary": "Called get_case"
+    },
+    {
+      "id": "run_f12330f7:1",
+      "idx": 1,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_result",
+      "tool": "get_case",
+      "input": null,
+      "output": null,
+      "summary": "Read the case file of CD-420299"
+    },
+    {
+      "id": "run_f12330f7:2",
+      "idx": 2,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_call",
+      "tool": "reply_driver",
+      "input": {
+        "text": "Hi Camille! Ask for Oscar Alderfield at the site desk at Tavellor Leipzig. Not quite just taking the keys: the service desk checks the completed workshop release first. The workshop completion sheet has to be signed before they mark the car ready and hand over the keys. Your pickup slot is Fri 23 Oct, 11:00–13:00."
+      },
+      "output": null,
+      "summary": "Called reply_driver"
+    },
+    {
+      "id": "run_f12330f7:3",
+      "idx": 3,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_result",
+      "tool": "reply_driver",
+      "input": null,
+      "output": {
+        "text": "Hi Camille! Ask for Oscar Alderfield at the site desk at Tavellor Leipzig. Not quite just taking the keys: the service desk checks the completed workshop release first. The workshop completion sheet has to be signed before they mark the car ready and hand over the keys. Your pickup slot is Fri 23 Oct, 11:00–13:00.",
+        "entryId": "live:3da2f082-bebf-4565-96c1-455bfeff93f2"
+      },
+      "summary": "Replied to the driver: “Hi Camille! Ask for Oscar Alderfield at the site desk at Tavellor Leipzig. Not quite just taking the keys: the service desk checks the completed workshop release first. The workshop completion sheet has to be signed before they mark the car ready and hand over the keys. Your pickup slot is Fri 23 Oct, 11:00–13:00.”"
+    }
+  ],
+  "cards": [],
+  "decisions": []
+}

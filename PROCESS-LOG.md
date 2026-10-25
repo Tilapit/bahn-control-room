@@ -2178,3 +2178,40 @@ above it. Review 2: the view menu, then Finland, because "For you" opened on Eve
 **Checked.** `npm run typecheck`; `npx tsx --test tests/*.test.ts` 66 of 66. Screenshots after each fix, all looked
 at: laptop Everyone and Finland, after J J, after R; phone list and case. A Playwright run of the keys: on load, A
 showed no toast; a second A did, Undo brought the case back, and R opened the reply box in one press.
+
+### 7. Footage: stopped on request, nothing recorded committed
+
+**What happened.** The footage script was updated for the inbox, the reason chips, the team view and the two new items:
+- `openCase`, which clicks a list row, and `scrollPane`, which scrolls the case pane, replace the old row
+  selectors;
+- clip 1 shows J/K, Later and the Finland view;
+- clip 2 shows similar past cases;
+- clip 3 picks "Customer must decide" before its reply, because the API now refuses a reply without a reason;
+- clip 6 approves with A;
+- new clip 10 is the backup driver accepting, and new clip 11 approves a playbook rule.
+
+The two new clips were recorded once as a trial, end to end (1:46), and I looked at three frames from them. They
+showed the code-built cancel card, the order with Ida as driver and Carl's bookings "Cancelled", and "Evals before
+approval: passed (All 11 groups passed.)". Three of the item 6 fixes came from those frames. The full recording
+started at 10:58. It was **stopped at 11:11 on request**, while clip 10 was being recorded; clips 01–09 had been
+recorded again by then.
+
+**What is in the repo.** No new footage. The clips and `SHOTLIST.md` in `demo-footage/` are still last round's, so
+they show the old For you, before the inbox. The nine re-recorded clips, the two trial clips, the trial's shot list
+and the partial clip are kept outside the repo, in the session's scratchpad. No frames were extracted from the full
+run and none of its clips were checked.
+
+**Traces.** The recording's demo approvals and the take-over rewrote four tracked traces: CD-420154, CD-420299,
+CD-420449 and CD-420593, each now "Approved by Ops and carried out …". They are side effects of the stopped
+recording, not of the recorded morning, and earlier footage commits never included such changes. They were set back
+to their committed versions; copies are kept with the footage. The 41 traces of earlier runs that had never been
+committed are committed now. The database was loaded back to the recorded morning (`npm run fixtures:load`), the step
+the footage script runs at the end, which the stop skipped.
+
+**Also committed.** `scripts/screens.ts`: the `+keys`, `+reply` and `+view-Finland` actions with their default shots
+(the saved-view shot last, because the view stays in the browser), and a `--width` option. README: the paragraph on
+For you describes the inbox, the keys and the view. Its two screenshots are still last round's, because they were not
+retaken.
+
+**Cleanup.** The three fork worktrees under `.claude/worktrees/` were removed after their commits were merged here.
+Their branches (`worktree-agent-…`) are kept.

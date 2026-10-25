@@ -1,0 +1,1158 @@
+{
+  "run": {
+    "id": "run_81c84cd5",
+    "orderId": "ord-00603",
+    "agent": "Investigator",
+    "model": "claude-sonnet-5-5",
+    "trigger": "Open signals on this order: open alert: ferry check-in at risk; earlier agent proposal approved, not carried out yet; unanswered message in support chat.",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:02:00.000Z",
+    "status": "waiting_person",
+    "outcomeSummary": "driver reports ~13:30 arrival at terminal; check-in closes 14:00",
+    "nextCheckAt": null,
+    "inputTokens": 8576,
+    "outputTokens": 20210,
+    "cacheReadTokens": 71246,
+    "cacheWriteTokens": 6534,
+    "costUsd": 0.08453696,
+    "escalation": null,
+    "reference": "CD-420603"
+  },
+  "steps": [
+    {
+      "id": "run_81c84cd5:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_call",
+      "tool": "get_case",
+      "input": {
+        "order": "CD-420603"
+      },
+      "output": null,
+      "summary": "Called get_case"
+    },
+    {
+      "id": "run_81c84cd5:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "get_case",
+      "input": {
+        "order": "CD-420603"
+      },
+      "output": {
+        "data": null,
+        "content": "CD-420603 · Volkswagen Golf 2025 · On the road\nCustomer (pays; any contact needs a person's approval): Torvamelio Ajoneuvot, their reference PO-004-0603\nRoute: private address, Munich → private address, Lahti · 2391 km · with ferry\nDriver: Charlotte Benvik, driving, lives in Helsinki, FI\nNow: Wed 21 Oct, 12:00 in Lahti, 11:00 in Munich and Hamburg (09:00 UTC). Timeline times are Lahti time; key times are in their own place's time.\n\nKEY TIMES\n- Picked up, Munich: Tue 20 Oct 16:00 CEST. Source: Charlotte Benvik [E1]\n- Ferry check-in closes, Hamburg: Wed 21 Oct 14:00 CEST. West Baltic, sailing 16:00. Source: Driver travel [E2]\n- Driver app ETA, Lahti: Fri 23 Oct 12:24 EEST. Coarse estimate, not a promise. Source: Driver app [E3]\n- Delivery promise, Lahti: Fri 23 Oct 13:00–15:00 EEST. Source: Torvamelio Ajoneuvot, order form [E4]\n\nAGREED AND STATED\n- Delivery handover: A named receiver must accept the car and keys; there is no agreed unattended drop. (stated, not confirmed; Torvamelio Ajoneuvot, order form) [E5]\n- Delivery contact: Phoebe Marlbrook, handoff contact (stated, not confirmed; Torvamelio Ajoneuvot, order form) [E5]\n- (3 details from before the pickup are historical, left out)\n\nOPEN\n- Alert (high, nobody has taken it), raised Wed 21 Oct 10:00 EEST: Ferry check-in at risk. \"Review ferry cutoff for CD-420603; source is a conversation, not a verified outcome.\" A signal, not a diagnosis [E6]\n- Earlier agent proposal (approved, not carried out yet): Refresh vehicle-space availability and show the effect on the delivery window. Check capacity and driver rest first. Return for a separate booking decision. [E7]\n- Not answered yet: Charlotte Benvik (support chat), Wed 21 Oct 10:31 EEST [E8]\n\nROUTE AND TRAVEL\n- Leg: Munich (private) → Lahti (private), drive with ferry, 2391 km, in progress, Charlotte Benvik\n- Driver gig: taken by a driver, fee €1,695\nBOOKED (real reservations):\n- Ferry booked: West Baltic to South Finland, departs Wed 21 Oct 16:00 CEST, check-in closes 14:00 [E2]\n- Planning estimate (a range from a planning table, not live traffic, not a position): Munich to West Baltic terminal in Hamburg is about 800 km, 8 h to 10 h 30 min of driving without breaks or check-in [E9]\nLAST GPS: 1772 km to go, coarse signal, observed Wed 21 Oct 11:06 EEST (54 min ago), app ETA Fri 23 Oct 12:24 EEST. GPS gives km to go and an ETA, no map position [E3]\n\nTIMELINE (newest first; the 36 most recent entries, stage changes left out; use timeline() for older ones)\nWed 21 Oct\n11:43 Driver travel: Asked the ferry line to move the car to a later crossing; not confirmed yet [E10]\n11:43 Driver travel (Internal (Slack), internal): \"Carrier desk took our request to move this car to a later crossing, but has not confirmed a slot or fare. Keep the original booking active. Do not tell the driver to turn away or change the customer's delivery promise yet.\" [E11]\n11:06 GPS: Coarse app position: 1772 km to go (26% of the drive), ETA Fri 23 Oct 12:24 EEST [E3]\n10:59 Driver travel: Approved: refresh vehicle-space availability and show the effect on the delivery window [E12]\n10:57 Travel planning agent: Proposed: Refresh vehicle-space availability and show the effect on the delivery window [E7]\n10:31 Charlotte Benvik (Support chat (Intercom)): \"I am still in the queue with the car. I have not turned toward another terminal.\" [E8]\n10:14 Support desk (Internal (Slack), internal): \"Do not cancel the current booking or promise another crossing until capacity and fare terms are confirmed.\" [E13]\n10:10 Support desk (Support chat (Intercom)): \"I am checking the check-in deadline and next available sailing. Please send your latest ETA when it updates.\" [E14]\n10:00 Monitoring: Ferry check-in at risk (high alert) (A SIGNAL, NOT A DIAGNOSIS) [E6]\n09:58 Charlotte Benvik (Support chat (Intercom)): \"The queue before the terminal has barely moved. The booked crossing for CD-420603 may close before I reach check-in.\" [E15]\n04:55 GPS: Coarse app position: 1812 km to go (24% of the drive), ETA Fri 23 Oct 15:36 EEST [E16]\n03:37 GPS: Coarse app position: 1922 km to go (20% of the drive), ETA Fri 23 Oct 13:57 EEST [E17]\n01:35 GPS: Coarse app position: 1989 km to go (17% of the drive), ETA Fri 23 Oct 12:09 EEST [E18]\nTue 20 Oct\n23:34 GPS: Coarse app position: 2049 km to go (14% of the drive), ETA Fri 23 Oct 14:55 EEST [E19]\n21:49 GPS: Coarse app position: 2116 km to go (12% of the drive), ETA Fri 23 Oct 14:23 EEST [E20]\n20:16 GPS: Coarse app position: 2228 km to go (7% of the drive), ETA Fri 23 Oct 12:23 EEST [E21]\n   … 1 more GPS positions: 2334 km at 18:43\n17:15 Documents: Digital CMR signed at pickup only; the receiver has not signed [E22]\n17:07 Driver app: Pickup photos sent by the driver (4 files), not reviewed yet [E23]\n17:00 Charlotte Benvik: Car picked up at private address in Munich [E1]\n16:03 Charlotte Benvik: Charlotte Benvik started the gig [E24]\nThu 15 Oct\n08:01 Driver travel: Ferry booked: West Baltic to South Finland, departs Wed 21 Oct 16:00 CEST, check-in closes 14:00 (BOOKED) [E2]\n06:05 Charlotte Benvik: Charlotte Benvik took the gig [E25]\nWed 14 Oct\n22:54 Dispatch agent: Gig offered to drivers at €1,695 [E26]\n15:42 Ops, with the route plan: Pickup slot: Tue 20 Oct 16:00–17:00 CEST at private address in Munich [E27]\n15:42 Transport planning: Route plan activated [E28]\n15:23 Readiness desk: Pickup availability confirmed [E29]\n13:05 Transport planning: Route plan drafted [E30]\n12:37 Torvamelio Ajoneuvot, order form: Delivery promise: Fri 23 Oct 13:00–15:00 EEST at private address in Lahti [E4]\n12:37 Torvamelio Ajoneuvot, order form: Pickup availability: Tue 20 Oct 09:00–17:00 CEST at private address in Munich [E31]\n12:37 Route planning table: Planning estimate: Munich to West Baltic terminal in Hamburg is about 800 km, 8 h to 10 h 30 min of driving [E9]\n12:37 Torvamelio Ajoneuvot, order form: Pickup handover: Arrange a named seller handover at the door; no unattended key collection is agreed. [E32]\n12:37 Torvamelio Ajoneuvot, order form: Delivery handover: A named receiver must accept the car and keys; there is no agreed unattended drop. [E5]\n12:37 Torvamelio Ajoneuvot: Order placed by Torvamelio Ajoneuvot [E33]",
+        "isError": false
+      },
+      "summary": "Read the case file of CD-420603"
+    },
+    {
+      "id": "run_81c84cd5:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "thought",
+      "tool": null,
+      "input": null,
+      "output": {
+        "text": "The driver's claim of being in a terminal queue doesn't match the GPS data showing 1772 km still remaining out of 2391 total, with only 619 km driven so far against an 800 km Munich-to-Hamburg stretch—meaning they likely haven't even reached Hamburg yet. This discrepancy, combined with the ferry leg still ahead to Lahti, makes it hard to reconcile; I should check the ferry status and schedule options.\n\n",
+        "model": "claude-sonnet-5-5"
+      },
+      "summary": "The driver's claim of being in a terminal queue doesn't match the GPS data showing 1772 km still remaining out of 2391 total, with only 619 km driven so far against an 800 km Munich-to-Hamburg stretch—meaning they likely haven't even reached Hamburg yet. This discrepancy, combined with the ferry leg still ahead to Lahti, makes it hard to reconcile; I should check the ferry status and schedule opti"
+    },
+    {
+      "id": "run_81c84cd5:3",
+      "idx": 3,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_call",
+      "tool": "ferry_booking_status",
+      "input": {},
+      "output": null,
+      "summary": "Called ferry_booking_status"
+    },
+    {
+      "id": "run_81c84cd5:4",
+      "idx": 4,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "ferry_booking_status",
+      "input": {},
+      "output": {
+        "data": {
+          "text": "Booking WBV-FERRY-00603 is active: vehicle space on the Wed 21 Oct 16:00 CEST sailing from West Baltic, check-in closes 14:00. A request to move it to a later crossing was received Wed 21 Oct 10:43 CEST and is not confirmed: no later sailing or fare is held.",
+          "summary": "Ferry line confirms booking WBV-FERRY-00603 is active",
+          "hasBooking": true
+        },
+        "content": "Booking WBV-FERRY-00603 is active: vehicle space on the Wed 21 Oct 16:00 CEST sailing from West Baltic, check-in closes 14:00. A request to move it to a later crossing was received Wed 21 Oct 10:43 CEST and is not confirmed: no later sailing or fare is held.\nSource: [E34]",
+        "isError": false
+      },
+      "summary": "Asked the ferry line what it has on file: ferry line confirms booking WBV-FERRY-00603 is active"
+    },
+    {
+      "id": "run_81c84cd5:5",
+      "idx": 5,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_call",
+      "tool": "ferry_options",
+      "input": {
+        "after": "2026-10-21T09:00:00Z"
+      },
+      "output": null,
+      "summary": "Called ferry_options"
+    },
+    {
+      "id": "run_81c84cd5:6",
+      "idx": 6,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "ferry_options",
+      "input": {
+        "after": "2026-10-21T09:00:00Z"
+      },
+      "output": {
+        "data": {
+          "route": "West Baltic to South Finland",
+          "options": [
+            {
+              "id": "ferry:booked:res-x1082202e8d139d61",
+              "to": "South Finland Vehicle Terminal",
+              "from": "West Baltic Vehicle Terminal",
+              "state": "booked for this car",
+              "provider": "The booked ferry line",
+              "arrivalAt": "2026-10-22T20:00:00Z",
+              "checkedAt": "2026-10-21T09:00:00.000Z",
+              "priceCents": null,
+              "departureAt": "2026-10-21T14:00:00.000Z",
+              "checkInCutoffAt": "2026-10-21T12:00:00Z",
+              "datasetOptionId": null
+            },
+            {
+              "id": "ferry:the-booked-ferry-line:2026-10-22T00:00:00.000Z",
+              "to": "South Finland Vehicle Terminal",
+              "from": "West Baltic Vehicle Terminal",
+              "state": "sold out",
+              "provider": "The booked ferry line",
+              "arrivalAt": "2026-10-23T04:00:00.000Z",
+              "checkedAt": "2026-10-21T09:00:00.000Z",
+              "priceCents": 40900,
+              "departureAt": "2026-10-22T00:00:00.000Z",
+              "checkInCutoffAt": "2026-10-21T22:00:00.000Z",
+              "datasetOptionId": null
+            },
+            {
+              "id": "ferry:the-booked-ferry-line:2026-10-22T14:00:00.000Z",
+              "to": "South Finland Vehicle Terminal",
+              "from": "West Baltic Vehicle Terminal",
+              "state": "quote",
+              "provider": "The booked ferry line",
+              "arrivalAt": "2026-10-23T18:00:00.000Z",
+              "checkedAt": "2026-10-21T09:00:00.000Z",
+              "priceCents": 46900,
+              "departureAt": "2026-10-22T14:00:00.000Z",
+              "checkInCutoffAt": "2026-10-22T12:00:00.000Z",
+              "datasetOptionId": null
+            },
+            {
+              "id": "ferry:the-booked-ferry-line:2026-10-23T00:00:00.000Z",
+              "to": "South Finland Vehicle Terminal",
+              "from": "West Baltic Vehicle Terminal",
+              "state": "quote",
+              "provider": "The booked ferry line",
+              "arrivalAt": "2026-10-24T04:00:00.000Z",
+              "checkedAt": "2026-10-21T09:00:00.000Z",
+              "priceCents": 40900,
+              "departureAt": "2026-10-23T00:00:00.000Z",
+              "checkInCutoffAt": "2026-10-22T22:00:00.000Z",
+              "datasetOptionId": null
+            },
+            {
+              "id": "ferry:the-booked-ferry-line:2026-10-23T14:00:00.000Z",
+              "to": "South Finland Vehicle Terminal",
+              "from": "West Baltic Vehicle Terminal",
+              "state": "quote",
+              "provider": "The booked ferry line",
+              "arrivalAt": "2026-10-24T18:00:00.000Z",
+              "checkedAt": "2026-10-21T09:00:00.000Z",
+              "priceCents": 35900,
+              "departureAt": "2026-10-23T14:00:00.000Z",
+              "checkInCutoffAt": "2026-10-23T12:00:00.000Z",
+              "datasetOptionId": null
+            },
+            {
+              "id": "ferry:the-booked-ferry-line:2026-10-24T00:00:00.000Z",
+              "to": "South Finland Vehicle Terminal",
+              "from": "West Baltic Vehicle Terminal",
+              "state": "quote",
+              "provider": "The booked ferry line",
+              "arrivalAt": "2026-10-25T04:00:00.000Z",
+              "checkedAt": "2026-10-21T09:00:00.000Z",
+              "priceCents": 48900,
+              "departureAt": "2026-10-24T00:00:00.000Z",
+              "checkInCutoffAt": "2026-10-23T22:00:00.000Z",
+              "datasetOptionId": null
+            }
+          ]
+        },
+        "content": "Sailings West Baltic to South Finland, checked 11:00 Hamburg time. These are quotes and availability checks, not bookings.\n- ferry:booked:res-x1082202e8d139d61: The booked ferry line, West Baltic to South Finland, departs Wed 21 Oct 16:00 CEST, check-in closes 14:00, arrives Thu 22 Oct 23:00 EEST (booked for this car)\n- ferry:the-booked-ferry-line:2026-10-22T00:00:00.000Z: The booked ferry line, West Baltic to South Finland, departs Thu 22 Oct 02:00 CEST, check-in closes 00:00, arrives Fri 23 Oct 07:00 EEST, €409 (sold out)\n- ferry:the-booked-ferry-line:2026-10-22T14:00:00.000Z: The booked ferry line, West Baltic to South Finland, departs Thu 22 Oct 16:00 CEST, check-in closes 14:00, arrives Fri 23 Oct 21:00 EEST, €469 (quote, not booked)\n- ferry:the-booked-ferry-line:2026-10-23T00:00:00.000Z: The booked ferry line, West Baltic to South Finland, departs Fri 23 Oct 02:00 CEST, check-in closes 00:00, arrives Sat 24 Oct 07:00 EEST, €409 (quote, not booked)\n- ferry:the-booked-ferry-line:2026-10-23T14:00:00.000Z: The booked ferry line, West Baltic to South Finland, departs Fri 23 Oct 16:00 CEST, check-in closes 14:00, arrives Sat 24 Oct 21:00 EEST, €359 (quote, not booked)\n- ferry:the-booked-ferry-line:2026-10-24T00:00:00.000Z: The booked ferry line, West Baltic to South Finland, departs Sat 24 Oct 02:00 CEST, check-in closes 00:00, arrives Sun 25 Oct 06:00 EET, €489 (quote, not booked)\nSource: [E35]",
+        "isError": false
+      },
+      "summary": "Checked ferry sailings after Wed 21 Oct 11:00 CEST: Wed 21 Oct 16:00 booked for this car; Thu 22 Oct 02:00 sold out; Thu 22 Oct 16:00 €469 (quote, not booked); Fri 23 Oct 02:00 €409 (quote, not booked); Fri 23 Oct 16:00 €359 (quote, not booked); Sat 24 Oct 02:00 €489 (quote, not booked)"
+    },
+    {
+      "id": "run_81c84cd5:7",
+      "idx": 7,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "thought",
+      "tool": null,
+      "input": null,
+      "output": {
+        "text": "The Friday 13-15 delivery window will be missed no matter which sailing is used, though the booked one arriving Thursday 23:00 would still work. There's a conflict though: the driver claims to be queued at the terminal, but GPS shows 1772 km remaining. I should just ask the driver directly for their location and ETA to check-in to resolve this.\n\n",
+        "model": "claude-sonnet-5-5"
+      },
+      "summary": "The Friday 13-15 delivery window will be missed no matter which sailing is used, though the booked one arriving Thursday 23:00 would still work. There's a conflict though: the driver claims to be queued at the terminal, but GPS shows 1772 km remaining. I should just ask the driver directly for their location and ETA to check-in to resolve this."
+    },
+    {
+      "id": "run_81c84cd5:8",
+      "idx": 8,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_call",
+      "tool": "ask_driver",
+      "input": {
+        "question": "Hi Charlotte, thanks for the updates. Roughly how many km or minutes are you from the West Baltic terminal in Hamburg now, and which road or town are you at? Check-in closes 14:00 CEST. Please don't take risks to make it."
+      },
+      "output": null,
+      "summary": "Called ask_driver"
+    },
+    {
+      "id": "run_81c84cd5:9",
+      "idx": 9,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "ask_driver",
+      "input": {
+        "question": "Hi Charlotte, thanks for the updates. Roughly how many km or minutes are you from the West Baltic terminal in Hamburg now, and which road or town are you at? Check-in closes 14:00 CEST. Please don't take risks to make it."
+      },
+      "output": {
+        "data": null,
+        "content": "",
+        "isError": false
+      },
+      "summary": "Asked the driver: “Hi Charlotte, thanks for the updates. Roughly how many km or minutes are you from the West Baltic terminal in Hamburg now, and which road or town are you at? Check-in closes 14:00 CEST. Please don't take risks to make it.”"
+    },
+    {
+      "id": "run_81c84cd5:10",
+      "idx": 10,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "message",
+      "tool": "ask_driver",
+      "input": null,
+      "output": {
+        "reply": "Still on the A7 northbound near Hannover, roughly 150 km from the West Baltic terminal. Navigation says about 2 h 30 min at this speed, so around 13:30 Hamburg time, which is cutting it close for 14:00. I won't take any risks, I'm just crawling along with the traffic.",
+        "entryId": "live:ea9c7067-74c1-42ca-8bf6-4c1be73cd051",
+        "simulated": true
+      },
+      "summary": "Charlotte Benvik replied (simulated): “Still on the A7 northbound near Hannover, roughly 150 km from the West Baltic terminal. Navigation says about 2 h 30 min at this speed, so around 13:30 Hamburg time, which is cutting it close for 14:00. I won't take any risks, I'm just crawling along with the traffic.”"
+    },
+    {
+      "id": "run_81c84cd5:11",
+      "idx": 11,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "thought",
+      "tool": null,
+      "input": null,
+      "output": {
+        "text": "Checking timing: Hannover to Hamburg is roughly 150km, arrival estimate around 13:30 against a 14:00 target feels tight but workable. I'll keep the current booking, plan to recheck in 45 minutes, and hold a pending move request as backup in case the ferry connection slips — if it works out, the customer arrives Thursday Oct 22 at 23:00 EEST.\n\nIf that holds, the Lahti delivery promise for Friday should still be met with an ETA around 12:24. I'll propose this plan with that caveat, while also flagging an alternative: switching to the Thursday 16:00 sailing for €469, which arrives Friday at 21:00 but would miss the delivery promise and require notifying the customer.\n\n",
+        "model": "claude-sonnet-5-5"
+      },
+      "summary": "Checking timing: Hannover to Hamburg is roughly 150km, arrival estimate around 13:30 against a 14:00 target feels tight but workable. I'll keep the current booking, plan to recheck in 45 minutes, and hold a pending move request as backup in case the ferry connection slips — if it works out, the customer arrives Thursday Oct 22 at 23:00 EEST. If that holds, the Lahti delivery promise for Friday sho"
+    },
+    {
+      "id": "run_81c84cd5:12",
+      "idx": 12,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_call",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": "\n<parameter name=\"x\">",
+        "findings": "\n<parameter name=\"x\">",
+        "headline": "driver reports ~13:30 arrival at Hamburg; check-in closes 14:00",
+        "reject_label": "Reject: change nothing, I'll decide",
+        "what_happened": "The monitor raised a ferry check-in alert. The driver says they are on the A7 near Hannover in slow traffic and expects to reach the terminal around 13:30, 30 minutes before check-in closes. The original booking is still active and the ferry line has not confirmed a move to a later sailing."
+      },
+      "output": null,
+      "summary": "Called propose"
+    },
+    {
+      "id": "run_81c84cd5:13",
+      "idx": 13,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_result",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": "\n<parameter name=\"x\">",
+        "findings": "\n<parameter name=\"x\">",
+        "headline": "driver reports ~13:30 arrival at Hamburg; check-in closes 14:00",
+        "reject_label": "Reject: change nothing, I'll decide",
+        "what_happened": "The monitor raised a ferry check-in alert. The driver says they are on the A7 near Hannover in slow traffic and expects to reach the terminal around 13:30, 30 minutes before check-in closes. The original booking is still active and the ferry line has not confirmed a move to a later sailing."
+      },
+      "output": {
+        "data": {
+          "problems": [
+            "Your propose call arrived malformed: findings and options must be JSON lists of objects, and neither may be empty. Send the whole card again in one call."
+          ]
+        },
+        "content": "The card was not shown to anyone. Fix these and call propose again:\n- Your propose call arrived malformed: findings and options must be JSON lists of objects, and neither may be empty. Send the whole card again in one call.",
+        "isError": true
+      },
+      "summary": "Card call arrived malformed; sent back"
+    },
+    {
+      "id": "run_81c84cd5:14",
+      "idx": 14,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_call",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [
+          {
+            "label": "Keep the booked 16:00 ferry; recheck in 45 minutes",
+            "steps": [
+              {
+                "action": "note",
+                "params": {
+                  "text": "Keep Wed 21 Oct 16:00 booking. Recheck driver position before 14:00 CEST check-in cutoff; follow up on the ferry line's move request.",
+                  "minutes": 45
+                }
+              }
+            ],
+            "effect": "Changes nothing and books nothing; the active booking and the pending move request stay, and the case is looked at again before check-in closes at 14:00 CEST."
+          },
+          {
+            "label": "Book Thu 22 Oct 16:00 sailing (€469) and tell the customer delivery will be late",
+            "steps": [
+              {
+                "action": "book_ferry",
+                "params": {
+                  "id": "ferry:the-booked-ferry-line:2026-10-22T14:00:00.000Z"
+                }
+              },
+              {
+                "action": "message_customer",
+                "params": {
+                  "to": "Torvamelio Ajoneuvot",
+                  "text": "The ferry crossing for your Volkswagen Golf (PO-004-0603) has been moved because of heavy traffic. Delivery in Lahti, promised Fri 23 Oct 13:00–15:00, will be late; we now expect arrival on the evening of Fri 23 Oct. We will confirm the exact time."
+                }
+              }
+            ],
+            "effect": "Books a second crossing (quote, not booked yet), which arrives Fri 23 Oct 21:00 EEST and misses the delivery promise; sends the customer an email after approval. Does not cancel the current booking."
+          }
+        ],
+        "cost_eur": 0,
+        "findings": [
+          {
+            "text": "The driver says at 11:02 they are on the A7 northbound near Hannover, about 150 km from the terminal, expecting about 13:30 Hamburg time and calling it close.",
+            "source": "E36"
+          },
+          {
+            "text": "The ferry line confirms booking WBV-FERRY-00603 is active on the Wed 21 Oct 16:00 CEST sailing, check-in closes 14:00.",
+            "source": "E34"
+          },
+          {
+            "text": "The request to move the car to a later crossing, received 10:43 CEST, is not confirmed and no sailing or fare is held.",
+            "source": "E34"
+          },
+          {
+            "text": "Internal note: keep the original booking active and do not change the customer's delivery promise yet.",
+            "source": "E11"
+          },
+          {
+            "text": "The next sailing, Thu 22 Oct 16:00 CEST, is a quote at €469, not booked; it arrives Fri 23 Oct 21:00 EEST, after the 13:00–15:00 delivery promise in Lahti.",
+            "source": "E35"
+          },
+          {
+            "text": "GPS at 11:06 EEST showed 1772 km to go with app ETA Fri 23 Oct 12:24 EEST, inside the promised window.",
+            "source": "E3"
+          }
+        ],
+        "headline": "driver reports ~13:30 arrival at Hamburg; check-in closes 14:00",
+        "reject_label": "Reject: change nothing, I'll decide",
+        "what_happened": "The monitor raised a ferry check-in alert. The driver says they are on the A7 near Hannover in slow traffic and expects to reach the terminal around 13:30 Hamburg time, 30 minutes before check-in closes. The original booking is still active and the ferry line has not confirmed a move to a later sailing. If the car makes the 16:00 sailing it arrives in South Finland Thu 22 Oct 23:00 EEST, so Fri 23 Oct 13:00–15:00 delivery in Lahti still looks possible and the customer needs no message yet."
+      },
+      "output": null,
+      "summary": "Called propose"
+    },
+    {
+      "id": "run_81c84cd5:15",
+      "idx": 15,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_result",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [
+          {
+            "label": "Keep the booked 16:00 ferry; recheck in 45 minutes",
+            "steps": [
+              {
+                "action": "note",
+                "params": {
+                  "text": "Keep Wed 21 Oct 16:00 booking. Recheck driver position before 14:00 CEST check-in cutoff; follow up on the ferry line's move request.",
+                  "minutes": 45
+                }
+              }
+            ],
+            "effect": "Changes nothing and books nothing; the active booking and the pending move request stay, and the case is looked at again before check-in closes at 14:00 CEST."
+          },
+          {
+            "label": "Book Thu 22 Oct 16:00 sailing (€469) and tell the customer delivery will be late",
+            "steps": [
+              {
+                "action": "book_ferry",
+                "params": {
+                  "id": "ferry:the-booked-ferry-line:2026-10-22T14:00:00.000Z"
+                }
+              },
+              {
+                "action": "message_customer",
+                "params": {
+                  "to": "Torvamelio Ajoneuvot",
+                  "text": "The ferry crossing for your Volkswagen Golf (PO-004-0603) has been moved because of heavy traffic. Delivery in Lahti, promised Fri 23 Oct 13:00–15:00, will be late; we now expect arrival on the evening of Fri 23 Oct. We will confirm the exact time."
+                }
+              }
+            ],
+            "effect": "Books a second crossing (quote, not booked yet), which arrives Fri 23 Oct 21:00 EEST and misses the delivery promise; sends the customer an email after approval. Does not cancel the current booking."
+          }
+        ],
+        "cost_eur": 0,
+        "findings": [
+          {
+            "text": "The driver says at 11:02 they are on the A7 northbound near Hannover, about 150 km from the terminal, expecting about 13:30 Hamburg time and calling it close.",
+            "source": "E36"
+          },
+          {
+            "text": "The ferry line confirms booking WBV-FERRY-00603 is active on the Wed 21 Oct 16:00 CEST sailing, check-in closes 14:00.",
+            "source": "E34"
+          },
+          {
+            "text": "The request to move the car to a later crossing, received 10:43 CEST, is not confirmed and no sailing or fare is held.",
+            "source": "E34"
+          },
+          {
+            "text": "Internal note: keep the original booking active and do not change the customer's delivery promise yet.",
+            "source": "E11"
+          },
+          {
+            "text": "The next sailing, Thu 22 Oct 16:00 CEST, is a quote at €469, not booked; it arrives Fri 23 Oct 21:00 EEST, after the 13:00–15:00 delivery promise in Lahti.",
+            "source": "E35"
+          },
+          {
+            "text": "GPS at 11:06 EEST showed 1772 km to go with app ETA Fri 23 Oct 12:24 EEST, inside the promised window.",
+            "source": "E3"
+          }
+        ],
+        "headline": "driver reports ~13:30 arrival at Hamburg; check-in closes 14:00",
+        "reject_label": "Reject: change nothing, I'll decide",
+        "what_happened": "The monitor raised a ferry check-in alert. The driver says they are on the A7 near Hannover in slow traffic and expects to reach the terminal around 13:30 Hamburg time, 30 minutes before check-in closes. The original booking is still active and the ferry line has not confirmed a move to a later sailing. If the car makes the 16:00 sailing it arrives in South Finland Thu 22 Oct 23:00 EEST, so Fri 23 Oct 13:00–15:00 delivery in Lahti still looks possible and the customer needs no message yet."
+      },
+      "output": {
+        "data": [
+          {
+            "ok": true,
+            "note": "The 11:02 Hamburg time, roughly 150 km, about 13:30 estimate and 'close' wording all match the driver's message, which is 12:02 EEST, i.e. 11:02 CEST.",
+            "finding": 0
+          },
+          {
+            "ok": true,
+            "note": "The record confirms the booking is active on the Wed 21 Oct 16:00 CEST sailing with check-in closing 14:00.",
+            "finding": 1
+          },
+          {
+            "ok": true,
+            "note": "The record states the move request was received 10:43 CEST, is not confirmed, and no later sailing or fare is held.",
+            "finding": 2
+          },
+          {
+            "ok": true,
+            "note": "The finding presents the internal note as colleague guidance rather than as proof that something happened, so it is acceptable.",
+            "finding": 3
+          },
+          {
+            "ok": true,
+            "note": "The Thu 22 Oct 16:00 CEST €469 quote, not booked, arriving Fri 23 Oct 21:00 EEST, matches the record.",
+            "finding": 4
+          },
+          {
+            "ok": false,
+            "note": "The app ETA of Fri 23 Oct 12:24 EEST is before the 13:00 start of the window, not inside it, so 'inside the promised window' misstates the record.",
+            "finding": 5
+          },
+          {
+            "ok": true,
+            "note": "The headline and what happened attribute the 13:30 estimate to the driver and do not present it as a confirmed arrival.",
+            "finding": null
+          },
+          {
+            "ok": true,
+            "note": "The conclusion that Fri 13:00–15:00 delivery is still possible rests on the booked Thu 23:00 EEST arrival, which the findings support, and the no-message-yet call matches option 1.",
+            "finding": null
+          },
+          {
+            "ok": false,
+            "note": "Finding 2 puts the internal booking code WBV-FERRY-00603 on the card, which breaks the plain-language rule against codes and ids.",
+            "finding": null
+          },
+          {
+            "ok": true,
+            "note": "Option 1 changes nothing and books nothing, and its 'does' matches the label and effect.",
+            "finding": null
+          },
+          {
+            "ok": true,
+            "note": "Option 2 contacts the customer only through the email that follows the person's approval of that button, so nothing is sent without approval.",
+            "finding": null
+          }
+        ],
+        "content": "The verifier checked each claim against its source and found problems. The card was not shown yet. Fix these and call propose again:\n- Finding 6: The app ETA of Fri 23 Oct 12:24 EEST is before the 13:00 start of the window, not inside it, so 'inside the promised window' misstates the record.\n- Finding 2 puts the internal booking code WBV-FERRY-00603 on the card, which breaks the plain-language rule against codes and ids.",
+        "isError": true
+      },
+      "summary": "Card sent back by the verifier (2 problems)"
+    },
+    {
+      "id": "run_81c84cd5:16",
+      "idx": 16,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_call",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [
+          {
+            "label": "Keep the booked 16:00 ferry; recheck in 45 minutes",
+            "steps": [
+              {
+                "action": "note",
+                "params": {
+                  "text": "Keep Wed 21 Oct 16:00 booking. Recheck driver position before 14:00 CEST check-in cutoff; follow up on the ferry line's move request.",
+                  "minutes": 45
+                }
+              }
+            ],
+            "effect": "Changes nothing and books nothing; the active booking and the pending move request stay, and the case is looked at again before check-in closes at 14:00 CEST."
+          },
+          {
+            "label": "Book Thu 22 Oct 16:00 sailing (€469) and tell the customer delivery will be late",
+            "steps": [
+              {
+                "action": "book_ferry",
+                "params": {
+                  "id": "ferry:the-booked-ferry-line:2026-10-22T14:00:00.000Z"
+                }
+              },
+              {
+                "action": "message_customer",
+                "params": {
+                  "to": "Torvamelio Ajoneuvot",
+                  "text": "The ferry crossing for your Volkswagen Golf (PO-004-0603) has been moved because of heavy traffic. Delivery in Lahti, promised Fri 23 Oct 13:00–15:00, will be late; we now expect arrival on the evening of Fri 23 Oct. We will confirm the exact time."
+                }
+              }
+            ],
+            "effect": "Books a second crossing arriving Fri 23 Oct 21:00 EEST, which misses the delivery promise, and emails the customer after approval. Does not cancel the current booking."
+          }
+        ],
+        "cost_eur": 0,
+        "findings": [
+          {
+            "text": "The driver says at 11:02 they are on the A7 northbound near Hannover, about 150 km from the terminal, expecting about 13:30 Hamburg time and calling it close.",
+            "source": "E36"
+          },
+          {
+            "text": "The ferry line confirms the booking is active on the Wed 21 Oct 16:00 CEST sailing, check-in closes 14:00.",
+            "source": "E34"
+          },
+          {
+            "text": "The request to move the car to a later crossing, received 10:43 CEST, is not confirmed and no sailing or fare is held.",
+            "source": "E34"
+          },
+          {
+            "text": "Internal note: keep the original booking active and do not change the customer's delivery promise yet.",
+            "source": "E11"
+          },
+          {
+            "text": "The next sailing, Thu 22 Oct 16:00 CEST, is a quote at €469, not booked; it arrives Fri 23 Oct 21:00 EEST, after the 13:00–15:00 delivery promise in Lahti.",
+            "source": "E35"
+          },
+          {
+            "text": "GPS at 11:06 EEST showed 1772 km to go with app ETA Fri 23 Oct 12:24 EEST, a coarse estimate shortly before the promised window opens.",
+            "source": "E3"
+          }
+        ],
+        "headline": "driver reports ~13:30 arrival at Hamburg; check-in closes 14:00",
+        "reject_label": "Reject: change nothing, I'll decide",
+        "what_happened": "The monitor raised a ferry check-in alert. The driver says they are on the A7 near Hannover in slow traffic and expects to reach the terminal around 13:30 Hamburg time, 30 minutes before check-in closes. The original booking is still active and the ferry line has not confirmed a move to a later sailing. If the car makes the 16:00 sailing it arrives in South Finland Thu 22 Oct 23:00 EEST, so the Fri 23 Oct 13:00–15:00 delivery in Lahti still looks possible and the customer needs no message yet."
+      },
+      "output": null,
+      "summary": "Called propose"
+    },
+    {
+      "id": "run_81c84cd5:17",
+      "idx": 17,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_result",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [
+          {
+            "label": "Keep the booked 16:00 ferry; recheck in 45 minutes",
+            "steps": [
+              {
+                "action": "note",
+                "params": {
+                  "text": "Keep Wed 21 Oct 16:00 booking. Recheck driver position before 14:00 CEST check-in cutoff; follow up on the ferry line's move request.",
+                  "minutes": 45
+                }
+              }
+            ],
+            "effect": "Changes nothing and books nothing; the active booking and the pending move request stay, and the case is looked at again before check-in closes at 14:00 CEST."
+          },
+          {
+            "label": "Book Thu 22 Oct 16:00 sailing (€469) and tell the customer delivery will be late",
+            "steps": [
+              {
+                "action": "book_ferry",
+                "params": {
+                  "id": "ferry:the-booked-ferry-line:2026-10-22T14:00:00.000Z"
+                }
+              },
+              {
+                "action": "message_customer",
+                "params": {
+                  "to": "Torvamelio Ajoneuvot",
+                  "text": "The ferry crossing for your Volkswagen Golf (PO-004-0603) has been moved because of heavy traffic. Delivery in Lahti, promised Fri 23 Oct 13:00–15:00, will be late; we now expect arrival on the evening of Fri 23 Oct. We will confirm the exact time."
+                }
+              }
+            ],
+            "effect": "Books a second crossing arriving Fri 23 Oct 21:00 EEST, which misses the delivery promise, and emails the customer after approval. Does not cancel the current booking."
+          }
+        ],
+        "cost_eur": 0,
+        "findings": [
+          {
+            "text": "The driver says at 11:02 they are on the A7 northbound near Hannover, about 150 km from the terminal, expecting about 13:30 Hamburg time and calling it close.",
+            "source": "E36"
+          },
+          {
+            "text": "The ferry line confirms the booking is active on the Wed 21 Oct 16:00 CEST sailing, check-in closes 14:00.",
+            "source": "E34"
+          },
+          {
+            "text": "The request to move the car to a later crossing, received 10:43 CEST, is not confirmed and no sailing or fare is held.",
+            "source": "E34"
+          },
+          {
+            "text": "Internal note: keep the original booking active and do not change the customer's delivery promise yet.",
+            "source": "E11"
+          },
+          {
+            "text": "The next sailing, Thu 22 Oct 16:00 CEST, is a quote at €469, not booked; it arrives Fri 23 Oct 21:00 EEST, after the 13:00–15:00 delivery promise in Lahti.",
+            "source": "E35"
+          },
+          {
+            "text": "GPS at 11:06 EEST showed 1772 km to go with app ETA Fri 23 Oct 12:24 EEST, a coarse estimate shortly before the promised window opens.",
+            "source": "E3"
+          }
+        ],
+        "headline": "driver reports ~13:30 arrival at Hamburg; check-in closes 14:00",
+        "reject_label": "Reject: change nothing, I'll decide",
+        "what_happened": "The monitor raised a ferry check-in alert. The driver says they are on the A7 near Hannover in slow traffic and expects to reach the terminal around 13:30 Hamburg time, 30 minutes before check-in closes. The original booking is still active and the ferry line has not confirmed a move to a later sailing. If the car makes the 16:00 sailing it arrives in South Finland Thu 22 Oct 23:00 EEST, so the Fri 23 Oct 13:00–15:00 delivery in Lahti still looks possible and the customer needs no message yet."
+      },
+      "output": {
+        "data": [
+          {
+            "ok": true,
+            "note": "The driver's message gives A7 northbound near Hannover, about 150 km from the terminal, and about 13:30 Hamburg time, cutting it close for 14:00.",
+            "finding": 0
+          },
+          {
+            "ok": true,
+            "note": "The ferry line lookup confirms the booking is active on the Wed 21 Oct 16:00 CEST sailing with check-in closing at 14:00.",
+            "finding": 1
+          },
+          {
+            "ok": true,
+            "note": "The lookup says the move request received 10:43 CEST is not confirmed and no later sailing or fare is held.",
+            "finding": 2
+          },
+          {
+            "ok": true,
+            "note": "The record is an internal Ops note giving guidance to keep the booking active, and the finding labels it as such rather than as evidence of an event.",
+            "finding": 3
+          },
+          {
+            "ok": false,
+            "note": "The cited ferry record gives the Thu 22 Oct 16:00 quote and its Fri 23 Oct 21:00 arrival, but no cited record mentions Lahti or a 13:00–15:00 delivery promise, so that comparison is unsupported.",
+            "finding": 4
+          },
+          {
+            "ok": true,
+            "note": "The driver app record gives 1772 km to go, 26% of the drive, and an ETA of Fri 23 Oct 12:24 EEST at 11:06 EEST.",
+            "finding": 5
+          },
+          {
+            "ok": false,
+            "note": "The headline says arrival at Hamburg, but the records only give Hamburg as a time zone and never state the terminal's location.",
+            "finding": null
+          },
+          {
+            "ok": false,
+            "note": "The claim that the Lahti 13:00–15:00 delivery still looks possible and needs no customer message rests on a delivery promise window that no cited record contains.",
+            "finding": null
+          },
+          {
+            "ok": true,
+            "note": "Both options match their labels, and the customer email in option 2 is sent only after the person approves the button.",
+            "finding": null
+          },
+          {
+            "ok": true,
+            "note": "The card uses plain language with no internal ids or codes.",
+            "finding": null
+          }
+        ],
+        "content": "The verifier checked each claim against its source and found problems. The card was not shown yet. Fix these and call propose again:\n- Finding 5: The cited ferry record gives the Thu 22 Oct 16:00 quote and its Fri 23 Oct 21:00 arrival, but no cited record mentions Lahti or a 13:00–15:00 delivery promise, so that comparison is unsupported.\n- The headline says arrival at Hamburg, but the records only give Hamburg as a time zone and never state the terminal's location.\n- The claim that the Lahti 13:00–15:00 delivery still looks possible and needs no customer message rests on a delivery promise window that no cited record contains.",
+        "isError": true
+      },
+      "summary": "Card sent back by the verifier (3 problems)"
+    },
+    {
+      "id": "run_81c84cd5:18",
+      "idx": 18,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_call",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [
+          {
+            "label": "Keep the booked 16:00 ferry; recheck in 45 minutes",
+            "steps": [
+              {
+                "action": "note",
+                "params": {
+                  "text": "Keep Wed 21 Oct 16:00 booking. Recheck driver position before 14:00 CEST check-in cutoff; follow up on the ferry line's move request.",
+                  "minutes": 45
+                }
+              }
+            ],
+            "effect": "Changes nothing and books nothing; the active booking and the pending move request stay, and the case is looked at again before check-in closes at 14:00 CEST."
+          },
+          {
+            "label": "Book Thu 22 Oct 16:00 sailing (€469) and tell the customer delivery will be late",
+            "steps": [
+              {
+                "action": "book_ferry",
+                "params": {
+                  "id": "ferry:the-booked-ferry-line:2026-10-22T14:00:00.000Z"
+                }
+              },
+              {
+                "action": "message_customer",
+                "params": {
+                  "to": "Torvamelio Ajoneuvot",
+                  "text": "The ferry crossing for your Volkswagen Golf (PO-004-0603) has been moved because of heavy traffic. Delivery in Lahti, promised Fri 23 Oct 13:00–15:00, will be late; we now expect arrival on the evening of Fri 23 Oct. We will confirm the exact time."
+                }
+              }
+            ],
+            "effect": "Books a second crossing arriving Fri 23 Oct 21:00 EEST, after the 13:00–15:00 promise, and emails the customer after approval. Does not cancel the current booking."
+          }
+        ],
+        "cost_eur": 0,
+        "findings": [
+          {
+            "text": "The driver says at 11:02 they are on the A7 northbound near Hannover, about 150 km from the terminal, expecting about 13:30 Hamburg time and calling it close.",
+            "source": "E36"
+          },
+          {
+            "text": "The ferry line confirms the booking is active on the Wed 21 Oct 16:00 CEST sailing, check-in closes 14:00.",
+            "source": "E34"
+          },
+          {
+            "text": "The request to move the car to a later crossing, received 10:43 CEST, is not confirmed and no sailing or fare is held.",
+            "source": "E34"
+          },
+          {
+            "text": "Internal note: keep the original booking active and do not change the customer's delivery promise yet.",
+            "source": "E11"
+          },
+          {
+            "text": "The customer's delivery promise is Fri 23 Oct 13:00–15:00 EEST at the private address in Lahti.",
+            "source": "E4"
+          },
+          {
+            "text": "The next sailing, Thu 22 Oct 16:00 CEST, is a quote at €469, not booked; it arrives Fri 23 Oct 21:00 EEST.",
+            "source": "E35"
+          }
+        ],
+        "headline": "driver reports ~13:30 arrival at terminal; check-in closes 14:00",
+        "reject_label": "Reject: change nothing, I'll decide",
+        "what_happened": "The monitor raised a ferry check-in alert. The driver says they are on the A7 near Hannover in slow traffic and expects to reach the terminal around 13:30, 30 minutes before check-in closes. The original booking is still active and the ferry line has not confirmed a move. If the car makes the 16:00 sailing, the Fri 23 Oct 13:00–15:00 EEST delivery promise in Lahti still looks possible and the customer needs no message yet."
+      },
+      "output": null,
+      "summary": "Called propose"
+    },
+    {
+      "id": "run_81c84cd5:19",
+      "idx": 19,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_result",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [
+          {
+            "label": "Keep the booked 16:00 ferry; recheck in 45 minutes",
+            "steps": [
+              {
+                "action": "note",
+                "params": {
+                  "text": "Keep Wed 21 Oct 16:00 booking. Recheck driver position before 14:00 CEST check-in cutoff; follow up on the ferry line's move request.",
+                  "minutes": 45
+                }
+              }
+            ],
+            "effect": "Changes nothing and books nothing; the active booking and the pending move request stay, and the case is looked at again before check-in closes at 14:00 CEST."
+          },
+          {
+            "label": "Book Thu 22 Oct 16:00 sailing (€469) and tell the customer delivery will be late",
+            "steps": [
+              {
+                "action": "book_ferry",
+                "params": {
+                  "id": "ferry:the-booked-ferry-line:2026-10-22T14:00:00.000Z"
+                }
+              },
+              {
+                "action": "message_customer",
+                "params": {
+                  "to": "Torvamelio Ajoneuvot",
+                  "text": "The ferry crossing for your Volkswagen Golf (PO-004-0603) has been moved because of heavy traffic. Delivery in Lahti, promised Fri 23 Oct 13:00–15:00, will be late; we now expect arrival on the evening of Fri 23 Oct. We will confirm the exact time."
+                }
+              }
+            ],
+            "effect": "Books a second crossing arriving Fri 23 Oct 21:00 EEST, after the 13:00–15:00 promise, and emails the customer after approval. Does not cancel the current booking."
+          }
+        ],
+        "cost_eur": 0,
+        "findings": [
+          {
+            "text": "The driver says at 11:02 they are on the A7 northbound near Hannover, about 150 km from the terminal, expecting about 13:30 Hamburg time and calling it close.",
+            "source": "E36"
+          },
+          {
+            "text": "The ferry line confirms the booking is active on the Wed 21 Oct 16:00 CEST sailing, check-in closes 14:00.",
+            "source": "E34"
+          },
+          {
+            "text": "The request to move the car to a later crossing, received 10:43 CEST, is not confirmed and no sailing or fare is held.",
+            "source": "E34"
+          },
+          {
+            "text": "Internal note: keep the original booking active and do not change the customer's delivery promise yet.",
+            "source": "E11"
+          },
+          {
+            "text": "The customer's delivery promise is Fri 23 Oct 13:00–15:00 EEST at the private address in Lahti.",
+            "source": "E4"
+          },
+          {
+            "text": "The next sailing, Thu 22 Oct 16:00 CEST, is a quote at €469, not booked; it arrives Fri 23 Oct 21:00 EEST.",
+            "source": "E35"
+          }
+        ],
+        "headline": "driver reports ~13:30 arrival at terminal; check-in closes 14:00",
+        "reject_label": "Reject: change nothing, I'll decide",
+        "what_happened": "The monitor raised a ferry check-in alert. The driver says they are on the A7 near Hannover in slow traffic and expects to reach the terminal around 13:30, 30 minutes before check-in closes. The original booking is still active and the ferry line has not confirmed a move. If the car makes the 16:00 sailing, the Fri 23 Oct 13:00–15:00 EEST delivery promise in Lahti still looks possible and the customer needs no message yet."
+      },
+      "output": {
+        "data": {
+          "cardId": "card_10542985-1b2",
+          "verifier": [
+            {
+              "ok": true,
+              "note": "The driver's message supports the A7 near Hannover location, about 150 km from the terminal, and the expected arrival of about 13:30 Hamburg time, and it is attributed to the driver.",
+              "finding": 0
+            },
+            {
+              "ok": true,
+              "note": "The ferry line lookup confirms the booking is active on the Wed 21 Oct 16:00 CEST sailing with check-in closing at 14:00.",
+              "finding": 1
+            },
+            {
+              "ok": true,
+              "note": "The ferry line lookup says the move request received 10:43 CEST is not confirmed and no later sailing or fare is held.",
+              "finding": 2
+            },
+            {
+              "ok": true,
+              "note": "The finding presents the internal note as a colleague's guidance to keep the booking and promise unchanged, not as evidence of an event.",
+              "finding": 3
+            },
+            {
+              "ok": true,
+              "note": "The order form states the delivery promise of Fri 23 Oct 13:00–15:00 EEST at the private address in Lahti.",
+              "finding": 4
+            },
+            {
+              "ok": true,
+              "note": "The re-check record gives the Thu 22 Oct 16:00 CEST sailing as a €469 quote, not booked, arriving Fri 23 Oct 21:00 EEST.",
+              "finding": 5
+            },
+            {
+              "ok": true,
+              "note": "The headline attributes the 13:30 arrival to the driver's report and matches the driver's message.",
+              "finding": null
+            },
+            {
+              "ok": true,
+              "note": "The claim that the delivery promise still looks possible on the 16:00 sailing follows from the booked crossing arriving Thu 22 Oct 23:00 EEST, which the cited re-check record holds.",
+              "finding": null
+            },
+            {
+              "ok": true,
+              "note": "Option 1 changes and books nothing and contacts no one, and its label matches its effect.",
+              "finding": null
+            },
+            {
+              "ok": true,
+              "note": "Option 2 books the quoted sailing only on approval and emails the customer only after approval, and its label matches its effect.",
+              "finding": null
+            },
+            {
+              "ok": true,
+              "note": "The card uses plain language with no internal codes or ids.",
+              "finding": null
+            }
+          ]
+        },
+        "content": "The card is in front of a person now. Your run ends here.",
+        "isError": false
+      },
+      "summary": "Proposed to a person: Keep the booked 16:00 ferry; recheck in 45 minutes"
+    }
+  ],
+  "cards": [
+    {
+      "id": "card_10542985-1b2",
+      "orderId": "ord-00603",
+      "runId": "run_81c84cd5",
+      "createdAt": "2026-10-21T09:02:00.000Z",
+      "kind": "decision",
+      "status": "open",
+      "headline": "Volkswagen Golf: driver reports ~13:30 arrival at terminal; check-in closes 14:00",
+      "whatHappened": "The monitor raised a ferry check-in alert. The driver says they are on the A7 near Hannover in slow traffic and expects to reach the terminal around 13:30, 30 minutes before check-in closes. The original booking is still active and the ferry line has not confirmed a move. If the car makes the 16:00 sailing, the Fri 23 Oct 13:00–15:00 EEST delivery promise in Lahti still looks possible and the customer needs no message yet.",
+      "findings": [
+        {
+          "at": "2026-10-21T09:02:00.000Z",
+          "text": "The driver says at 11:02 they are on the A7 northbound near Hannover, about 150 km from the terminal, expecting about 13:30 Hamburg time and calling it close.",
+          "source_label": "Driver",
+          "source_entry_id": "live:ea9c7067-74c1-42ca-8bf6-4c1be73cd051"
+        },
+        {
+          "at": "2026-10-21T09:00:00.000Z",
+          "text": "The ferry line confirms the booking is active on the Wed 21 Oct 16:00 CEST sailing, check-in closes 14:00.",
+          "source_label": "Ferry line lookup",
+          "source_entry_id": "live:8cd5fb16-6619-400c-a69e-489c30ce3f73"
+        },
+        {
+          "at": "2026-10-21T09:00:00.000Z",
+          "text": "The request to move the car to a later crossing, received 10:43 CEST, is not confirmed and no sailing or fare is held.",
+          "source_label": "Ferry line lookup",
+          "source_entry_id": "live:8cd5fb16-6619-400c-a69e-489c30ce3f73"
+        },
+        {
+          "at": "2026-10-21T08:43:00.000Z",
+          "text": "Internal note: keep the original booking active and do not change the customer's delivery promise yet.",
+          "source_label": "Internal note",
+          "source_entry_id": "messages:msg-x7074c5c677e14192"
+        },
+        {
+          "at": "2026-10-14T09:37:00.000Z",
+          "text": "The customer's delivery promise is Fri 23 Oct 13:00–15:00 EEST at the private address in Lahti.",
+          "source_label": "Torvamelio Ajoneuvot, order form",
+          "source_entry_id": "time_windows:win-xd8ea7b8e35089ee5"
+        },
+        {
+          "at": "2026-10-21T09:00:00.000Z",
+          "text": "The next sailing, Thu 22 Oct 16:00 CEST, is a quote at €469, not booked; it arrives Fri 23 Oct 21:00 EEST.",
+          "source_label": "Quote, not booked",
+          "source_entry_id": "live:51cb67fb-cafc-4e60-aa12-aa07b6b1e155"
+        }
+      ],
+      "proposal": {
+        "action": "note",
+        "params": {
+          "text": "Keep Wed 21 Oct 16:00 booking. Recheck driver position before 14:00 CEST check-in cutoff; follow up on the ferry line's move request.",
+          "minutes": 45
+        },
+        "cost_eur": null,
+        "effect_text": "Changes nothing and books nothing; the active booking and the pending move request stay, and the case is looked at again before check-in closes at 14:00 CEST.",
+        "requires_approval_reason": null
+      },
+      "options": [
+        {
+          "id": "opt-1",
+          "kind": "approve",
+          "label": "Keep the booked 16:00 ferry; recheck in 45 minutes",
+          "steps": [
+            {
+              "action": "note",
+              "params": {
+                "text": "Keep Wed 21 Oct 16:00 booking. Recheck driver position before 14:00 CEST check-in cutoff; follow up on the ferry line's move request.",
+                "minutes": 45
+              }
+            }
+          ],
+          "action": "note",
+          "params": {
+            "text": "Keep Wed 21 Oct 16:00 booking. Recheck driver position before 14:00 CEST check-in cutoff; follow up on the ferry line's move request.",
+            "minutes": 45
+          },
+          "effect_text": "Changes nothing and books nothing; the active booking and the pending move request stay, and the case is looked at again before check-in closes at 14:00 CEST."
+        },
+        {
+          "id": "opt-2",
+          "kind": "approve",
+          "label": "Book Thu 22 Oct 16:00 sailing (€469) and tell the customer delivery will be late",
+          "steps": [
+            {
+              "action": "book_ferry",
+              "params": {
+                "id": "ferry:the-booked-ferry-line:2026-10-22T14:00:00.000Z",
+                "lookup": {
+                  "kind": "ferry",
+                  "label": "The booked ferry line, West Baltic to South Finland, departs Thu 22 Oct 16:00 CEST, check-in closes 14:00, arrives Fri 23 Oct 21:00 EEST, €469 (quote, not booked)",
+                  "details": {
+                    "id": "ferry:the-booked-ferry-line:2026-10-22T14:00:00.000Z",
+                    "to": "South Finland Vehicle Terminal",
+                    "from": "West Baltic Vehicle Terminal",
+                    "state": "quote",
+                    "provider": "The booked ferry line",
+                    "arrivalAt": "2026-10-23T18:00:00.000Z",
+                    "checkedAt": "2026-10-21T09:00:00.000Z",
+                    "priceCents": 46900,
+                    "departureAt": "2026-10-22T14:00:00.000Z",
+                    "checkInCutoffAt": "2026-10-22T12:00:00.000Z",
+                    "datasetOptionId": null
+                  },
+                  "price_cents": 46900
+                }
+              }
+            },
+            {
+              "action": "message_customer",
+              "params": {
+                "to": "Torvamelio Ajoneuvot",
+                "text": "The ferry crossing for your Volkswagen Golf (PO-004-0603) has been moved because of heavy traffic. Delivery in Lahti, promised Fri 23 Oct 13:00–15:00, will be late; we now expect arrival on the evening of Fri 23 Oct. We will confirm the exact time."
+              }
+            }
+          ],
+          "action": "book_ferry",
+          "params": {
+            "id": "ferry:the-booked-ferry-line:2026-10-22T14:00:00.000Z",
+            "lookup": {
+              "kind": "ferry",
+              "label": "The booked ferry line, West Baltic to South Finland, departs Thu 22 Oct 16:00 CEST, check-in closes 14:00, arrives Fri 23 Oct 21:00 EEST, €469 (quote, not booked)",
+              "details": {
+                "id": "ferry:the-booked-ferry-line:2026-10-22T14:00:00.000Z",
+                "to": "South Finland Vehicle Terminal",
+                "from": "West Baltic Vehicle Terminal",
+                "state": "quote",
+                "provider": "The booked ferry line",
+                "arrivalAt": "2026-10-23T18:00:00.000Z",
+                "checkedAt": "2026-10-21T09:00:00.000Z",
+                "priceCents": 46900,
+                "departureAt": "2026-10-22T14:00:00.000Z",
+                "checkInCutoffAt": "2026-10-22T12:00:00.000Z",
+                "datasetOptionId": null
+              },
+              "price_cents": 46900
+            }
+          },
+          "effect_text": "Books a second crossing arriving Fri 23 Oct 21:00 EEST, after the 13:00–15:00 promise, and emails the customer after approval. Does not cancel the current booking."
+        },
+        {
+          "id": "reject",
+          "kind": "reject",
+          "label": "Reject: change nothing, I'll decide",
+          "action": "reject",
+          "params": {}
+        }
+      ],
+      "consequenceAt": "2026-10-21T12:00:00.000Z",
+      "consequenceText": "Ferry check-in in Hamburg closes in 2 h 58 min, at 14:00",
+      "severity": "high",
+      "verifierNotes": [
+        {
+          "ok": true,
+          "note": "The driver's message supports the A7 near Hannover location, about 150 km from the terminal, and the expected arrival of about 13:30 Hamburg time, and it is attributed to the driver.",
+          "finding": 0
+        },
+        {
+          "ok": true,
+          "note": "The ferry line lookup confirms the booking is active on the Wed 21 Oct 16:00 CEST sailing with check-in closing at 14:00.",
+          "finding": 1
+        },
+        {
+          "ok": true,
+          "note": "The ferry line lookup says the move request received 10:43 CEST is not confirmed and no later sailing or fare is held.",
+          "finding": 2
+        },
+        {
+          "ok": true,
+          "note": "The finding presents the internal note as a colleague's guidance to keep the booking and promise unchanged, not as evidence of an event.",
+          "finding": 3
+        },
+        {
+          "ok": true,
+          "note": "The order form states the delivery promise of Fri 23 Oct 13:00–15:00 EEST at the private address in Lahti.",
+          "finding": 4
+        },
+        {
+          "ok": true,
+          "note": "The re-check record gives the Thu 22 Oct 16:00 CEST sailing as a €469 quote, not booked, arriving Fri 23 Oct 21:00 EEST.",
+          "finding": 5
+        },
+        {
+          "ok": true,
+          "note": "The headline attributes the 13:30 arrival to the driver's report and matches the driver's message.",
+          "finding": null
+        },
+        {
+          "ok": true,
+          "note": "The claim that the delivery promise still looks possible on the 16:00 sailing follows from the booked crossing arriving Thu 22 Oct 23:00 EEST, which the cited re-check record holds.",
+          "finding": null
+        },
+        {
+          "ok": true,
+          "note": "Option 1 changes and books nothing and contacts no one, and its label matches its effect.",
+          "finding": null
+        },
+        {
+          "ok": true,
+          "note": "Option 2 books the quoted sailing only on approval and emails the customer only after approval, and its label matches its effect.",
+          "finding": null
+        },
+        {
+          "ok": true,
+          "note": "The card uses plain language with no internal codes or ids.",
+          "finding": null
+        }
+      ],
+      "origin": "agent"
+    }
+  ],
+  "decisions": []
+}

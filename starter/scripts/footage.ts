@@ -3,7 +3,8 @@
 // every card), into ../demo-footage/, and writes ../demo-footage/SHOTLIST.md with what each clip shows, when, and how
 // long it is. Each clip starts from the recorded morning with scale mode on (1,000 orders); the recorded morning is
 // put back at the end. A recording has no mouse pointer, so the page draws one.
-// Clips: for-you, scenario-1, scenario-2, scenario-6, scenario-7, autonomy, case-view, how-it-works, take-over.
+// Clips: for-you, scenario-1, scenario-2, scenario-6, scenario-7, autonomy, case-view, how-it-works, take-over,
+// backup-driver, playbook.
 // Scenario 2 and 7 are replays of recorded live runs (real speed); with an API key, scenario 2 also sends the reply.
 
 import "dotenv/config"
@@ -16,7 +17,9 @@ import { chromium, type Locator, type Page } from "playwright"
 import { hasApiKey } from "@/lib/agents/llm"
 import { resetOrderDecisions } from "@/lib/agents/reset"
 import { getCase } from "@/lib/case"
-import { closeDb } from "@/lib/db"
+import { eq } from "drizzle-orm"
+import { closeDb, db } from "@/lib/db"
+import { playbookRules } from "@/lib/schema"
 import { loadFixtures } from "@/lib/fixtures"
 import { addScaleOrders, scaleState } from "@/lib/scale"
 
@@ -96,7 +99,24 @@ async function until(page: Page, target: Locator, seconds: number): Promise<bool
   return target.first().waitFor({ timeout: seconds * 1000 }).then(() => true, () => false)
 }
 
-const row = (page: Page, text: string) => page.locator("article.row", { hasText: text }).first()
+/** For you is an inbox: a row in the list on the left, and the selected case in the pane on the right. */
+const row = (page: Page, text: string) => page.locator(".inbox-row", { hasText: text }).first()
+const pane = (page: Page) => page.locator(".inbox-detail .case-detail")
+
+/** Select a case in the list, as a person clicks it; the pane shows it. */
+async function openCase(page: Page, text: string): Promise<Locator> {
+  const target = row(page, text)
+  await target.scrollIntoViewIfNeeded()
+  await click(page, target.locator("button, a").first())
+  await wait(page, 600)
+  return pane(page)
+}
+
+/** The case pane scrolls on its own, beside the list. */
+async function scrollPane(page: Page, pixels: number, readMs = 1800): Promise<void> {
+  await page.locator(".inbox-detail").evaluate((element, top) => element.scrollBy({ top, behavior: "smooth" }), pixels)
+  await wait(page, 700 + readMs)
+}
 
 /** For you shows Now; the rest waits under one "N more" row. Open it so a card further down can be found. */
 async function showLater(page: Page): Promise<void> {
@@ -118,13 +138,33 @@ function clips(base: string): Clip[] {
         beat("For you opens: the header counts what needs a person, what agents are handling, and the orders with nothing open")
         await point(page, page.locator(".page-sub"))
         await wait(page, 4500)
-        beat("The safety case is first, then the earliest consequence")
-        await point(page, page.locator("article.row").first())
+        beat("The safety case is first and already open on the right; then the earliest consequence")
+        await point(page, page.locator(".inbox-row").first())
         await wait(page, 3500)
-        beat("Scrolling the list: each row says what is lost and when, and what the agent proposes")
-        for (let index = 0; index < 4; index += 1) await scrollBy(page, 620, 2200)
+        beat("J moves down the list, the case on the right follows: what is lost and when, and what the agent proposes")
+        for (let index = 0; index < 4; index += 1) { await page.keyboard.press("j"); await wait(page, 2600) }
+        await page.keyboard.press("k")
+        await wait(page, 2000)
+        beat("Later is folded: nothing there is lost before the time it names")
+        await click(page, page.locator(".later-toggle"))
+        await wait(page, 3500)
+        await scrollBy(page, 500, 2500)
         await page.evaluate(() => window.scrollTo({ top: 0, behavior: "smooth" }))
         await wait(page, 1500)
+        beat("The team view: Finland's desk picks its market; the header counts the other countries")
+        await click(page, page.locator(".view-button"))
+        await wait(page, 1800)
+        await click(page, page.locator(".view-pop label", { hasText: "Finland" }))
+        await wait(page, 1200)
+        await page.keyboard.press("Escape")
+        await wait(page, 3500)
+        beat("What is left out is one muted row, never hidden; the sidebar count follows the view")
+        await point(page, page.locator(".inbox-outside"))
+        await wait(page, 3500)
+        await point(page, page.locator("nav[aria-label='Main'] .count"))
+        await wait(page, 2500)
+        await click(page, page.locator(".inbox-outside"))
+        await wait(page, 2000)
         beat("Orders: all 1,000, the ones with something open first")
         await click(page, page.locator("nav[aria-label='Main'] a", { hasText: "Orders" }))
         await wait(page, 3500)
@@ -144,25 +184,23 @@ function clips(base: string): Clip[] {
         if (file) await resetOrderDecisions(file.order.id)
         await go(page, base, "/")
         await showLater(page)
-        const card = row(page, "BMW M4 · ferry sold out")
-        beat("The ferry card in For you: what is lost and when, and the proposal in one line")
-        await point(page, card)
+        beat("The ferry case in the list: what is lost and when, and the proposal in one line")
+        await point(page, row(page, "CD-420299"))
         await wait(page, 3000)
-        beat("Opened: what happened, what the agent found with a source for each fact, and what it proposes")
-        await click(page, card.locator(".row-head"))
+        beat("Selected: what happened, what approving does, and what the agent found with a source for each fact")
+        const card = await openCase(page, "CD-420299")
         await wait(page, 4000)
-        await scrollBy(page, 330, 5500)
-        await scrollBy(page, 300, 4500)
-        beat("Approve: the toast counts down the 8-second undo window")
+        beat("Similar past cases: three earlier bookings from an old quote were rejected, wrong facts (demo history)")
+        await scrollPane(page, 330, 6000)
+        await scrollPane(page, -330, 1500)
+        beat("Approve: the toast counts down the 8-second undo window, and the next case is selected")
         await click(page, card.locator(".row-actions .btn.primary"))
         await wait(page, 2500)
-        beat("Undo inside the window: nothing was booked and the card comes back")
+        beat("Undo inside the window: nothing was booked and the case comes back, selected")
         await click(page, page.locator(".toast button", { hasText: "Undo" }))
         await wait(page, 2500)
         await showLater(page)
-        const again = row(page, "BMW M4 · ferry sold out")
-        await again.scrollIntoViewIfNeeded()
-        if (await again.getAttribute("data-open") !== "true") await click(page, again.locator(".row-head"))
+        const again = await openCase(page, "CD-420299")
         beat("Approve again and let the window run out")
         await click(page, again.locator(".row-actions .btn.primary"))
         await wait(page, 10_500)
@@ -197,25 +235,29 @@ function clips(base: string): Clip[] {
         await wait(page, 6000)
         // Agents lists what waits for a person as one row now; the card itself shows on For you when it is ready.
         await go(page, base, "/")
-        const waiting = await until(page, row(page, "Bentley Continental GT"), 200)
-        beat(waiting ? "The card is ready: it waits for a person" : "Still working")
+        const waiting = await until(page, row(page, "CD-420322"), 200)
+        beat(waiting ? "The case is ready: it waits for a person" : "Still working")
         await wait(page, 2000)
-        const card = row(page, "Bentley Continental GT")
-        beat("The safety card is first in For you")
-        await point(page, card)
+        beat("The safety case is first in For you")
+        await point(page, row(page, "CD-420322"))
         await wait(page, 3500)
-        await click(page, card.locator(".row-head"))
+        const card = await openCase(page, "CD-420322")
         beat("What the driver said, the stale GPS, the customer's instruction, the promise, and the recovery quotes, each with its source")
         await wait(page, 5000)
-        await scrollBy(page, 330, 6000)
-        await scrollBy(page, 330, 5000)
+        await scrollPane(page, 330, 6000)
+        await scrollPane(page, 330, 5000)
+        await scrollPane(page, -660, 1500)
         if (!hasApiKey()) return
-        // The reply box opens from "Reject or reply" while the replayed card is current; if it was replaced, the clip ends here.
+        // The reply box opens with R while the replayed card is current; if it was replaced, the clip ends here.
         const replyButton = card.locator(".row-actions button", { hasText: "Reject or reply" })
         if (!(await replyButton.isVisible().catch(() => false))) return
-        beat("A person writes one sentence back instead of choosing an option")
-        await click(page, replyButton)
-        await type(page, card.locator(".answer-box input"), "call the seller first")
+        beat("R: a person writes one sentence back instead of choosing an option")
+        await point(page, replyButton)
+        await page.keyboard.press("r")
+        await wait(page, 800)
+        beat("Why not as proposed: one reason first, then the sentence")
+        await click(page, card.locator(".reason-chip", { hasText: "Customer must decide" }))
+        await type(page, card.locator("form.reply input"), "call the seller first")
         await click(page, card.locator(".answer-box button", { hasText: "Send to agent" }))
         await wait(page, 10_000)
         beat("After the undo window the same agent continues with the reply, live")
@@ -223,13 +265,12 @@ function clips(base: string): Clip[] {
         await until(page, page.locator(".run-row", { hasText: "Bentley" }).first(), 20)
         await wait(page, 4000)
         await go(page, base, "/")
-        const next = await until(page, row(page, "Bentley Continental GT"), 180)
+        const next = await until(page, row(page, "CD-420322"), 180)
         if (!next) return
-        const updated = row(page, "Bentley Continental GT")
         beat("Its next card, after the reply")
-        await click(page, updated.locator(".row-head"))
+        await openCase(page, "CD-420322")
         await wait(page, 6000)
-        await scrollBy(page, 330, 5000)
+        await scrollPane(page, 330, 5000)
       },
     },
     {
@@ -237,20 +278,23 @@ function clips(base: string): Clip[] {
       about: "CD-420603. The driver says they are in the queue before the terminal; the last GPS shows 1,772 km to go. The Verifier found the conflict and code moved the case to Opus. The card shows both statements with their sources and the gap, and keeps the booked crossing. The source chips open the records.",
       run: async (page, beat) => {
         await go(page, base, "/")
-        const card = row(page, "Volkswagen Golf")
-        beat("The ferry check-in card: closes at 14:00 Hamburg time")
-        await point(page, card)
+        beat("The ferry check-in case: closes at 14:00 Hamburg time")
+        await point(page, row(page, "CD-420603"))
         await wait(page, 3500)
-        await click(page, card.locator(".row-head"))
+        const card = await openCase(page, "CD-420603")
         beat("Both statements, with their sources: the driver's messages and the GPS, and the gap between them")
         await wait(page, 5000)
-        await scrollBy(page, 300, 7000)
-        await scrollBy(page, 300, 5000)
+        await scrollPane(page, 300, 7000)
+        await scrollPane(page, 300, 5000)
         beat("The quiet line: investigated on Opus, moved to the senior model because records disagree")
+        await card.locator(".run-line").evaluate((element) => element.scrollIntoView({ behavior: "smooth", block: "center" }))
+        await wait(page, 900)
         await point(page, card.locator(".run-line"))
         await wait(page, 4000)
         beat("A source chip opens the GPS record on the order's timeline")
         const gps = card.locator('a.fact-src[title^="GPS"]').first()
+        await gps.evaluate((element) => element.scrollIntoView({ behavior: "smooth", block: "center" }))
+        await wait(page, 900)
         await point(page, gps)
         await wait(page, 2500)
         await gps.click()
@@ -259,9 +303,9 @@ function clips(base: string): Clip[] {
         beat("The driver's message chip opens what the driver wrote, with the time")
         await page.goBack({ waitUntil: "networkidle" })
         await wait(page, 1500)
-        const back = row(page, "Volkswagen Golf")
-        if (await back.getAttribute("data-open") !== "true") await click(page, back.locator(".row-head"))
+        const back = await openCase(page, "CD-420603")
         const driver = back.locator('a.fact-src[title^="Driver"]').first()
+        await driver.scrollIntoViewIfNeeded()
         await point(page, driver)
         await driver.click()
         await page.waitForLoadState("networkidle")
@@ -274,15 +318,14 @@ function clips(base: string): Clip[] {
       run: async (page, beat) => {
         await go(page, base, "/")
         await showLater(page)
-        const strike = row(page, "rail strike")
-        beat("The rail strike card: the Monitor matched the notice to the driver's booked train")
-        await point(page, strike)
+        beat("The rail strike case: the Monitor matched the notice to the driver's booked train")
+        await point(page, row(page, "CD-420123"))
         await wait(page, 3000)
-        await click(page, strike.locator(".row-head"))
+        await openCase(page, "CD-420123")
         beat("It cites the rail operator's notice and says nobody on the ground has confirmed it")
         await wait(page, 5000)
-        await scrollBy(page, 330, 6000)
-        await scrollBy(page, 330, 4000)
+        await scrollPane(page, 330, 6000)
+        await scrollPane(page, 330, 4000)
         beat("Demo controls: the regional traffic service publishes a protest notice near Lille (a replay of the recorded live run)")
         await go(page, base, "/demo")
         const event = page.locator(".demo-events li", { hasText: "Scenario 7" })
@@ -297,13 +340,12 @@ function clips(base: string): Clip[] {
         await showLater(page)
         await until(page, row(page, "2 orders"), 150)
         await showLater(page)
-        const group = row(page, "2 orders")
         beat("One card, two orders, one cause: each order's effect, and the source")
-        await point(page, group)
+        await point(page, row(page, "2 orders"))
         await wait(page, 3000)
-        await click(page, group.locator(".row-head"))
+        await openCase(page, "2 orders")
         await wait(page, 5000)
-        await scrollBy(page, 330, 6000)
+        await scrollPane(page, 330, 6000)
       },
     },
     {
@@ -318,13 +360,13 @@ function clips(base: string): Clip[] {
         await threshold.selectOption("2")
         await wait(page, 2500)
         await go(page, base, "/")
-        for (const text of ["BMW M4 · ferry sold out", "Audi Q8 e-tron · ferry sold out"]) {
+        for (const [reference, car] of [["CD-420299", "BMW M4"], ["CD-420154", "Audi Q8 e-tron"]]) {
           await showLater(page)
-          const card = row(page, text)
-          beat(`Approve the ferry card as proposed (${text.split(" · ")[0]})`)
-          await click(page, card.locator(".row-head"))
-          await wait(page, 3500)
-          await click(page, card.locator(".row-actions .btn.primary"))
+          beat(`Approve the ferry case as proposed (${car}), with the A key`)
+          const card = await openCase(page, reference)
+          await wait(page, 3000)
+          await point(page, card.locator(".row-actions .btn.primary"))
+          await page.keyboard.press("a")
           await wait(page, 10_500)
         }
         await page.evaluate(() => window.scrollTo({ top: 0, behavior: "smooth" }))
@@ -399,20 +441,19 @@ function clips(base: string): Clip[] {
       about: "CD-420593, the car that is not at the Helsinki pickup. From its card the person takes the order over: it moves to Yours at the top of For you, no agent or Monitor rule acts on it, and what the agent found stays. They write what they did, which goes on the order's timeline, and hand it back; the agent continues with their note.",
       run: async (page, beat) => {
         await go(page, base, "/")
-        const card = row(page, "BMW M4 · car not at Helsinki pickup")
-        beat("A card under Now: the car is not at the Helsinki pickup")
-        await point(page, card)
+        beat("A case under Now: the car is not at the Helsinki pickup")
+        await point(page, row(page, "CD-420593"))
         await wait(page, 3000)
-        await click(page, card.locator(".row-head"))
+        const card = await openCase(page, "CD-420593")
         await wait(page, 4000)
         beat("I'll handle this: the order is yours, and agents and Monitor rules stop acting on it")
         await click(page, card.locator(".row-actions button", { hasText: "I'll handle this" }))
         await until(page, page.locator("section[aria-label='Yours']"), 15)
         await page.evaluate(() => window.scrollTo({ top: 0, behavior: "smooth" }))
         await wait(page, 2500)
-        const yours = page.locator("section[aria-label='Yours'] article.row").first()
         beat("Yours, first on For you, with everything the agent found")
-        if (await yours.getAttribute("data-open") !== "true") await click(page, yours.locator(".row-head"))
+        await click(page, page.locator("section[aria-label='Yours'] .inbox-row button").first())
+        const yours = pane(page)
         await wait(page, 4000)
         beat("What the person did goes on the order's timeline, in their name")
         await type(page, yours.locator(".takeover-bar input"), "Called the Vantaa yard: they release the car at 13:00 once the customer confirms by email.")
@@ -424,6 +465,60 @@ function clips(base: string): Clip[] {
         await go(page, base, "/orders/CD-420593")
         beat("On the order: the takeover, the note and the hand-back, each by the person, on one timeline")
         await scrollTo(page, page.locator("section[aria-label='Timeline']"), 7000)
+      },
+    },
+    {
+      id: "backup-driver", file: "10-backup-driver-accepts.webm", title: "Scenario 4: the backup driver accepts, then the old travel is cancelled",
+      about: "CD-420449. Carl is ill. Approving (the A key) offers the gig to Ida; Carl's train, flight and hotel stay booked, by a rule in code. On the Demo page Ida accepts in the driver app (simulated). Code then puts a card on For you to cancel Carl's travel; after the 8-second undo window the Executor cancels it, and the order shows Ida as the driver and the bookings as cancelled.",
+      run: async (page, beat) => {
+        const file = await getCase("CD-420449")
+        if (file) await resetOrderDecisions(file.order.id)
+        await go(page, base, "/")
+        beat("The driver-ill case: approving offers the gig to Ida; Carl's travel stays booked until she accepts")
+        const card = await openCase(page, "CD-420449")
+        await wait(page, 5000)
+        await point(page, card.locator(".row-actions .btn.primary"))
+        await page.keyboard.press("a")
+        await wait(page, 10_500)
+        beat("Demo controls: Ida accepts the gig in the driver app (simulated)")
+        await go(page, base, "/demo")
+        const block = page.locator("section[aria-label='Backup driver']")
+        await scrollTo(page, block, 2500)
+        await until(page, block.locator("button:not([disabled])"), 15)
+        await click(page, block.locator("button"))
+        await wait(page, 4000)
+        beat("For you: code proposes cancelling Carl's train, flight and hotel, now that Ida holds the gig")
+        await go(page, base, "/")
+        await showLater(page)
+        const cancel = await openCase(page, "CD-420449")
+        await wait(page, 5000)
+        await click(page, cancel.locator(".row-actions .btn.primary"))
+        await wait(page, 10_500)
+        beat("The order: Ida is the driver, Carl's bookings read Cancelled, and every step is on the timeline")
+        await go(page, base, "/orders/CD-420449")
+        await wait(page, 3500)
+        await scrollTo(page, page.locator("section[aria-label='Route and travel']"), 5000)
+        await scrollTo(page, page.locator("section[aria-label='Timeline']"), 6000)
+      },
+    },
+    {
+      id: "playbook", file: "11-playbook-rule.webm", title: "Learning: a playbook rule, tested before the agent uses it",
+      about: "Settings → Learning. Three rejections with the same reason on one kind of action (booking a ferry from an old quote, wrong facts) made code draft a rule, worded by Haiku. Approve runs the recorded evals first; only when they pass is the rule added to the Investigator's instructions. Below: acceptance per kind of action, the reasons, and outcomes checked in code.",
+      run: async (page, beat) => {
+        const reset = () => db.update(playbookRules).set({ status: "suggested", evalPassed: null, evalResult: null, decidedAt: null }).where(eq(playbookRules.status, "approved"))
+        await reset()
+        await go(page, base, "/settings/learning")
+        beat("A suggested rule: three ferry bookings from an old quote were rejected for the same reason")
+        await point(page, page.locator(".playbook-actions").first())
+        await wait(page, 5000)
+        beat("Approve: the recorded evals run first; the rule is added only if they pass")
+        await click(page, page.locator(".playbook-actions button", { hasText: "Approve" }).first())
+        await until(page, page.getByText("Evals before approval"), 120)
+        await wait(page, 5000)
+        beat("Acceptance per kind of action, the reasons, and outcomes checked in code after the deadline")
+        await scrollBy(page, 420, 5000)
+        await scrollBy(page, 520, 5000)
+        await reset()
       },
     },
   ]

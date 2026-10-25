@@ -31,8 +31,11 @@ npm run dev -- -p 3001
 ```
 
 Open http://localhost:3001 (any port works; the screenshot and footage scripts use 3001). Start on
-**For you** (what needs you now, then later; "I'll handle this" takes an order over, and no agent acts on it until
-you hand it back). **Agents** shows what every agent did and is doing, **Orders** has every order with who has it,
+**For you**, an inbox like Apple Mail: what needs you now, then later, on the left; the selected item on the
+right with what approving does, its facts and sources, and similar past decisions. Keys: J/K move, Enter opens, A
+approves an opened item, R rejects or replies (with one reason), T is "I'll handle this", which takes an order over
+so no agent acts on it until you hand it back. The menu at the top right picks a market and desks (saved in your
+browser); Orders, Agents and the sidebar count follow it. **Agents** shows what every agent did and is doing, **Orders** has every order with who has it,
 **Sources** shows every channel that feeds the order timelines, **Settings** holds what agents may do on their own,
 what they learned from your corrections and **How it works**.
 **Demo controls** (foot of the left rail) moves the simulated clock, plays the scenarios and switches

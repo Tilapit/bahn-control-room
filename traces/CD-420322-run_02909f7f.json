@@ -1,0 +1,872 @@
+{
+  "run": {
+    "id": "run_02909f7f",
+    "orderId": "ord-00322",
+    "agent": "Investigator",
+    "model": "claude-opus-5-5",
+    "trigger": "Open signals on this order: taken alert: driver stopped: red warning light; open alert: no recent position from the driver app; open task: decide on recovery of the stopped car; open incident: warning light, car stopped; unanswered message in case workspace.",
+    "startedAt": "2026-10-21T09:00:00.000Z",
+    "finishedAt": "2026-10-21T09:02:00.000Z",
+    "status": "waiting_person",
+    "outcomeSummary": "Red warning, car stopped on A7 near Hannover; owner's call needed",
+    "nextCheckAt": null,
+    "inputTokens": 4585,
+    "outputTokens": 9867,
+    "cacheReadTokens": 52972,
+    "cacheWriteTokens": 10337,
+    "costUsd": 0.16854832,
+    "escalation": "Safety case: the senior model investigates from the start.",
+    "reference": "CD-420322"
+  },
+  "steps": [
+    {
+      "id": "run_02909f7f:0",
+      "idx": 0,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_call",
+      "tool": "get_case",
+      "input": {
+        "order": "CD-420322"
+      },
+      "output": null,
+      "summary": "Called get_case"
+    },
+    {
+      "id": "run_02909f7f:1",
+      "idx": 1,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "get_case",
+      "input": {
+        "order": "CD-420322"
+      },
+      "output": {
+        "data": null,
+        "content": "CD-420322 · Bentley Continental GT 2021 · On the road\nCustomer (pays; any contact needs a person's approval): Marvellin Motorhandel, their reference PO-024-0322\nRoute: private address, Munich → Marvellin Hamburg, Hamburg · 765 km\nDriver: Kasper Kovelund, driving, lives in Munich, DE\nNow: Wed 21 Oct, 11:00 in Hamburg and Munich (09:00 UTC). Timeline times are Hamburg time; key times are in their own place's time.\n\nKEY TIMES\n- Picked up, Munich: Tue 20 Oct 10:30 CEST. Source: Kasper Kovelund [E1]\n- Driver app ETA, Hamburg: Wed 21 Oct 13:13 CEST. Stale estimate, not a promise. Source: Driver app [E2]\n- Delivery promise, Hamburg: Wed 21 Oct 12:00–16:00 CEST. Source: Marvellin Motorhandel, order form [E3]\n\nAGREED AND STATED\n- Delivery handover: Yard staff must meet the driver at the gate. Do not leave the car or keys unattended. (confirmed; Site profile, Marvellin Hamburg) [E4]\n- Delivery contact: Iris Alderfield, site desk (confirmed; Site profile, Marvellin Hamburg) [E4]\n- (3 details from before the pickup are historical, left out)\n\nOPEN\n- Alert (critical, taken by Shift lead, not resolved), raised Wed 21 Oct 10:07 CEST: Driver stopped: red warning light. \"Driver reports a red warning and has stopped safely. Diagnosis and recovery remain open.\" A signal, not a diagnosis [E5]\n- Alert (medium, nobody has taken it), raised Wed 21 Oct 07:16 CEST: No recent position from the driver app. \"No recent driver-app position; check before changing a promise.\" A signal, not a diagnosis [E6]\n- Incident (needs a person, Shift lead): warning light, car stopped. Reported: Red dashboard warning and reduced acceleration. Driver reports a service-area car park after leaving Munich; exact point unverified. Location not verified. Photo requested, not received. Recovery decision waits for the car's owner. [E7]\n- Task for Shift lead: Decide on recovery of the stopped car. Next step written by a person: \"Obtain the dashboard photo and owner's service decision; agree recovery or safe custody, then separately replan the driver and customer promise. Do not authorize driving from the warning report alone.\" [E8]\n- Not answered yet: Kasper Kovelund (case workspace), Wed 21 Oct 10:58 CEST [E9]\n- Document requested: Warning light photo [E10]\n\nROUTE AND TRAVEL\n- Leg: Munich (private) → Marvellin Hamburg, Hamburg, drive, 765 km, in progress, Kasper Kovelund\n- Driver gig: taken by a driver, fee €343\nBOOKED: nothing is booked for this order\nLAST GPS: 233 km to go, stale signal, observed Wed 21 Oct 07:00 CEST (4 h ago), app ETA Wed 21 Oct 13:13 CEST. GPS gives km to go and an ETA, no map position [E2]\n\nTIMELINE (newest first; the 40 most recent entries, stage changes left out; use timeline() for older ones)\nWed 21 Oct\n10:58 Kasper Kovelund (Driver chat): \"I will wait here. Please tell me who is collecting the car before anyone moves it.\" [E9]\n10:49 Support desk (Email): \"We have paused the journey pending the owner's instruction. We will update the delivery estimate after the recovery plan is confirmed.\" [E11]\n10:40 Marvellin Motorhandel (Email): \"Please keep the vehicle stopped. I will ask our service contact whether it needs roadside assistance or collection.\" [E12]\n10:37 Journey monitor (Driver chat): \"Operations has a human coordinator on this. Please keep the vehicle stopped and send the service-area name or a safe location pin when you can. We are waiting for the owner's service instruction; nobody has cleared onward driving.\" [E13]\n10:37 Journey monitor: Approved proposal carried out [E14]\n10:35 Shift lead: Task for Shift lead: Decide on recovery of the stopped car [E8]\n10:35 Shift lead: Approved with changes: ask for the parked vehicle's location without giving mechanical advice [E15]\n10:34 Shift lead: Shift lead took the alert: driver stopped: red warning light [E16]\n10:32 Shift lead: Shift lead owns the alert [E17]\n10:31 Shift lead (Internal (Slack), internal): \"Human owner required. Record the safe stop, get the photo and call the customer for instructions. No recovery booking or delivery promise yet.\" [E18]\n10:23 Journey monitor: Proposed: Ask for the parked vehicle's location without giving mechanical advice [E19]\n10:22 Kasper Kovelund (Driver chat): \"I am safe at a service-area car park. The engine is off. I can send a dashboard photo, but I have not diagnosed the issue.\" [E20]\n10:13 Support desk (Driver chat): \"Thank you for stopping. Are you and the vehicle in a safe place? Please do not drive it further while we contact the owner.\" [E21]\n10:13 Documents: Warning light photo requested from the driver, not received [E10]\n10:07 Shift lead: Incident opened: warning light, car stopped [E7]\n10:07 Monitoring: Driver stopped: red warning light (critical alert) (A SIGNAL, NOT A DIAGNOSIS) [E5]\n10:04 Kasper Kovelund (Driver chat): \"I have stopped the Bentley Continental GT on CD-420322. A red warning came on and the car felt different when accelerating.\" [E22]\n07:16 Monitoring: No recent position from the driver app (medium alert) (A SIGNAL, NOT A DIAGNOSIS) [E6]\n07:00 GPS: Stale app position: 233 km to go (70% of the drive), ETA Wed 21 Oct 13:13 CEST [E2]\n05:20 GPS: Coarse app position: 315 km to go (59% of the drive), ETA Wed 21 Oct 16:30 CEST [E23]\n02:55 GPS: Coarse app position: 414 km to go (46% of the drive), ETA Wed 21 Oct 15:10 CEST [E24]\n   … 1 more GPS positions: 470 km at 00:40\nTue 20 Oct\n21:50 Driver expense review: Fuel claim approved (not paid yet): €128.57 [E25]\n21:07 Kasper Kovelund: Fuel cost claimed by the driver: €128.57 at Aster Road Fuel [E26]\n18:43 GPS: Coarse app position: 502 km to go (34% of the drive), ETA Wed 21 Oct 16:51 CEST [E27]\n16:48 GPS: Coarse app position: 552 km to go (28% of the drive), ETA Wed 21 Oct 15:56 CEST [E28]\n16:38 Driver expense review: Fuel claim rejected: €58.76 [E29]\n15:06 Kasper Kovelund: Fuel cost claimed by the driver: €58.76 at Morrow Roadside [E30]\n14:58 GPS: Coarse app position: 588 km to go (23% of the drive), ETA Wed 21 Oct 15:23 CEST [E31]\n12:52 GPS: Coarse app position: 679 km to go (11% of the drive), ETA Wed 21 Oct 13:44 CEST [E32]\n10:37 Driver app: Pickup photos sent by the driver (4 files), not reviewed yet [E33]\n10:30 Kasper Kovelund: Car picked up at private address in Munich [E1]\n08:43 Kasper Kovelund: Kasper Kovelund started the gig [E34]\nSat 17 Oct\n02:41 Kasper Kovelund: Kasper Kovelund took the gig [E35]\nFri 16 Oct\n20:18 Dispatch agent: Gig offered to drivers at €343 [E36]\n14:40 Ops, with the route plan: Pickup slot: Tue 20 Oct 10:00–13:00 CEST at private address in Munich [E37]\n14:40 Transport planning: Route plan activated [E38]\n14:19 Readiness desk: Pickup availability confirmed [E39]",
+        "isError": false
+      },
+      "summary": "Read the case file of CD-420322"
+    },
+    {
+      "id": "run_02909f7f:2",
+      "idx": 2,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "thought",
+      "tool": null,
+      "input": null,
+      "output": {
+        "text": "The driver reports things are safe, but there's an unanswered message from 10:58 asking who's collecting the car, and the shift lead is waiting on the customer's service instruction before acting. With 233 km still remaining at the 07:00 GPS check and the driver stopped since 10:04 with no known location, the 12:00–16:00 Hamburg delivery window is likely to be missed — support said they'll give a new estimate once a recovery plan is in place.\n\nI think I should reply to the driver first, reassuring them that nobody's collecting the car yet and the shift lead will follow up, while also asking for the service-area name and a photo to confirm location. Then I'd flag a card to the shift lead to call the customer for the owner's service decision and warn that today's delivery window is at risk — no cost involved, and I'll avoid giving any mechanical advice.\n\n",
+        "model": "claude-opus-5-5"
+      },
+      "summary": "The driver reports things are safe, but there's an unanswered message from 10:58 asking who's collecting the car, and the shift lead is waiting on the customer's service instruction before acting. With 233 km still remaining at the 07:00 GPS check and the driver stopped since 10:04 with no known location, the 12:00–16:00 Hamburg delivery window is likely to be missed — support said they'll give a "
+    },
+    {
+      "id": "run_02909f7f:3",
+      "idx": 3,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_call",
+      "tool": "ask_driver",
+      "input": {
+        "question": "Hi Kasper, thanks for waiting with the car. Nobody is collecting it yet and nobody will move it without telling you first. Our shift lead is waiting for the owner's instruction. Please keep the engine off. When you can, send: 1) the name of the service area and motorway/direction (or a location pin), 2) the dashboard photo. Are you OK where you are?"
+      },
+      "output": null,
+      "summary": "Called ask_driver"
+    },
+    {
+      "id": "run_02909f7f:4",
+      "idx": 4,
+      "at": "2026-10-21T09:00:00.000Z",
+      "type": "tool_result",
+      "tool": "ask_driver",
+      "input": {
+        "question": "Hi Kasper, thanks for waiting with the car. Nobody is collecting it yet and nobody will move it without telling you first. Our shift lead is waiting for the owner's instruction. Please keep the engine off. When you can, send: 1) the name of the service area and motorway/direction (or a location pin), 2) the dashboard photo. Are you OK where you are?"
+      },
+      "output": {
+        "data": null,
+        "content": "",
+        "isError": false
+      },
+      "summary": "Asked the driver: “Hi Kasper, thanks for waiting with the car. Nobody is collecting it yet and nobody will move it without telling you first. Our shift lead is waiting for the owner's instruction. Please keep the engine off. When you can, send: 1) the name of the service area and motorway/direction (or a location pin), 2) the dashboard photo. Are you OK where you are?”"
+    },
+    {
+      "id": "run_02909f7f:5",
+      "idx": 5,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "message",
+      "tool": "ask_driver",
+      "input": null,
+      "output": {
+        "reply": "Yes, I'm OK, thanks. I'm at Hollenmark services on the A7 northbound, about 40 km south of Hannover, and I've just sent the dashboard photo in the app. Engine stays off and I won't drive it again until someone qualified says so. Please tell me as soon as there's a name for who's collecting it.",
+        "entryId": "live:f7287122-ca11-4bee-9570-64b2b1f37ebd",
+        "simulated": true
+      },
+      "summary": "Kasper Kovelund replied (simulated): “Yes, I'm OK, thanks. I'm at Hollenmark services on the A7 northbound, about 40 km south of Hannover, and I've just sent the dashboard photo in the app. Engine stays off and I won't drive it again until someone qualified says so. Please tell me as soon as there's a name for who's collecting it.”"
+    },
+    {
+      "id": "run_02909f7f:6",
+      "idx": 6,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "thought",
+      "tool": null,
+      "input": null,
+      "output": {
+        "text": "I'm checking the distances against the GPS readings — 233 km remaining at 07:00 doesn't quite line up with the ~190 km the driver claimed after leaving Munich, so there's a discrepancy worth flagging there.\n\nThe bigger issue is the 12:00–16:00 delivery window will be missed given the breakdown, so I should recommend the shift lead contact the customer about the delay while waiting on the owner's recovery decision, and pull together some tow shop options as a backup in case towing becomes necessary.\n\n",
+        "model": "claude-opus-5-5"
+      },
+      "summary": "I'm checking the distances against the GPS readings — 233 km remaining at 07:00 doesn't quite line up with the ~190 km the driver claimed after leaving Munich, so there's a discrepancy worth flagging there. The bigger issue is the 12:00–16:00 delivery window will be missed given the breakdown, so I should recommend the shift lead contact the customer about the delay while waiting on the owner's re"
+    },
+    {
+      "id": "run_02909f7f:7",
+      "idx": 7,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_call",
+      "tool": "find_repair_shops",
+      "input": {
+        "near": "Hollenmark services, A7 northbound, about 40 km south of Hannover"
+      },
+      "output": null,
+      "summary": "Called find_repair_shops"
+    },
+    {
+      "id": "run_02909f7f:8",
+      "idx": 8,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_result",
+      "tool": "find_repair_shops",
+      "input": {
+        "near": "Hollenmark services, A7 northbound, about 40 km south of Hannover"
+      },
+      "output": {
+        "data": [
+          {
+            "id": "shop:kellerbrook-recovery",
+            "kind": "tow and roadside assistance",
+            "name": "Kellerbrook Recovery",
+            "note": "24-hour line; flatbed suitable for low cars",
+            "distanceKm": 9,
+            "towEtaMinutes": 52,
+            "towToShopCents": 21500,
+            "towToDeliveryCents": 81000
+          },
+          {
+            "id": "shop:auenwald-motor-works",
+            "kind": "workshop with tow truck",
+            "name": "Auenwald Motor Works",
+            "note": "Open until 18:00",
+            "distanceKm": 20,
+            "towEtaMinutes": 83,
+            "towToShopCents": 19600,
+            "towToDeliveryCents": 81000
+          },
+          {
+            "id": "shop:linden-premium-service",
+            "kind": "workshop for high-end cars, no tow truck",
+            "name": "Linden Premium Service",
+            "note": "Can read the warning code and give a diagnosis today if the car is brought in",
+            "distanceKm": 13,
+            "towEtaMinutes": 0,
+            "towToShopCents": 0,
+            "towToDeliveryCents": null
+          }
+        ],
+        "content": "Near \"Hollenmark services, A7 northbound, about 40 km south of Hannover\" (the place as described, not a verified position). Prices are estimates, not bookings.\n- shop:kellerbrook-recovery: Kellerbrook Recovery, tow and roadside assistance, 9 km away, tow truck in about 52 min, tow to their workshop about €215, tow to the delivery address about €810. 24-hour line; flatbed suitable for low cars\n- shop:auenwald-motor-works: Auenwald Motor Works, workshop with tow truck, 20 km away, tow truck in about 83 min, tow to their workshop about €196, tow to the delivery address about €810. Open until 18:00\n- shop:linden-premium-service: Linden Premium Service, workshop for high-end cars, no tow truck, 13 km away. Can read the warning code and give a diagnosis today if the car is brought in\nSource: [E41]",
+        "isError": false
+      },
+      "summary": "Looked up recovery and workshops near Hollenmark services, A7 northbound, about 40 km south of Hannover"
+    },
+    {
+      "id": "run_02909f7f:9",
+      "idx": 9,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "thought",
+      "tool": null,
+      "input": null,
+      "output": {
+        "text": "I should propose calling the customer to decide: roadside assistance, Kellerbrook flatbed tow to workshop for €215, or tow to Hamburg for €810, and let them know today's delivery will be delayed. I'll note the Kellerbrook option as a possible second choice, though the shift lead hasn't authorized booking any recovery yet.\n\n",
+        "model": "claude-opus-5-5"
+      },
+      "summary": "I should propose calling the customer to decide: roadside assistance, Kellerbrook flatbed tow to workshop for €215, or tow to Hamburg for €810, and let them know today's delivery will be delayed. I'll note the Kellerbrook option as a possible second choice, though the shift lead hasn't authorized booking any recovery yet."
+    },
+    {
+      "id": "run_02909f7f:10",
+      "idx": 10,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_call",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [
+          {
+            "label": "Approve: call Marvellin for the recovery decision and say today's delivery will be late",
+            "steps": [
+              {
+                "action": "call_customer",
+                "params": {
+                  "to": "Marvellin Motorhandel",
+                  "text": "The Bentley (your ref PO-024-0322) is stopped with a red warning light at Hollenmark services, A7 northbound, about 40 km south of Hannover; the driver is safe and the engine is off. Today's 12:00–16:00 delivery in Hamburg will be late. Ask: 1) does your service contact send roadside assistance, or should we arrange recovery? 2) if we arrange it: flatbed to a workshop (Kellerbrook Recovery, about €215, quote) for diagnosis, or flatbed straight to Marvellin Hamburg (about €810, quote)? 3) who pays for recovery, and what new delivery window do you want?"
+                }
+              },
+              {
+                "action": "note",
+                "params": {
+                  "text": "Driver Kasper Kovelund is waiting at Hollenmark services and asked to be told the name of whoever collects the car before it is moved. Dashboard photo reported sent at 11:02; check it and pass it to the owner's service contact.",
+                  "minutes": 30
+                }
+              }
+            ],
+            "effect": "Puts a call to Marvellin Motorhandel on the Shift lead's list with the questions below; it books no tow and changes no delivery time until they answer."
+          }
+        ],
+        "cost_eur": null,
+        "findings": [
+          {
+            "text": "The driver says at 11:02 they are OK at Hollenmark services, A7 northbound, about 40 km south of Hannover, engine off, and have sent the dashboard photo in the app.",
+            "source": "E40"
+          },
+          {
+            "text": "The last GPS reading, stale, at 07:00 CEST showed 233 km to go to Hamburg; GPS gives no map position, so the driver's location is their claim.",
+            "source": "E2"
+          },
+          {
+            "text": "Marvellin Motorhandel wrote at 10:40 to keep the car stopped while they ask their service contact whether it needs roadside assistance or collection.",
+            "source": "E12"
+          },
+          {
+            "text": "The delivery promise is Wed 21 Oct 12:00–16:00 CEST at Marvellin Hamburg.",
+            "source": "E3"
+          },
+          {
+            "text": "Kellerbrook Recovery (24-hour, flatbed for low cars) can be there in about 52 min: about €215 to their workshop or about €810 to the Hamburg delivery address, quotes, not booked.",
+            "source": "E41"
+          },
+          {
+            "text": "Linden Premium Service, 13 km away, can read the warning code and diagnose today if the car is brought in, but has no tow truck.",
+            "source": "E41"
+          }
+        ],
+        "headline": "Red warning, car stopped on A7 near Hannover; owner's call needed",
+        "reject_label": "Reject: make no call, I'll handle the customer and recovery myself",
+        "what_happened": "The driver stopped at 10:04 after a red warning light and is waiting safely with the engine off; the customer said at 10:40 they would ask their service contact, and nothing has come back. Shift lead owns the recovery task; today's delivery in Hamburg, promised 12:00–16:00 CEST, will be late."
+      },
+      "output": null,
+      "summary": "Called propose"
+    },
+    {
+      "id": "run_02909f7f:11",
+      "idx": 11,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_result",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [
+          {
+            "label": "Approve: call Marvellin for the recovery decision and say today's delivery will be late",
+            "steps": [
+              {
+                "action": "call_customer",
+                "params": {
+                  "to": "Marvellin Motorhandel",
+                  "text": "The Bentley (your ref PO-024-0322) is stopped with a red warning light at Hollenmark services, A7 northbound, about 40 km south of Hannover; the driver is safe and the engine is off. Today's 12:00–16:00 delivery in Hamburg will be late. Ask: 1) does your service contact send roadside assistance, or should we arrange recovery? 2) if we arrange it: flatbed to a workshop (Kellerbrook Recovery, about €215, quote) for diagnosis, or flatbed straight to Marvellin Hamburg (about €810, quote)? 3) who pays for recovery, and what new delivery window do you want?"
+                }
+              },
+              {
+                "action": "note",
+                "params": {
+                  "text": "Driver Kasper Kovelund is waiting at Hollenmark services and asked to be told the name of whoever collects the car before it is moved. Dashboard photo reported sent at 11:02; check it and pass it to the owner's service contact.",
+                  "minutes": 30
+                }
+              }
+            ],
+            "effect": "Puts a call to Marvellin Motorhandel on the Shift lead's list with the questions below; it books no tow and changes no delivery time until they answer."
+          }
+        ],
+        "cost_eur": null,
+        "findings": [
+          {
+            "text": "The driver says at 11:02 they are OK at Hollenmark services, A7 northbound, about 40 km south of Hannover, engine off, and have sent the dashboard photo in the app.",
+            "source": "E40"
+          },
+          {
+            "text": "The last GPS reading, stale, at 07:00 CEST showed 233 km to go to Hamburg; GPS gives no map position, so the driver's location is their claim.",
+            "source": "E2"
+          },
+          {
+            "text": "Marvellin Motorhandel wrote at 10:40 to keep the car stopped while they ask their service contact whether it needs roadside assistance or collection.",
+            "source": "E12"
+          },
+          {
+            "text": "The delivery promise is Wed 21 Oct 12:00–16:00 CEST at Marvellin Hamburg.",
+            "source": "E3"
+          },
+          {
+            "text": "Kellerbrook Recovery (24-hour, flatbed for low cars) can be there in about 52 min: about €215 to their workshop or about €810 to the Hamburg delivery address, quotes, not booked.",
+            "source": "E41"
+          },
+          {
+            "text": "Linden Premium Service, 13 km away, can read the warning code and diagnose today if the car is brought in, but has no tow truck.",
+            "source": "E41"
+          }
+        ],
+        "headline": "Red warning, car stopped on A7 near Hannover; owner's call needed",
+        "reject_label": "Reject: make no call, I'll handle the customer and recovery myself",
+        "what_happened": "The driver stopped at 10:04 after a red warning light and is waiting safely with the engine off; the customer said at 10:40 they would ask their service contact, and nothing has come back. Shift lead owns the recovery task; today's delivery in Hamburg, promised 12:00–16:00 CEST, will be late."
+      },
+      "output": {
+        "data": {
+          "problems": [
+            "Option 1's label is too long; keep it under 70 characters"
+          ]
+        },
+        "content": "The card was not shown to anyone. Fix these and call propose again:\n- Option 1's label is too long; keep it under 70 characters",
+        "isError": true
+      },
+      "summary": "Card sent back by code checks (1 problem)"
+    },
+    {
+      "id": "run_02909f7f:12",
+      "idx": 12,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_call",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [
+          {
+            "label": "Approve: call Marvellin for recovery decision, say delivery is late",
+            "steps": [
+              {
+                "action": "call_customer",
+                "params": {
+                  "to": "Marvellin Motorhandel",
+                  "text": "The Bentley (your ref PO-024-0322) is stopped with a red warning light at Hollenmark services, A7 northbound, about 40 km south of Hannover; the driver is safe and the engine is off. Today's 12:00–16:00 delivery in Hamburg will be late. Ask: 1) does your service contact send roadside assistance, or should we arrange recovery? 2) if we arrange it: flatbed to a workshop (Kellerbrook Recovery, about €215, quote) for diagnosis, or flatbed straight to Marvellin Hamburg (about €810, quote)? 3) who pays for recovery, and what new delivery window do you want?"
+                }
+              },
+              {
+                "action": "note",
+                "params": {
+                  "text": "Driver Kasper Kovelund is waiting at Hollenmark services and asked to be told the name of whoever collects the car before it is moved. Dashboard photo reported sent at 11:02; check it and pass it to the owner's service contact.",
+                  "minutes": 30
+                }
+              }
+            ],
+            "effect": "Puts a call to Marvellin Motorhandel on the Shift lead's list with the questions below; it books no tow and changes no delivery time until they answer."
+          }
+        ],
+        "cost_eur": null,
+        "findings": [
+          {
+            "text": "The driver says at 11:02 they are OK at Hollenmark services, A7 northbound, about 40 km south of Hannover, engine off, and have sent the dashboard photo in the app.",
+            "source": "E40"
+          },
+          {
+            "text": "The last GPS reading, stale, at 07:00 CEST showed 233 km to go to Hamburg; GPS gives no map position, so the driver's location is their claim.",
+            "source": "E2"
+          },
+          {
+            "text": "Marvellin Motorhandel wrote at 10:40 to keep the car stopped while they ask their service contact whether it needs roadside assistance or collection.",
+            "source": "E12"
+          },
+          {
+            "text": "The delivery promise is Wed 21 Oct 12:00–16:00 CEST at Marvellin Hamburg.",
+            "source": "E3"
+          },
+          {
+            "text": "Kellerbrook Recovery (24-hour, flatbed for low cars) can be there in about 52 min: about €215 to their workshop or about €810 to the Hamburg delivery address, quotes, not booked.",
+            "source": "E41"
+          },
+          {
+            "text": "Linden Premium Service, 13 km away, can read the warning code and diagnose today if the car is brought in, but has no tow truck.",
+            "source": "E41"
+          }
+        ],
+        "headline": "Red warning, car stopped on A7 near Hannover; owner's call needed",
+        "reject_label": "Reject: make no call, I'll handle the customer and recovery myself",
+        "what_happened": "The driver stopped at 10:04 after a red warning light and is waiting safely with the engine off; the customer said at 10:40 they would ask their service contact, and nothing has come back. Shift lead owns the recovery task; today's delivery in Hamburg, promised 12:00–16:00 CEST, will be late."
+      },
+      "output": null,
+      "summary": "Called propose"
+    },
+    {
+      "id": "run_02909f7f:13",
+      "idx": 13,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_result",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [
+          {
+            "label": "Approve: call Marvellin for recovery decision, say delivery is late",
+            "steps": [
+              {
+                "action": "call_customer",
+                "params": {
+                  "to": "Marvellin Motorhandel",
+                  "text": "The Bentley (your ref PO-024-0322) is stopped with a red warning light at Hollenmark services, A7 northbound, about 40 km south of Hannover; the driver is safe and the engine is off. Today's 12:00–16:00 delivery in Hamburg will be late. Ask: 1) does your service contact send roadside assistance, or should we arrange recovery? 2) if we arrange it: flatbed to a workshop (Kellerbrook Recovery, about €215, quote) for diagnosis, or flatbed straight to Marvellin Hamburg (about €810, quote)? 3) who pays for recovery, and what new delivery window do you want?"
+                }
+              },
+              {
+                "action": "note",
+                "params": {
+                  "text": "Driver Kasper Kovelund is waiting at Hollenmark services and asked to be told the name of whoever collects the car before it is moved. Dashboard photo reported sent at 11:02; check it and pass it to the owner's service contact.",
+                  "minutes": 30
+                }
+              }
+            ],
+            "effect": "Puts a call to Marvellin Motorhandel on the Shift lead's list with the questions below; it books no tow and changes no delivery time until they answer."
+          }
+        ],
+        "cost_eur": null,
+        "findings": [
+          {
+            "text": "The driver says at 11:02 they are OK at Hollenmark services, A7 northbound, about 40 km south of Hannover, engine off, and have sent the dashboard photo in the app.",
+            "source": "E40"
+          },
+          {
+            "text": "The last GPS reading, stale, at 07:00 CEST showed 233 km to go to Hamburg; GPS gives no map position, so the driver's location is their claim.",
+            "source": "E2"
+          },
+          {
+            "text": "Marvellin Motorhandel wrote at 10:40 to keep the car stopped while they ask their service contact whether it needs roadside assistance or collection.",
+            "source": "E12"
+          },
+          {
+            "text": "The delivery promise is Wed 21 Oct 12:00–16:00 CEST at Marvellin Hamburg.",
+            "source": "E3"
+          },
+          {
+            "text": "Kellerbrook Recovery (24-hour, flatbed for low cars) can be there in about 52 min: about €215 to their workshop or about €810 to the Hamburg delivery address, quotes, not booked.",
+            "source": "E41"
+          },
+          {
+            "text": "Linden Premium Service, 13 km away, can read the warning code and diagnose today if the car is brought in, but has no tow truck.",
+            "source": "E41"
+          }
+        ],
+        "headline": "Red warning, car stopped on A7 near Hannover; owner's call needed",
+        "reject_label": "Reject: make no call, I'll handle the customer and recovery myself",
+        "what_happened": "The driver stopped at 10:04 after a red warning light and is waiting safely with the engine off; the customer said at 10:40 they would ask their service contact, and nothing has come back. Shift lead owns the recovery task; today's delivery in Hamburg, promised 12:00–16:00 CEST, will be late."
+      },
+      "output": {
+        "data": [
+          {
+            "ok": true,
+            "note": "The driver's 11:02 message says they are at Hollenmark services on the A7 northbound, about 40 km south of Hannover, with the engine off and the dashboard photo sent, and the card presents it as the driver's claim.",
+            "finding": 0
+          },
+          {
+            "ok": true,
+            "note": "The stale 07:00 GPS reading of 233 km to go and ETA 13:13 is quoted correctly, and the card correctly notes GPS gives no map position.",
+            "finding": 1
+          },
+          {
+            "ok": true,
+            "note": "The customer's 10:40 message asking to keep the vehicle stopped while checking roadside assistance or collection is quoted accurately.",
+            "finding": 2
+          },
+          {
+            "ok": true,
+            "note": "The order form's delivery promise of Wed 21 Oct 12:00–16:00 CEST at Marvellin Hamburg matches the record.",
+            "finding": 3
+          },
+          {
+            "ok": true,
+            "note": "The Kellerbrook figures (52 min, about €215 to workshop, about €810 to delivery address, 24-hour flatbed) match the lookup, and the card correctly labels them as quotes, not bookings.",
+            "finding": 4
+          },
+          {
+            "ok": true,
+            "note": "Linden Premium Service's 13 km distance, same-day diagnosis if brought in, and lack of a tow truck match the lookup record.",
+            "finding": 5
+          },
+          {
+            "ok": false,
+            "note": "The stop time of 10:04 and the red warning light appear in no cited record, so the headline and 'what happened' state unsupported facts.",
+            "finding": null
+          },
+          {
+            "ok": false,
+            "note": "The claim that the delivery 'will be late' rests on no finding: the only ETA (13:13, stale) falls inside the 12:00–16:00 promise, so the card needs to show that lateness depends on the recovery outcome rather than state it as fact.",
+            "finding": null
+          },
+          {
+            "ok": false,
+            "note": "'Shift lead owns the recovery task' is not supported by any cited record, and the card presents task ownership without a source.",
+            "finding": null
+          },
+          {
+            "ok": false,
+            "note": "Option 1's button text 'say delivery is late' repeats the unsupported lateness conclusion, so the customer-facing call would assert something the findings do not establish.",
+            "finding": null
+          },
+          {
+            "ok": true,
+            "note": "Option 1 only places a call on the Shift lead's list for approval and changes no booking or delivery time, and the reject option makes no contact, so no customer contact happens without approval.",
+            "finding": null
+          },
+          {
+            "ok": true,
+            "note": "The card's wording is plain, with no internal ids or codes shown to the person.",
+            "finding": null
+          }
+        ],
+        "content": "The verifier checked each claim against its source and found problems. The card was not shown yet. Fix these and call propose again:\n- The stop time of 10:04 and the red warning light appear in no cited record, so the headline and 'what happened' state unsupported facts.\n- The claim that the delivery 'will be late' rests on no finding: the only ETA (13:13, stale) falls inside the 12:00–16:00 promise, so the card needs to show that lateness depends on the recovery outcome rather than state it as fact.\n- 'Shift lead owns the recovery task' is not supported by any cited record, and the card presents task ownership without a source.\n- Option 1's button text 'say delivery is late' repeats the unsupported lateness conclusion, so the customer-facing call would assert something the findings do not establish.",
+        "isError": true
+      },
+      "summary": "Card sent back by the verifier (4 problems)"
+    },
+    {
+      "id": "run_02909f7f:14",
+      "idx": 14,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "thought",
+      "tool": null,
+      "input": null,
+      "output": {
+        "text": "I need to narrow findings down to six: E40, E22 (the red warning at 10:04), E12, E3, E8 (task for the shift lead), and E41 (Kellerbrook), dropping the Linden and GPS items. For lateness, I should frame it as \"at risk\" since the car is stopped with no recovery plan and nobody has cleared onward driving.\n\n",
+        "model": "claude-opus-5-5"
+      },
+      "summary": "I need to narrow findings down to six: E40, E22 (the red warning at 10:04), E12, E3, E8 (task for the shift lead), and E41 (Kellerbrook), dropping the Linden and GPS items. For lateness, I should frame it as \"at risk\" since the car is stopped with no recovery plan and nobody has cleared onward driving."
+    },
+    {
+      "id": "run_02909f7f:15",
+      "idx": 15,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_call",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [
+          {
+            "label": "Approve: call Marvellin for recovery decision and new delivery time",
+            "steps": [
+              {
+                "action": "call_customer",
+                "params": {
+                  "to": "Marvellin Motorhandel",
+                  "text": "The Bentley (your ref PO-024-0322) is stopped after a red warning light; the driver says they are at Hollenmark services, A7 northbound, about 40 km south of Hannover, engine off. Today's 12:00–16:00 delivery in Hamburg depends on the recovery plan and is likely to slip. Ask: 1) does your service contact send roadside assistance, or should we arrange recovery? 2) if we arrange it: flatbed to a nearby workshop for diagnosis (Kellerbrook Recovery, about €215, quote) or flatbed straight to Marvellin Hamburg (about €810, quote)? 3) who pays for recovery, and what new delivery window works for you?"
+                }
+              },
+              {
+                "action": "note",
+                "params": {
+                  "text": "Driver Kasper Kovelund is waiting at Hollenmark services and asked to be told the name of whoever collects the car before it is moved. Driver says the dashboard photo was sent at 11:02; check it and pass it to the owner's service contact.",
+                  "minutes": 30
+                }
+              }
+            ],
+            "effect": "Puts a call to Marvellin Motorhandel on the operations list with the questions below and a 30-minute check; it books no tow and changes no delivery time until they answer."
+          }
+        ],
+        "cost_eur": null,
+        "findings": [
+          {
+            "text": "The driver wrote at 10:04 that a red warning came on, the car felt different when accelerating, and they had stopped.",
+            "source": "E22"
+          },
+          {
+            "text": "The driver says at 11:02 they are OK at Hollenmark services, A7 northbound, about 40 km south of Hannover, engine off, and have sent the dashboard photo in the app.",
+            "source": "E40"
+          },
+          {
+            "text": "The last GPS reading, stale, at 07:00 CEST showed 233 km to go to Hamburg and an app ETA of 13:13 CEST; GPS gives no map position, so the driver's location is their claim.",
+            "source": "E2"
+          },
+          {
+            "text": "Marvellin Motorhandel wrote at 10:40 to keep the car stopped while they ask their service contact whether it needs roadside assistance or collection.",
+            "source": "E12"
+          },
+          {
+            "text": "The delivery promise is Wed 21 Oct 12:00–16:00 CEST at Marvellin Hamburg.",
+            "source": "E3"
+          },
+          {
+            "text": "Kellerbrook Recovery (24-hour, flatbed for low cars) can be there in about 52 min: about €215 to their workshop or about €810 to the Hamburg delivery address, quotes, not booked.",
+            "source": "E41"
+          }
+        ],
+        "headline": "Red warning, car stopped on A7 near Hannover; owner's call needed",
+        "reject_label": "Reject: make no call, I'll handle the customer and recovery myself",
+        "what_happened": "The driver reported a red warning light and stopped the car at 10:04; they say they are safe at a service area with the engine off. The customer asked at 10:40 to keep the car stopped while they check with their service contact, so today's 12:00–16:00 CEST delivery in Hamburg is at risk until a recovery plan is agreed."
+      },
+      "output": null,
+      "summary": "Called propose"
+    },
+    {
+      "id": "run_02909f7f:16",
+      "idx": 16,
+      "at": "2026-10-21T09:02:00.000Z",
+      "type": "tool_result",
+      "tool": "propose",
+      "input": {
+        "kind": "decision",
+        "options": [
+          {
+            "label": "Approve: call Marvellin for recovery decision and new delivery time",
+            "steps": [
+              {
+                "action": "call_customer",
+                "params": {
+                  "to": "Marvellin Motorhandel",
+                  "text": "The Bentley (your ref PO-024-0322) is stopped after a red warning light; the driver says they are at Hollenmark services, A7 northbound, about 40 km south of Hannover, engine off. Today's 12:00–16:00 delivery in Hamburg depends on the recovery plan and is likely to slip. Ask: 1) does your service contact send roadside assistance, or should we arrange recovery? 2) if we arrange it: flatbed to a nearby workshop for diagnosis (Kellerbrook Recovery, about €215, quote) or flatbed straight to Marvellin Hamburg (about €810, quote)? 3) who pays for recovery, and what new delivery window works for you?"
+                }
+              },
+              {
+                "action": "note",
+                "params": {
+                  "text": "Driver Kasper Kovelund is waiting at Hollenmark services and asked to be told the name of whoever collects the car before it is moved. Driver says the dashboard photo was sent at 11:02; check it and pass it to the owner's service contact.",
+                  "minutes": 30
+                }
+              }
+            ],
+            "effect": "Puts a call to Marvellin Motorhandel on the operations list with the questions below and a 30-minute check; it books no tow and changes no delivery time until they answer."
+          }
+        ],
+        "cost_eur": null,
+        "findings": [
+          {
+            "text": "The driver wrote at 10:04 that a red warning came on, the car felt different when accelerating, and they had stopped.",
+            "source": "E22"
+          },
+          {
+            "text": "The driver says at 11:02 they are OK at Hollenmark services, A7 northbound, about 40 km south of Hannover, engine off, and have sent the dashboard photo in the app.",
+            "source": "E40"
+          },
+          {
+            "text": "The last GPS reading, stale, at 07:00 CEST showed 233 km to go to Hamburg and an app ETA of 13:13 CEST; GPS gives no map position, so the driver's location is their claim.",
+            "source": "E2"
+          },
+          {
+            "text": "Marvellin Motorhandel wrote at 10:40 to keep the car stopped while they ask their service contact whether it needs roadside assistance or collection.",
+            "source": "E12"
+          },
+          {
+            "text": "The delivery promise is Wed 21 Oct 12:00–16:00 CEST at Marvellin Hamburg.",
+            "source": "E3"
+          },
+          {
+            "text": "Kellerbrook Recovery (24-hour, flatbed for low cars) can be there in about 52 min: about €215 to their workshop or about €810 to the Hamburg delivery address, quotes, not booked.",
+            "source": "E41"
+          }
+        ],
+        "headline": "Red warning, car stopped on A7 near Hannover; owner's call needed",
+        "reject_label": "Reject: make no call, I'll handle the customer and recovery myself",
+        "what_happened": "The driver reported a red warning light and stopped the car at 10:04; they say they are safe at a service area with the engine off. The customer asked at 10:40 to keep the car stopped while they check with their service contact, so today's 12:00–16:00 CEST delivery in Hamburg is at risk until a recovery plan is agreed."
+      },
+      "output": {
+        "data": {
+          "cardId": "card_3e66badc-956",
+          "verifier": [
+            {
+              "ok": true,
+              "note": "The driver's 10:04 message says a red warning came on, the car felt different when accelerating, and they stopped the car.",
+              "finding": 0
+            },
+            {
+              "ok": true,
+              "note": "The driver's 11:02 message gives Hollenmark services on the A7 northbound, about 40 km south of Hannover, engine off, and a sent dashboard photo, and the card presents this as their claim.",
+              "finding": 1
+            },
+            {
+              "ok": true,
+              "note": "The stale 07:00 GPS record gives only 233 km to go and an ETA of 13:13, and the finding correctly says it gives no position.",
+              "finding": 2
+            },
+            {
+              "ok": true,
+              "note": "The customer's 10:40 message asks to keep the vehicle stopped while they check with their service contact about roadside assistance or collection.",
+              "finding": 3
+            },
+            {
+              "ok": true,
+              "note": "The order record states the delivery promise as Wed 21 Oct 12:00–16:00 CEST at Marvellin Hamburg.",
+              "finding": 4
+            },
+            {
+              "ok": true,
+              "note": "The lookup gives Kellerbrook a 52-minute tow time and about €215 and €810 tow costs, and the card correctly says these are not booked.",
+              "finding": 5
+            },
+            {
+              "ok": true,
+              "note": "The headline and what-happened sections match the driver's and customer's messages and the order promise, and the card attributes the driver's safety and location claims to the driver.",
+              "finding": null
+            },
+            {
+              "ok": true,
+              "note": "The approve option's effect (a call to Marvellin with a 30-minute check, no tow booked, no delivery time changed) matches its stated does-list, and the customer is only contacted if the person approves.",
+              "finding": null
+            },
+            {
+              "ok": true,
+              "note": "The reject option makes no call and matches its label.",
+              "finding": null
+            },
+            {
+              "ok": true,
+              "note": "The card uses plain language with no internal codes or ids.",
+              "finding": null
+            }
+          ]
+        },
+        "content": "The card is in front of a person now. Your run ends here.",
+        "isError": false
+      },
+      "summary": "Proposed to a person: Approve: call Marvellin for recovery decision and new delivery time"
+    }
+  ],
+  "cards": [
+    {
+      "id": "card_3e66badc-956",
+      "orderId": "ord-00322",
+      "runId": "run_02909f7f",
+      "createdAt": "2026-10-21T09:02:00.000Z",
+      "kind": "decision",
+      "status": "open",
+      "headline": "Bentley Continental GT: Red warning, car stopped on A7 near Hannover; owner's call needed",
+      "whatHappened": "The driver reported a red warning light and stopped the car at 10:04; they say they are safe at a service area with the engine off. The customer asked at 10:40 to keep the car stopped while they check with their service contact, so today's 12:00–16:00 CEST delivery in Hamburg is at risk until a recovery plan is agreed.",
+      "findings": [
+        {
+          "at": "2026-10-21T08:04:00.000Z",
+          "text": "The driver wrote at 10:04 that a red warning came on, the car felt different when accelerating, and they had stopped.",
+          "source_label": "Driver",
+          "source_entry_id": "messages:msg-xbd0256027a9d35dd"
+        },
+        {
+          "at": "2026-10-21T09:02:00.000Z",
+          "text": "The driver says at 11:02 they are OK at Hollenmark services, A7 northbound, about 40 km south of Hannover, engine off, and have sent the dashboard photo in the app.",
+          "source_label": "Driver",
+          "source_entry_id": "live:f7287122-ca11-4bee-9570-64b2b1f37ebd"
+        },
+        {
+          "at": "2026-10-21T05:00:00.000Z",
+          "text": "The last GPS reading, stale, at 07:00 CEST showed 233 km to go to Hamburg and an app ETA of 13:13 CEST; GPS gives no map position, so the driver's location is their claim.",
+          "source_label": "GPS",
+          "source_entry_id": "tracking_observations:track-x4ec652df41547497"
+        },
+        {
+          "at": "2026-10-21T08:40:00.000Z",
+          "text": "Marvellin Motorhandel wrote at 10:40 to keep the car stopped while they ask their service contact whether it needs roadside assistance or collection.",
+          "source_label": "Customer email",
+          "source_entry_id": "messages:msg-x61cd4aae96d91cff"
+        },
+        {
+          "at": "2026-10-16T09:03:00.000Z",
+          "text": "The delivery promise is Wed 21 Oct 12:00–16:00 CEST at Marvellin Hamburg.",
+          "source_label": "Marvellin Motorhandel, order form",
+          "source_entry_id": "time_windows:win-x7c8722a53360a2ad"
+        },
+        {
+          "at": "2026-10-21T09:02:00.000Z",
+          "text": "Kellerbrook Recovery (24-hour, flatbed for low cars) can be there in about 52 min: about €215 to their workshop or about €810 to the Hamburg delivery address, quotes, not booked.",
+          "source_label": "Repair shop lookup",
+          "source_entry_id": "live:b724ff9f-b67e-4234-820c-073a25d2b098"
+        }
+      ],
+      "proposal": {
+        "action": "call_customer",
+        "params": {
+          "to": "Marvellin Motorhandel",
+          "text": "The Bentley (your ref PO-024-0322) is stopped after a red warning light; the driver says they are at Hollenmark services, A7 northbound, about 40 km south of Hannover, engine off. Today's 12:00–16:00 delivery in Hamburg depends on the recovery plan and is likely to slip. Ask: 1) does your service contact send roadside assistance, or should we arrange recovery? 2) if we arrange it: flatbed to a nearby workshop for diagnosis (Kellerbrook Recovery, about €215, quote) or flatbed straight to Marvellin Hamburg (about €810, quote)? 3) who pays for recovery, and what new delivery window works for you?"
+        },
+        "cost_eur": null,
+        "effect_text": "Puts a call to Marvellin Motorhandel on the operations list with the questions below and a 30-minute check; it books no tow and changes no delivery time until they answer.",
+        "requires_approval_reason": "it contacts a customer"
+      },
+      "options": [
+        {
+          "id": "opt-1",
+          "kind": "approve",
+          "label": "Approve: call Marvellin for recovery decision and new delivery time",
+          "steps": [
+            {
+              "action": "call_customer",
+              "params": {
+                "to": "Marvellin Motorhandel",
+                "text": "The Bentley (your ref PO-024-0322) is stopped after a red warning light; the driver says they are at Hollenmark services, A7 northbound, about 40 km south of Hannover, engine off. Today's 12:00–16:00 delivery in Hamburg depends on the recovery plan and is likely to slip. Ask: 1) does your service contact send roadside assistance, or should we arrange recovery? 2) if we arrange it: flatbed to a nearby workshop for diagnosis (Kellerbrook Recovery, about €215, quote) or flatbed straight to Marvellin Hamburg (about €810, quote)? 3) who pays for recovery, and what new delivery window works for you?"
+              }
+            },
+            {
+              "action": "note",
+              "params": {
+                "text": "Driver Kasper Kovelund is waiting at Hollenmark services and asked to be told the name of whoever collects the car before it is moved. Driver says the dashboard photo was sent at 11:02; check it and pass it to the owner's service contact.",
+                "minutes": 30
+              }
+            }
+          ],
+          "action": "call_customer",
+          "params": {
+            "to": "Marvellin Motorhandel",
+            "text": "The Bentley (your ref PO-024-0322) is stopped after a red warning light; the driver says they are at Hollenmark services, A7 northbound, about 40 km south of Hannover, engine off. Today's 12:00–16:00 delivery in Hamburg depends on the recovery plan and is likely to slip. Ask: 1) does your service contact send roadside assistance, or should we arrange recovery? 2) if we arrange it: flatbed to a nearby workshop for diagnosis (Kellerbrook Recovery, about €215, quote) or flatbed straight to Marvellin Hamburg (about €810, quote)? 3) who pays for recovery, and what new delivery window works for you?"
+          },
+          "effect_text": "Puts a call to Marvellin Motorhandel on the operations list with the questions below and a 30-minute check; it books no tow and changes no delivery time until they answer."
+        },
+        {
+          "id": "reject",
+          "kind": "reject",
+          "label": "Reject: make no call, I'll handle the customer and recovery myself",
+          "action": "reject",
+          "params": {}
+        }
+      ],
+      "consequenceAt": "2026-10-21T14:00:00.000Z",
+      "consequenceText": "Customer was promised delivery in Hamburg by today 16:00",
+      "severity": "safety",
+      "verifierNotes": [
+        {
+          "ok": true,
+          "note": "The driver's 10:04 message says a red warning came on, the car felt different when accelerating, and they stopped the car.",
+          "finding": 0
+        },
+        {
+          "ok": true,
+          "note": "The driver's 11:02 message gives Hollenmark services on the A7 northbound, about 40 km south of Hannover, engine off, and a sent dashboard photo, and the card presents this as their claim.",
+          "finding": 1
+        },
+        {
+          "ok": true,
+          "note": "The stale 07:00 GPS record gives only 233 km to go and an ETA of 13:13, and the finding correctly says it gives no position.",
+          "finding": 2
+        },
+        {
+          "ok": true,
+          "note": "The customer's 10:40 message asks to keep the vehicle stopped while they check with their service contact about roadside assistance or collection.",
+          "finding": 3
+        },
+        {
+          "ok": true,
+          "note": "The order record states the delivery promise as Wed 21 Oct 12:00–16:00 CEST at Marvellin Hamburg.",
+          "finding": 4
+        },
+        {
+          "ok": true,
+          "note": "The lookup gives Kellerbrook a 52-minute tow time and about €215 and €810 tow costs, and the card correctly says these are not booked.",
+          "finding": 5
+        },
+        {
+          "ok": true,
+          "note": "The headline and what-happened sections match the driver's and customer's messages and the order promise, and the card attributes the driver's safety and location claims to the driver.",
+          "finding": null
+        },
+        {
+          "ok": true,
+          "note": "The approve option's effect (a call to Marvellin with a 30-minute check, no tow booked, no delivery time changed) matches its stated does-list, and the customer is only contacted if the person approves.",
+          "finding": null
+        },
+        {
+          "ok": true,
+          "note": "The reject option makes no call and matches its label.",
+          "finding": null
+        },
+        {
+          "ok": true,
+          "note": "The card uses plain language with no internal codes or ids.",
+          "finding": null
+        }
+      ],
+      "origin": "agent"
+    }
+  ],
+  "decisions": []
+}
