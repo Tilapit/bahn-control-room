@@ -20,6 +20,7 @@ const DEFAULT_SHOTS = [
   "agents-done=/agents?show=done",
   "agents-quiet=/agents?show=quiet",
   "orders=/orders",
+  "sources=/sources",
   "order-CD-420322=/orders/CD-420322",
   "order-CD-420299=/orders/CD-420299",
   "order-CD-420603=/orders/CD-420603",
@@ -54,6 +55,8 @@ async function main() {
   try {
     for (const theme of themes) {
       const context = await browser.newContext({ viewport: { width: Number(option(args, "--width", "1440")) || 1440, height: Number(option(args, "--height", "960")) || 960 }, colorScheme: theme, deviceScaleFactor: 1 })
+      // Light is the app's default; the dark pictures pick Dark, as a person would in the rail.
+      if (theme === "dark") await context.addInitScript(() => { try { localStorage.setItem("bahn.theme", "dark") } catch { /* light */ } })
       const page = await context.newPage()
       const errors: string[] = []
       page.on("pageerror", (error) => errors.push(error.message))

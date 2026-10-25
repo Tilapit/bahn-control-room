@@ -140,7 +140,6 @@ function WatchRow({ row, now }: { row: ORow; now: string }) {
         Started {time(row.startedAt, now)}{row.nextCheckAt ? ` · next check ${time(row.nextCheckAt, now)}` : ""} · {modelWords(row)}
       </span>
     </span>
-    <Icon name="chevron" size={16} className="ag-chevron" />
   </Link>
 }
 

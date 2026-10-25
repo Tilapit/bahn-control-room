@@ -7,6 +7,7 @@ import { railCounts } from "@/lib/shift"
 import { at } from "@/lib/time"
 import { LiveRefresh } from "./ui/live-refresh"
 import { DemoLink, Nav } from "./ui/nav"
+import { THEME_SCRIPT, ThemeToggle } from "./ui/theme-toggle"
 import { TopSearch } from "./ui/top-search"
 import "./globals.css"
 import "./teams.css"
@@ -29,7 +30,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   await connection()
   // The badge counts what needs someone now, in the person's own view: Nav filters it in the browser.
   const [teams, clock, rail] = await Promise.all([nowTeams(), now(), railCounts()])
-  return <html lang="en">
+  // Light unless the person picked Dark or System in the rail (THEME_SCRIPT applies a saved choice before paint).
+  return <html lang="en" data-theme="light" suppressHydrationWarning>
+    <head><script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} /></head>
     <body>
       <div className="app">
         <aside className="rail">
@@ -42,12 +45,14 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             </ul>
             <div className="running">
               <b><span className="live-dot" aria-hidden="true" />Agents running</b>
-              <span>{rail.handledToday.toLocaleString("en-GB")} updates handled today without you</span>
-              <span className="running-note">Fictional data. No real people, cars or bookings.{rail.shift.length > 1 ? " Colleagues are fictional too." : ""}</span>
-              <span className="running-clock" title="The app runs on a simulated clock that starts at the data snapshot.">Demo clock {at(clock, DESK_ZONE).replace(/ EE[S]?T$/, "")} Helsinki</span>
-              {!hasApiKey() && <a className="demo-mode" href="/demo" title="No API key is set, so agents cannot run live. Everything agents did here was recorded from real runs; the Demo page replays recorded scenarios.">Showing recorded agent runs</a>}
-              <DemoLink />
+              <span>{rail.handledToday.toLocaleString("en-GB")} handled today without you</span>
             </div>
+            <p className="rail-note">
+              <span title="No real people, cars or bookings; the colleagues are fictional too.">Fictional data</span> · <span title={`The app runs on a simulated clock that starts at the data snapshot: ${at(clock, DESK_ZONE)}.`}>demo clock {at(clock, DESK_ZONE).replace(/ EE[S]?T$/, "").replace(/^\w+ \d+ \w+ /, "")}</span>
+              {!hasApiKey() && <> · <a className="demo-mode" href="/demo" title="No API key is set, so agents cannot run live. Everything agents did here was recorded from real runs; the Demo page replays recorded scenarios.">recorded runs</a></>}
+              {" · "}<DemoLink />
+              <span className="rail-note-row"><ThemeToggle /></span>
+            </p>
           </div>
         </aside>
         <div className="main">

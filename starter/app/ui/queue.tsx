@@ -88,11 +88,20 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
   const allNow = all.filter(isNow)
   const ownNow = allNow.filter((item) => inView(item.team, view) && (!item.takenOver || mine(item))).length
   const withColleagues = allNow.filter((item) => item.takenOver && !mine(item)).length
-  const safetyElsewhere = allNow.filter((item) => !inView(item.team, view) && !mine(item)).length
+  // Safety from outside the view, counted like the badge: not when a colleague holds it.
+  const safetyElsewhere = allNow.filter((item) => !inView(item.team, view) && item.urgency.safety && (!item.takenOver || mine(item))).length
+  // The title counts what needs you now, the same number as the sidebar badge: in your view or a person's safety,
+  // and not held by a colleague. The subtitle says where everything else is.
+  const nowCount = ownNow + safetyElsewhere
+  const subtitle = [
+    `${all.length - allNow.length} more can wait`,
+    withColleagues ? `${withColleagues} with colleagues` : null,
+    where ? "agents handle the rest" : `agents handle the other ${onTrack.toLocaleString("en-GB")}`,
+  ].filter(Boolean).join(" · ") + "."
   const line = [
     `${ownNow} need${ownNow === 1 ? "s" : ""} you now${where ? ` ${where}` : ""}`,
     withColleagues ? `${withColleagues} with colleagues` : null,
-    safetyElsewhere ? `+${safetyElsewhere} safety in ${groupWords(allNow.filter((item) => !inView(item.team, view) && !mine(item)), view).replace(/ \d+/g, "")}` : null,
+    safetyElsewhere ? `+${safetyElsewhere} safety in ${groupWords(allNow.filter((item) => !inView(item.team, view) && item.urgency.safety), view).replace(/ \d+/g, "")}` : null,
     outsideNow.length ? `${outsideNow.length} more in ${elsewhere}` : null,
     `${all.length - allNow.length} can wait`,
     // What agents handle and what is quiet is counted across every market, so it is said only for everyone.
@@ -162,11 +171,8 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
   const head = <div className="fy-head">
     <div>
       <p className="fy-date">{dateLine}</p>
-      <div className="fy-title"><h1>{all.length} order{all.length === 1 ? "" : "s"} need{all.length === 1 ? "s" : ""} you{where ? ` ${where}` : ""}</h1><ViewSwitcher /></div>
-      <p className="fy-sub" title={hint}>{where
-        ? `The other orders ${where} are on track. Agents will bring you anything new.`
-        : `The other ${onTrack.toLocaleString("en-GB")} orders are on track. Agents will bring you anything new.`}</p>
-      <p className="fy-counts">{line}</p>
+      <div className="fy-title"><h1>{nowCount} order{nowCount === 1 ? "" : "s"} need{nowCount === 1 ? "s" : ""} you now{where ? ` ${where}` : ""}</h1><ViewSwitcher /></div>
+      <p className="fy-sub" title={`${hint ?? ""} ${line}`.trim()}>{subtitle}</p>
     </div>
   </div>
   // What the view leaves out of Now, by country (or desk), as one muted row: "3 more in other countries: Germany 2, Denmark 1".

@@ -31,11 +31,13 @@ npm run dev -- -p 3001
 ```
 
 Open http://localhost:3001 (any port works; the screenshot and footage scripts use 3001). Start on
-**For you**, an inbox like Apple Mail: what needs you now, then later, on the left; the selected item on the
-right with what approving does, its facts and sources, and similar past decisions. Keys: J/K move, Enter opens, A
-approves an opened item, R rejects or replies (with one reason), T is "I'll handle this", which takes an order over
-so no agent acts on it until you hand it back. The menu at the top right picks a market and desks (saved in your
-browser); Orders, Agents and the sidebar count follow it. **Agents** shows what every agent did and is doing, **Orders** has every order with who has it,
+**For you**: how many orders need you, then a list of cards (Unclaimed / Mine / All; Decide now, then Later) next to
+the selected order in a white panel: who has it (take it, or take over a colleague's claim that has gone quiet), car,
+route and driver, the car's journey with the problem point, what happened with every fact's source, what the agent
+already did, what it suggests and exactly what approving does. A call you approve stays under Mine as a to-do until
+you log what happened (or play the simulated call). Keys: J/K move, Enter opens, A approves an opened order, R rejects
+or replies (with one reason), T takes it. The menu next to the title picks a market and desks; Orders, Agents and the
+rail follow it. Colleagues on shift are fictional. **Agents** shows what every agent did and is doing, **Orders** has every order with who has it,
 **Sources** shows every channel that feeds the order timelines, **Settings** holds what agents may do on their own,
 what they learned from your corrections and **How it works**.
 **Demo controls** (foot of the left rail) moves the simulated clock, plays the scenarios and switches

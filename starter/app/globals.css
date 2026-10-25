@@ -31,13 +31,40 @@
 
   --radius: 8px;
   --radius-s: 6px;
-  --rail: 212px;
+  --rail: 220px;
   --shadow-pop: 0 8px 28px rgba(0, 0, 0, 0.12), 0 0 0 1px var(--line);
   color-scheme: light;
 }
 
+html[data-theme="dark"] {
+    --bg: #121214;
+    --surface: #18181b;
+    --raised: #1d1d21;
+    --text: #ececef;
+    --text-2: #b0b0b7;
+    --text-3: #8c8c94;
+    --line: rgba(255, 255, 255, 0.075);
+    --line-2: rgba(255, 255, 255, 0.14);
+    --hover: rgba(255, 255, 255, 0.04);
+    --press: rgba(255, 255, 255, 0.07);
+
+    --accent: #2f6fe0;
+    --accent-hover: #3d7cec;
+    --accent-text: #7aaaff;
+    --accent-soft: rgba(76, 141, 255, 0.12);
+    --on-accent: #ffffff;
+
+    --red: #ff6b6b;
+    --red-soft: rgba(255, 107, 107, 0.1);
+    --amber: #f5b14c;
+    --amber-dot: #f5a524;
+    --amber-soft: rgba(245, 165, 36, 0.12);
+    --green: #4ac26b;
+    --shadow-pop: 0 10px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--line-2);
+    color-scheme: dark;
+  }
 @media (prefers-color-scheme: dark) {
-  :root {
+html[data-theme="system"] {
     --bg: #121214;
     --surface: #18181b;
     --raised: #1d1d21;
@@ -327,7 +354,10 @@ time[title] { cursor: help; text-decoration: none; }
 .case-card-head { display: flex; gap: 12px; align-items: center; font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
 .case-card-head .mark { margin-top: 0; }
 .case-card.safety { border-color: color-mix(in srgb, var(--red) 40%, var(--line-2)); }
-@media (prefers-color-scheme: dark) { .case-card.safety { border-color: color-mix(in srgb, var(--red) 70%, var(--line-2)); } }
+html[data-theme="dark"] .case-card.safety { border-color: color-mix(in srgb, var(--red) 70%, var(--line-2)); }
+@media (prefers-color-scheme: dark) {
+html[data-theme="system"] .case-card.safety { border-color: color-mix(in srgb, var(--red) 70%, var(--line-2)); }
+}
 .case-card .row, .case-card .row:hover, .case-card .row[data-open="true"] { border-bottom: 0; margin: 0; padding: 0; background: none; box-shadow: none; }
 .open-items { display: grid; gap: 8px; margin-bottom: 32px; font-size: 14px; }
 .open-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: baseline; }
@@ -845,8 +875,15 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
     radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, 0.1), transparent) center top / 100% 10px no-repeat scroll,
     radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, 0.1), transparent) center bottom / 100% 10px no-repeat scroll;
 }
+html[data-theme="dark"] .inbox-detail {
+    background:
+      linear-gradient(var(--surface) 30%, transparent) center top / 100% 32px no-repeat local,
+      linear-gradient(transparent, var(--surface) 70%) center bottom / 100% 32px no-repeat local,
+      radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, 0.5), transparent) center top / 100% 10px no-repeat scroll,
+      radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, 0.5), transparent) center bottom / 100% 10px no-repeat scroll;
+  }
 @media (prefers-color-scheme: dark) {
-  .inbox-detail {
+html[data-theme="system"] .inbox-detail {
     background:
       linear-gradient(var(--surface) 30%, transparent) center top / 100% 32px no-repeat local,
       linear-gradient(transparent, var(--surface) 70%) center bottom / 100% 32px no-repeat local,
@@ -894,8 +931,27 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
   --radius: 12px;
   --radius-s: 8px;
 }
+html[data-theme="dark"] {
+    --bg: #151614;
+    --surface: #1d1e1c;
+    --raised: #222321;
+    --rail-bg: #191a18;
+    --text: #ecebe6;
+    --text-2: #b6b5ae;
+    --text-3: #8f8e87;
+    --line: rgba(255, 255, 255, 0.08);
+    --line-2: rgba(255, 255, 255, 0.15);
+    --hover: rgba(255, 255, 255, 0.04);
+    --press: rgba(255, 255, 255, 0.08);
+    --accent: #2f7d5f;
+    --accent-hover: #389070;
+    --accent-text: #8ad3b0;
+    --accent-soft: rgba(80, 180, 135, 0.14);
+    --amber-soft: rgba(232, 144, 12, 0.12);
+    --amber-line: rgba(232, 144, 12, 0.45);
+  }
 @media (prefers-color-scheme: dark) {
-  :root {
+html[data-theme="system"] {
     --bg: #151614;
     --surface: #1d1e1c;
     --raised: #222321;
@@ -1064,3 +1120,32 @@ html, body, .app, .main { background: var(--bg); }
    covers a page's own controls. */
 .main:not(:has(.inbox-page)) .topbar { position: static; width: auto; display: flex; justify-content: flex-end; padding: 20px 32px 0; }
 .main:not(:has(.inbox-page)) .topbar .search { width: 300px; flex: none; }
+
+/* ---------- Last fixes before recording: widths, the rail's foot, the theme toggle ---------- */
+
+/* A theme-scoped dark rule sets the panel's background shorthand; the panel itself stays a surface. */
+html[data-theme] .inbox-detail { background-color: var(--surface); }
+/* Use the width: every page's content up to 1280 px; the rail at 220 px so no label wraps. */
+.content.narrow, .content.wide, .content.inbox-page { max-width: 1280px; }
+.nav-link span:not(.count):not(.badge) { white-space: nowrap; }
+.nav-link .count { white-space: nowrap; }
+/* For you: a 360 px list keeps tag, reference and time on one line. */
+.inbox { grid-template-columns: minmax(0, 360px) minmax(0, 1fr); }
+.fy-card-top { flex-wrap: nowrap; }
+.fy-card-top .tag, .fy-card-top .row-ref { flex: none; white-space: nowrap; }
+/* Orders fills the width; the reference is never cut; "What's happening" gets the most room. */
+.orders-page .o-row { grid-template-columns: minmax(0, 1.45fr) 96px minmax(0, 1.5fr) minmax(0, 0.95fr) minmax(0, 2.4fr) 112px 104px; gap: 12px; }
+.orders-page .o-row > .o-ref { overflow: visible; text-overflow: clip; }
+@media (max-width: 1100px) { .orders-page .o-row { grid-template-columns: minmax(0, 1.2fr) 104px minmax(0, 1.3fr) minmax(0, 2.4fr) 104px 104px; } }
+@media (max-width: 760px) { .orders-page .o-row { grid-template-columns: minmax(0, 1fr) auto; } }
+/* The rail's foot: one box, then one small muted line. */
+.running { gap: 2px; }
+.rail-note { margin: 8px 10px 0; font-size: 11.5px; line-height: 1.5; color: var(--text-3); }
+.rail-note .rail-demo, .rail-note .demo-mode { display: inline; margin: 0; padding: 0; background: none; border: 0; color: var(--text-3); font-size: 11.5px; font-weight: 400; text-decoration: underline; text-underline-offset: 2px; }
+.theme-toggle { display: flex; gap: 2px; margin-top: 6px; }
+.theme-toggle button { all: unset; cursor: pointer; padding: 1px 6px; border-radius: 6px; font-size: 11.5px; color: var(--text-3); }
+.theme-toggle button:hover { color: var(--text); background: var(--hover); }
+.theme-toggle button[aria-pressed="true"] { color: var(--text); background: var(--press); }
+.rail-note-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.rail-note-row .theme-toggle { margin-top: 0; }
+.rail { min-width: 0; overflow: hidden; }

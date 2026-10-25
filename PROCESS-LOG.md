@@ -2447,3 +2447,34 @@ the timeline as a call. The server now takes the lines from its own script.
 
 **Not done.** One scripted call exists. The full call → log → agent path was not run on the shared database before the
 footage, because it resumes CD-420322's recorded Opus run; the footage clip runs it.
+
+### Last UI fixes before recording (CSS and copy, no new features)
+
+The footage recording started at 12:02 was stopped at 12:17 for these fixes. None of it was committed: the clips,
+the shot list and the traces it rewrote were set back, and the recorded morning was loaded again.
+
+1. **For you counts.** The title is the Now count, "5 orders need you now", the same number as the sidebar badge:
+   in your view or a person's safety, not held by a colleague. The subtitle is "17 more can wait · 2 with colleagues
+   · agents handle the other 976." It replaces the muted counts line, whose words moved to the subtitle's hover text.
+2. **Width.**
+   - The rail is 220 px, and its labels do not wrap.
+   - Content goes up to 1280 px on every page.
+   - The For you list is 360 px, so tag, reference and time stay on one line.
+   - In Orders, the reference never cuts and "What's happening" has the widest column. The first column split cut
+     car names and stages ("Driver book…"), so it was rebalanced after the first screenshot.
+3. **The rail's foot.** The box is only "Agents running · 1,036 handled today without you". "Fictional data · demo
+   clock 12:58 · Demo controls" is one small muted line under it, with the theme toggle under that. A first attempt
+   kept the toggle and Demo controls on one unbreakable row; the rail's foot then overflowed and cut "1 order" and
+   "away 35 min" (seen in the dark screenshot). The row now wraps, and the rail hides overflow.
+4. **Light by default.** Every dark block, in `globals.css` and `agents.css`, is now scoped to
+   `html[data-theme="dark"]`, with a copy under the OS media query for `data-theme="system"`. The page starts light
+   whatever the OS says. A Light / Dark / System toggle in the rail saves the choice in the browser, and a tiny inline
+   script applies it before paint. Checked with Playwright: with the OS in dark mode the page is light (#f4f2ee);
+   Dark turns it dark at once, and it stays dark after a reload. The scoping raised the dark rules' specificity, so
+   the panel's dark background shorthand would have made it transparent; a rule keeps it a surface. The screenshot
+   script's dark pictures now pick Dark, as a person would.
+5. **Agents.** The stray "›" under each watching card is gone; the whole card was already the link.
+
+**Checked.** Screenshots at 1440×900 of For you, Orders, Agents, Sources and Settings, light and dark, looked at, and
+every screen in `screens/` retaken. Sources was missing from the screenshot script's list, so its picture had been
+from an older round; it is in the list now. `npm run typecheck`; `npm test` 73/73 and all 11 recorded eval groups.
