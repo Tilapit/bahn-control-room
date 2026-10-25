@@ -4,6 +4,7 @@
 
 import { randomUUID } from "node:crypto"
 import { eq, sql } from "drizzle-orm"
+import type { CaseFile } from "./case"
 import { db } from "./db"
 import { policies, policyChanges } from "./schema"
 
@@ -104,6 +105,33 @@ export async function setPolicy(action: string, level: Level, options: { limitEu
     id: `pol_${randomUUID().slice(0, 12)}`, at: options.at, action, fromLevel: row?.level ?? known.level, toLevel: level, limitEur: limit,
     actor: options.actor, reason: options.reason,
   })
+}
+
+/** Actions that offer the gig to another driver. Nobody has said yes when the option is carried out: the offer goes out with it. */
+const OFFERS_GIG = new Set(["switch_driver", "republish_offer"])
+/** The action that cancels, or with a new booking changes, the travel booked for the driver who holds the gig. */
+const DRIVER_TRAVEL = new Set(["cancel_driver_travel"])
+
+/** What `waitsForBackup` needs to know about an order: does a driver still hold the gig, and is an offer to another driver open. */
+export type GigState = { driverHoldsGig: boolean; offeredTo: string | null }
+
+export function gigOf(file: CaseFile): GigState {
+  const state = file.order.driver?.state
+  return { driverHoldsGig: state === "booked" || state === "driving", offeredTo: file.plan.handover?.to ?? null }
+}
+
+/**
+ * A precondition, whatever the level and whatever a person's rule says: the current driver's travel is cancelled or
+ * changed only after a backup driver has accepted the gig. Until then the current driver is the only driver the car
+ * has, and cancelling their train in the same click that only offers the gig leaves nobody if the backup says no.
+ * Checked when a card is built (lib/agents/propose.ts) and again by the Executor before it writes anything
+ * (lib/executor.ts). Returns why the steps may not go ahead, in words a person can read, or null.
+ */
+export function waitsForBackup(actions: string[], gig: GigState): string | null {
+  if (!gig.driverHoldsGig || !actions.some((action) => DRIVER_TRAVEL.has(action))) return null
+  if (actions.some((action) => OFFERS_GIG.has(action))) return "the current driver's travel stays booked until a backup driver has accepted the gig, and this option only offers it"
+  if (gig.offeredTo) return `the current driver's travel stays booked until ${gig.offeredTo === "drivers" ? "a driver" : gig.offeredTo} accepts the gig, and nobody has yet`
+  return null
 }
 
 /** The strictest level across several steps of one option. */

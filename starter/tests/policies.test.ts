@@ -7,7 +7,8 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 import { describe, it } from "node:test"
 import { TOOL_DEFINITIONS } from "@/lib/agents/tools"
-import { ACTIONS, describe as policy, effectiveLevel, NEVER_AUTO, refusal } from "@/lib/policies"
+import { ACTIONS, describe as policy, effectiveLevel, gigOf, NEVER_AUTO, refusal, waitsForBackup } from "@/lib/policies"
+import { caseFile } from "./helpers"
 
 /** Every action that books, costs money, changes a date or contacts someone on our behalf. */
 const CHANGES_SOMETHING = ["book_ferry", "change_ferry_booking", "book_hotel", "book_driver_travel", "cancel_driver_travel", "switch_driver", "republish_offer", "raise_fee", "change_pickup_time", "change_delivery_time", "book_tow", "approve_repair_cost", "message_customer", "call_customer", "call_contact"]
@@ -93,5 +94,37 @@ describe("policies: a call is always a person's", () => {
   it("calling a seller or other contact never becomes automatic, whatever the table says", () => {
     assert.equal(effectiveLevel("call_contact", { level: "auto", autoLimitEur: null } as never, null), "approval")
     assert.ok(NEVER_AUTO.has("call_contact"))
+  })
+})
+
+describe("policies: the current driver's travel waits for a backup's yes", () => {
+  const holds = { driverHoldsGig: true, offeredTo: null }
+
+  it("an option that offers the gig and cancels the current driver's travel is refused (the CD-420449 live run)", () => {
+    assert.match(waitsForBackup(["switch_driver", "cancel_driver_travel", "message_driver"], holds) ?? "", /stays booked until a backup driver has accepted/)
+    assert.match(waitsForBackup(["republish_offer", "raise_fee", "cancel_driver_travel"], holds) ?? "", /stays booked/)
+  })
+
+  it("while an offer is open and nobody has accepted, cancelling the travel on its own is refused too", () => {
+    assert.match(waitsForBackup(["cancel_driver_travel"], { driverHoldsGig: true, offeredTo: "Ida Ervanton" }) ?? "", /until Ida Ervanton accepts/)
+  })
+
+  it("offering the gig while the travel stays booked is fine", () => {
+    assert.equal(waitsForBackup(["switch_driver", "message_driver"], holds), null)
+  })
+
+  it("changing the travel of a driver who keeps the gig is fine (the rail strike: cancel a train, book another)", () => {
+    assert.equal(waitsForBackup(["cancel_driver_travel", "book_driver_travel", "book_hotel", "change_pickup_time"], holds), null)
+  })
+
+  it("a driver who cancelled the gig themselves is not waited for", () => {
+    assert.equal(waitsForBackup(["republish_offer", "cancel_driver_travel"], { driverHoldsGig: false, offeredTo: null }), null)
+  })
+
+  it("the case file says who holds the gig and whether an offer is open", () => {
+    const file = caseFile()
+    assert.deepEqual(gigOf(file), { driverHoldsGig: true, offeredTo: null })
+    assert.deepEqual(gigOf({ ...file, plan: { ...file.plan, handover: { to: "Ida Ervanton", at: null } } }), { driverHoldsGig: true, offeredTo: "Ida Ervanton" })
+    assert.equal(gigOf({ ...file, order: { ...file.order, driver: { ...file.order.driver!, state: "cancelled" } } }).driverHoldsGig, false)
   })
 })

@@ -9,7 +9,7 @@ import { sql } from "drizzle-orm"
 import { textProblems } from "./agents/lint"
 import { TOOL_DEFINITIONS } from "./agents/tools"
 import { db } from "./db"
-import { effectiveLevel, refusal } from "./policies"
+import { effectiveLevel, refusal, waitsForBackup } from "./policies"
 
 type Row = Record<string, unknown>
 /** What the agents wrote about the case's orders, as Postgres gives it (snake_case), live or recorded. */
@@ -312,6 +312,8 @@ export async function policyChecks(options: { database: boolean }): Promise<Chec
     check("An agent cannot book anything itself: a booking is made only after a person approves it", !!noTool.isError, noTool.content),
     check("Booking driver travel needs a person's approval", effectiveLevel("book_driver_travel", null, 900) === "approval", `level: ${effectiveLevel("book_driver_travel", null, 900)}`),
     check("Customer contact can never be made automatic", !!refusal("message_customer", "auto") && effectiveLevel("message_customer", { level: "auto", autoLimitEur: null }) === "approval", refusal("message_customer", "auto") ?? "allowed"),
+    check("The current driver's travel cannot be cancelled in the click that only offers the gig to a backup",
+      !!waitsForBackup(["switch_driver", "cancel_driver_travel"], { driverHoldsGig: true, offeredTo: null }), waitsForBackup(["switch_driver", "cancel_driver_travel"], { driverHoldsGig: true, offeredTo: null }) ?? "allowed"),
   ]
   if (options.database) {
     // The card builder's own check, with the policies table: a flight the agent never looked up cannot go on a card.

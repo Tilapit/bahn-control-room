@@ -34,7 +34,7 @@ export function caseFile(patch: { stage?: StageKey; keyTimes?: KeyTime[]; alerts
     keyTimes: patch.keyTimes ?? [],
     facts: [],
     open: { alerts: patch.alerts ?? [], tasks: patch.tasks ?? [], incidents: patch.incidents ?? [], cards: [], proposals: [], claims: [], conversations: [], supportInbox: [], documents: [] },
-    plan: { stops: [], legs: [], offer: null, bookings: [], quotes: [], lastPosition: null, positions: [], terminalDrive: null },
+    plan: { stops: [], legs: [], offer: null, bookings: [], quotes: [], lastPosition: null, positions: [], terminalDrive: null, handover: null },
     timeline: [],
   }
 }

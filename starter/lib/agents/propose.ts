@@ -11,7 +11,7 @@ import { entriesById, getCase, type TimelineItem } from "../case"
 import { now as clockNow } from "../clock"
 import { db } from "../db"
 import { MODELS } from "../models"
-import { describe, levelFor, levelForAll, PROPOSABLE } from "../policies"
+import { describe, gigOf, levelFor, levelForAll, PROPOSABLE, waitsForBackup } from "../policies"
 import { orderView } from "../queue"
 import { cards, decisions, policies } from "../schema"
 import type { CardFinding, CardOption, CardStep } from "../schema"
@@ -193,6 +193,19 @@ export async function propose(ctx: RunCtx, input: Input): Promise<ToolOutcome> {
     const words = [whatHappened, ...drafts.map((draft) => draft.text)].join(" ")
     if (!/not (yet )?(been )?confirmed|ha(s|ve)n['’]t (yet )?(confirmed|reported)|ha(s|ve) not (yet )?(confirmed|reported)|no driver is booked|unconfirmed/i.test(words)) {
       problems.push("Say on the card that the driver has not confirmed the notice yet (or that no driver is booked): it is the source's report, not a fact on the ground")
+    }
+  }
+  // The current driver's travel waits for a backup's yes (lib/policies.ts): checked per order an option touches.
+  for (const [index, option] of options.entries()) {
+    const byOrder = new Map<string, string[]>()
+    for (const step of option.steps) {
+      const orderId = typeof step.params.order_id === "string" ? step.params.order_id : ctx.orderId
+      byOrder.set(orderId, [...(byOrder.get(orderId) ?? []), step.action])
+    }
+    for (const [orderId, actions] of byOrder) {
+      const target = orderId === file.order.id ? file : await getCase(orderId)
+      const problem = target ? waitsForBackup(actions, gigOf(target)) : null
+      if (problem) problems.push(`Option ${index + 1}: ${problem}. Keep the current driver's travel booked: take cancel_driver_travel out of this option, keep the offer to the backup, and say in its effect that the travel is cancelled only once the backup has accepted`)
     }
   }
   const levels = await Promise.all(options.map((option) => levelForAll(option.steps.map((step) => step.action))))

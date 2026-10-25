@@ -1655,3 +1655,44 @@ first recording, and the true one for this play.
 **Checked:** typecheck; the recorded evals (11 groups pass, including scenario 5 from its new recording); 0
 narrations with those words in the fixtures and in the three new recordings; screenshots `agents-*` in light and
 dark, looked at.
+
+### The earlier request, part 1: the ill-driver eval, fixed in code
+
+The live eval from task 4 failed on scenario 4 (CD-420449): the agent's main option offered the gig to a backup
+*and* cancelled the current driver's train, flight and hotel in the same click. Item 2's live hand-back produced the
+same option again. The rule is now a **precondition in the policy layer**, not a sentence in a prompt:
+
+- `waitsForBackup(actions, gig)` in `lib/policies.ts`: while a driver holds the gig, cancelling or changing their
+  travel (`cancel_driver_travel`; a change is a cancel plus a new booking) waits until a backup has accepted. It is
+  refused when the same option offers the gig (`switch_driver` or `republish_offer`: the offer goes out with that
+  click, so nobody can have said yes yet), and when an earlier approved offer is still open. What it allows: offering
+  the gig with the travel kept, changing the travel of a driver who keeps the gig (the rail-strike card cancels a
+  train and books another one for the same driver), and cancelling the travel of a driver who cancelled the gig
+  themselves.
+- "An offer still open" comes from the records: the Executor now notes on each offer who it went to and whose gig it
+  was (`ExecutedEffect.steps[].offer`), and the case file shows it as `plan.handover` until the order's booked driver
+  is someone else, which is what a backup accepting looks like in the records. Nothing in this demo makes a backup
+  accept, so after an approved offer the travel simply stays booked.
+- **The card builder refuses it** (`propose` in `lib/agents/propose.ts`, per order an option touches) and tells the
+  agent how to fix it: keep the offer, take the cancellation out, say in the effect that the travel is cancelled
+  once the backup accepts.
+- **The Executor checks it again before it writes anything** (`lib/executor.ts`): every order of the option is loaded
+  first, then the precondition, then the steps. Checked on CD-420449 with the failing run's own option (offer to Ida
+  Ervanton + cancel Carl's travel + message Carl): "Not carried out: the current driver's travel stays booked until a
+  backup driver has accepted the gig, and this option only offers it", and 0 timeline entries written. A card
+  recorded before the rule, or one an autonomy rule would carry out, cannot get past it either.
+- The prompt was **not** changed: it already said the current driver "is released only when the new one accepts". The
+  code's send-back teaches the agent within the run, and the live eval below shows that path working.
+
+**Tests.** `tests/policies.test.ts` (6 new): the failing run's option and a republish-plus-cancel are refused; a
+cancel on its own while an offer is open is refused and names who was offered the gig; an offer with the travel kept,
+the rail-strike change for a driver who stays, and a driver who cancelled are allowed; `gigOf` reads the case file.
+`npm test`: 46 tests pass. The evals' policy layer has a fifth check for the same rule.
+
+**Live, once** (`npm run evals -- --live driver-ill`, $0.14, 101 s): **PASS, 5 of 5.** The run's trace shows the
+check doing the work: its first card again put `cancel_driver_travel` in option 1, code sent it back ("Option 1: the
+current driver's travel stays booked until a backup driver has accepted the gig, and this option only offers it…"),
+the Verifier sent it back twice more (findings that claimed more than their source), and the card a person sees is
+"Approve: offer the gig to Ida Ervanton and tell Carl": `switch_driver` and `message_driver`, with "their train, flight
+and hotel are not cancelled by this click (a person cancels them after Ida accepts)", plus "Offer the gig to Milo
+Briarmont instead" as option 2. The recorded morning was loaded back afterwards.

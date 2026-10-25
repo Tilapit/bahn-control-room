@@ -10,6 +10,7 @@ import { now as clockNow } from "./clock"
 import { describeFerry, ferryOptions } from "./agents/mocks"
 import { writeEntry } from "./agents/entries"
 import type { CardOption, CardStep, ExecutedEffect } from "./schema"
+import { gigOf, waitsForBackup } from "./policies"
 import { orderView } from "./queue"
 import { at } from "./time"
 import { money } from "./words"
@@ -37,13 +38,22 @@ export async function execute(input: { decisionId: string; orderId: string; opti
   // A card for several orders: each step names the order it is for; the rest are for the card's own order.
   const files = new Map([[file.order.id, file]])
   const orderOf = (step: CardStep) => typeof step.params.order_id === "string" ? step.params.order_id : input.orderId
+  // Every order the option touches is loaded before anything is written.
   for (const step of steps) {
     const orderId = orderOf(step)
-    if (!files.has(orderId)) {
-      const other = await getCase(orderId)
-      if (!other) { effect.ok = false; effect.steps.push({ action: step.action, ok: false, summary: "The order could not be loaded.", entryId: null, error: "order missing", orderId }); break }
-      files.set(orderId, other)
-    }
+    if (files.has(orderId)) continue
+    const other = await getCase(orderId)
+    if (!other) return { ...effect, ok: false, steps: [{ action: step.action, ok: false, summary: "The order could not be loaded.", entryId: null, error: "order missing", orderId }] }
+    files.set(orderId, other)
+  }
+  // Preconditions, before any step runs (lib/policies.ts): the current driver's travel waits for a backup's yes.
+  // A card built before the rule, or by a person's rule, cannot get past it either.
+  for (const [orderId, target] of files) {
+    const problem = waitsForBackup(steps.filter((step) => orderOf(step) === orderId).map((step) => step.action), gigOf(target))
+    if (problem) return { ...effect, ok: false, steps: [{ action: "cancel_driver_travel", ok: false, summary: `Not carried out: ${problem}`, entryId: null, error: problem, orderId }] }
+  }
+  for (const step of steps) {
+    const orderId = orderOf(step)
     const result = await runStep(files.get(orderId)!, step, { ...input, orderId })
     effect.steps.push({ ...result.step, orderId })
     if (result.booking) effect.bookings.push({ ...result.booking, orderId })
@@ -129,12 +139,13 @@ async function runStep(file: CaseFile, step: CardStep, input: { decisionId: stri
     case "switch_driver": {
       const name = text(step.params.name) || lookup?.label || "the backup driver"
       const summary = `Gig offered to ${name} directly; the current driver stays booked until ${name} accepts (simulated offer)`
-      return { step: { action: step.action, ok: true, summary, entryId: await entry({ source: "person", channel: "executor_offer", kind: "event", summary }) } }
+      return { step: { action: step.action, ok: true, summary, entryId: await entry({ source: "person", channel: "executor_offer", kind: "event", summary }), offer: { to: name, replacing: file.order.driver?.id ?? null } } }
     }
     case "republish_offer":
     case "raise_fee": {
       const summary = step.action === "raise_fee" ? `Driver fee raised by €${Number(step.params.amount_eur ?? 0)} (simulated)` : "Gig offered to drivers again (simulated)"
-      return { step: { action: step.action, ok: true, summary, entryId: await entry({ source: "person", channel: "executor_offer", kind: "event", summary }) } }
+      const offer = step.action === "republish_offer" ? { to: "drivers", replacing: file.order.driver?.id ?? null } : undefined
+      return { step: { action: step.action, ok: true, summary, entryId: await entry({ source: "person", channel: "executor_offer", kind: "event", summary }), ...(offer ? { offer } : {}) } }
     }
     case "change_pickup_time":
     case "change_delivery_time": {

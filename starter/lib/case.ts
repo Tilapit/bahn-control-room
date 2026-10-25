@@ -137,6 +137,11 @@ export type CaseFile = {
     lastPosition: { at: string; receivedAt: string | null; kmToGo: number | null; eta: string | null; quality: string; source: SourceRef } | null
     /** Every GPS fix, newest first: the dataset's and live ones (the demo's driver app). */
     positions: { at: string; receivedAt: string | null; kmToGo: number | null; eta: string | null; quality: string; source: SourceRef }[]
+    /**
+     * The gig offered to another driver through an approved card, while the driver it would replace still holds it:
+     * nobody has accepted the offer yet. A backup who accepts holds the gig in the records, and this goes back to null.
+     */
+    handover: { to: string; at: string | null } | null
     /** Planning range from the pickup city to the ferry terminal. Not live, not a position. */
     terminalDrive: { from: string; terminal: string; city: string; km: number | null; minutesLow: number | null; minutesHigh: number | null; source: SourceRef } | null
   }
@@ -365,6 +370,11 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
   const stageLabel = gigCancelled && stage === "finding_driver" ? "Driver cancelled; needs a new driver" : stage === "delivered" && tradeInOpen ? "Delivered; trade-in still moving" : STAGE_LABEL[stage]
 
   const driverId = str(primaryAssignment?.details.driver_id)
+  // An offer to another driver is still open while the driver it would replace holds the gig (lib/policies.ts uses it).
+  const openOffers = effects.flatMap((effect) => effect.steps).filter((step) => step.ok && step.offer && (step.offer.replacing ?? null) === (driverId ?? null))
+    .map((step) => ({ to: step.offer!.to, at: step.entryId ? iso(entryById.get(step.entryId)?.occurredAt) || null : null }))
+    .sort((a, b) => String(a.at).localeCompare(String(b.at)))
+  const handover = openOffers.pop() ?? null
   const driverState = gigCancelled ? "cancelled" : primaryAssignment?.details.status === "IN_PROGRESS" ? "driving" : primaryAssignment?.details.status === "COMPLETED" ? "finished" : "booked"
   const otherDrivers = assignments
     .filter((row) => row !== primaryAssignment && row.details.driver_id)
@@ -652,7 +662,7 @@ function compile({ bundle, messageThreads, entries, factRows, openCards, inboxEn
         state: offer.details.status === "PUBLISHED" ? "offered to drivers, not taken yet" : offer.details.status === "ACCEPTED" ? "taken by a driver" : label(str(offer.details.status)).toLowerCase(),
         fee: money(num(offer.details.fee_cents), str(offer.details.currency)) || null, at: str(offer.details.accepted_at) ?? str(offer.details.published_at),
       } : null,
-      bookings, quotes, lastPosition, positions, terminalDrive,
+      bookings, quotes, lastPosition, positions, terminalDrive, handover,
     },
     timeline: [...entries].reverse().slice(0, 40).map(toItem),
   }

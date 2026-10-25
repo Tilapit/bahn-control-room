@@ -293,7 +293,11 @@ export const decisions = pgTable("decisions", {
 /** What the Executor did for one approved option, step by step. */
 export type ExecutedEffect = {
   ok: boolean
-  steps: { action: string; ok: boolean; summary: string; entryId: string | null; error?: string; orderId?: string }[]
+  steps: {
+    action: string; ok: boolean; summary: string; entryId: string | null; error?: string; orderId?: string
+    /** An offer of the gig to another driver: who it went to, and the driver who held the gig when it went out. */
+    offer?: { to: string; replacing: string | null }
+  }[]
   /** Simulated bookings made, shown on the order with the dataset's reservations. */
   bookings: { kind: string; summary: string; departureAt: string | null; cutoffAt: string | null; zone: string | null; entryId: string; reference: string; priceCents: number | null; orderId?: string }[]
   /** Pickup or delivery windows that were changed. */
