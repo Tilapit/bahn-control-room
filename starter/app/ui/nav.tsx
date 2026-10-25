@@ -35,7 +35,7 @@ export function Nav({ nowTeams, orders, working }: { nowTeams: (Team & { safety?
     {link("/", "For you", "inbox", match.forYou(path), openCards > 0 ? <span className="badge num" aria-label={`${openCards} need you now`} title={`${openCards} need you now: ${viewLabel(view)}`}>{openCards}</span> : null)}
     {link("/orders", "Orders", "list", match.orders(path), <span className="count num">{orders.toLocaleString("en-GB")}</span>)}
     <p className="rail-label">Behind the scenes</p>
-    {link("/agents", "Agents", "bot", match.agents(path), <span className="count">{working ? `${working} working` : "none working"}</span>)}
+    {link("/agents", "Agents", "bot", match.agents(path), <span className="count">{working ? `${working} watching` : "none at work"}</span>)}
     {link("/sources", "Sources", "database", match.sources(path))}
     {link("/settings", "Settings", "settings", match.settings(path))}
   </nav>

@@ -2356,3 +2356,39 @@ and mine after the merge with the new theme and the seeded claims.
 **Not done.** The chip counts count every market; only the rows follow the view. Paging lives in the browser, so going
 back from an order lands on page 1. Urgent rows get no colour tint as in the mock: red is for safety only.
 "Delivered today" is 0 in the recorded morning; older deliveries count under Quiet.
+
+### 4. Agents, after the mock
+
+Built by a fork in its worktree, then merged; two fixes by me.
+
+**Built.** `/agents` is one page with sections, from the new `agentsOverview()` in `lib/agents-view.ts`, every number
+from the runs table:
+- the summary line: "Today agents worked on 59 orders and checked 941 more with simple rules. 24 suggestions are
+  waiting for you."
+- chips that jump to the sections;
+- the banner "24 suggestions are waiting for your decision" with Open For you;
+- **Watching · 10**: a dot per agent, the agent, order, car, the Narrator's sentence, "Started 12:50 · next check
+  13:22" in Helsinki time, and the model, tokens and cost, linking to the trace;
+- **Done today**: 3 shown, then "Show N more"; the 55 messages the Classifier read are one counted line;
+- **Quiet checks · 968**: three tiles from what the quiet checks recorded as each order's stage (232 on the road, 441
+  before pickup, 295 delivered or cancelled; they add up to 968), then "Model use today: 89 runs, 3.7M tokens, $4.80.
+  Quiet checks cost nothing.";
+- **Who the agents are**: Classifier, Investigator, Driver support and Monitor, with the Verifier and the Narrator in
+  one line.
+
+The old Done and Quiet lists stay reachable, and counts follow the team view.
+
+**Checked.** `npm run typecheck`; `npm test` 71/71 and all 11 eval groups, after the merge and again after my fixes.
+Screenshots light and dark (fork) and after the merge with the theme (me).
+
+**Wrong first, and changed.**
+- The fork rendered the summary line before the per-row teams it counts existed.
+- It gave "Back to top" the same class as a row's top line.
+- After the merge the page's view switcher sat under the global search. The search now has its own row on every page
+  but For you, where it sits in the header as in the mock.
+- The rail first said "none working" while the page showed Watching · 10, and then "682 watching", because quiet
+  checks also have a next check. It now counts what the page calls watching: Investigator and Driver support runs
+  that are running, waiting, or due a next check. 10.
+
+**Not done.** The quiet tiles count every quiet check in the recording, not only today's; in the recorded morning
+they are the same 968 runs.

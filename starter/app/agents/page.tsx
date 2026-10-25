@@ -2,14 +2,17 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { connection } from "next/server"
 import { hasApiKey } from "@/lib/agents/llm"
-import { agentsView, dollars, type RunFilter, tokenWords } from "@/lib/agents-view"
+import { agentsOverview, agentsView, dollars, type OverviewRow, type RunFilter, tokenWords } from "@/lib/agents-view"
 import { now as clockNow } from "@/lib/clock"
 import { holdings } from "@/lib/queue"
 import { orderRoutes, teamOf } from "@/lib/team-data"
 import type { Team } from "@/lib/teams"
+import { clock } from "@/lib/time"
 import { Icon } from "../ui/icons"
 import { AnyInView, CountInView, CrossBorder, NoneInView, TeamGroup, TeamList, type TeamRow, ViewSwitcher } from "../ui/view-switcher"
 import { When } from "../ui/when"
+import { CountWords, ShowMore } from "./show-more"
+import "./agents.css"
 
 export const metadata: Metadata = { title: "Agents" }
 
@@ -95,10 +98,163 @@ function RunGroups({ filter, rows, now }: { filter: RunFilter; rows: Row[]; now:
   return <TeamList rows={teamRows(rows, now)} hint="Quiet checks look over orders with nothing open, so they sit at no desk: pick All desks to see them." />
 }
 
+// ---------------------------------------------------------------------------
+// The overview (design/agents.jpg): waiting, watching, done today, quiet checks, who the agents are
+// ---------------------------------------------------------------------------
+
+type Overview = Awaited<ReturnType<typeof agentsOverview>>
+type ORow = OverviewRow & { team: Team }
+
+/** The colour of an agent's dot: one muted colour per agent, the same in every list. */
+function agentKey(agent: string): string {
+  return agent === "Classifier" ? "classifier" : agent === "Investigator" ? "investigator" : agent === "Driver support" ? "driver" : agent === "Monitor" ? "monitor" : "other"
+}
+
+/** "10:12" today, "Tue 10:20" on another day, in Helsinki time like the rest of the page. */
+function time(iso: string, now: string): string {
+  const day = (value: string) => new Intl.DateTimeFormat("en-GB", { timeZone: DESK_ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value))
+  if (day(iso) === day(now)) return clock(iso, DESK_ZONE)
+  return `${new Intl.DateTimeFormat("en-GB", { timeZone: DESK_ZONE, weekday: "short" }).format(new Date(iso))} ${clock(iso, DESK_ZONE)}`
+}
+
+function modelWords(row: ORow): string {
+  return row.model === "Code" ? "code, no model" : `${row.model} · ${tokenWords(row.tokens)} · ${dollars(row.costUsd)}`
+}
+
+/** A run the agents are watching: who, which order and car, the one sentence, and when it looks again. */
+function WatchRow({ row, now }: { row: ORow; now: string }) {
+  return <Link className="run-row ag-row" href={`/agents/${row.id}`}>
+    <span className={`ag-dot ${agentKey(row.agent)}`} aria-hidden="true" />
+    <span className="ag-main">
+      <span className="ag-top">
+        <b className="ag-agent">{row.agent}</b>
+        {row.reference && <span className="ag-ref num">{row.reference}</span>}
+        {row.car && <span className="ag-car">{row.car}</span>}
+        {row.safety && <span className="tag safety">Safety</span>}
+        <CrossBorder team={row.team} />
+        {row.replay && <span className="replay-tag">Replay</span>}
+      </span>
+      <span className="ag-sentence">{row.sentence}</span>
+      <span className="ag-meta num">
+        {row.statusLabel !== "Watching" && <span className={`ag-state ${row.status}`}>{row.statusLabel} · </span>}
+        Started {time(row.startedAt, now)}{row.nextCheckAt ? ` · next check ${time(row.nextCheckAt, now)}` : ""} · {modelWords(row)}
+      </span>
+    </span>
+    <Icon name="chevron" size={16} className="ag-chevron" />
+  </Link>
+}
+
+/** A run finished today without anyone: what it did, the order, and when it finished. */
+function DoneRow({ row, now }: { row: ORow; now: string }) {
+  return <Link className="run-row ag-done" href={`/agents/${row.id}`}>
+    <Icon name="check" size={14} className="ag-check" />
+    <span className="ag-done-text">{row.sentence}{row.reference && <span className="ag-ref num"> · {row.reference}</span>}</span>
+    <span className="ag-time num">{time(row.finishedAt ?? row.startedAt, now)}</span>
+  </Link>
+}
+
+const WHO = [
+  { key: "classifier", name: "Classifier", model: "Haiku, the small model", text: "Reads every message once and notes what it says about which order: facts and agreements, marked as said, not confirmed." },
+  { key: "investigator", name: "Investigator", model: "Sonnet; Opus for safety, costs over €500 or records that disagree", text: "Looks into an order with a problem, asks drivers and sites, looks up options, and brings you a proposal when something needs a yes." },
+  { key: "driver", name: "Driver support", model: "Sonnet", text: "Answers drivers' routine questions in their language and hands the hard ones to the Investigator." },
+  { key: "monitor", name: "Monitor", model: "Rules in code, no model", text: "Watches positions, bookings, deadlines and disruption notices, and starts an Investigator before anyone reports a problem." },
+]
+
+async function OverviewPage({ view }: { view: Overview }) {
+  const held = await holdings(new Date(view.now))
+  const all = [...view.waiting, ...view.watching, ...view.doneToday]
+  const routes = await orderRoutes([...new Set(all.map((row) => row.orderId).filter((id): id is string => !!id))])
+  const files = new Map(held.files.map((file) => [file.order.id, file]))
+  const withTeam = (row: OverviewRow): ORow => ({
+    ...row, team: teamOf(row.orderId ? routes.get(row.orderId) : undefined, row.orderId ? held.cardOf.get(row.orderId) ?? null : null, row.orderId ? files.get(row.orderId) ?? null : null),
+  })
+  const waiting = view.waiting.map(withTeam)
+  const watching = view.watching.map(withTeam)
+  const done = view.doneToday.map(withTeam)
+  const waitingTeams = waiting.map((row) => row.team)
+  const watchRows: TeamRow[] = watching.map((row) => ({ key: row.id, team: row.team, node: <WatchRow row={row} now={view.now} /> }))
+  const doneRows: TeamRow[] = done.map((row) => ({ key: row.id, team: row.team, node: <DoneRow row={row} now={view.now} /> }))
+  return <>
+    <div className="ag-head">
+      <div>
+        <h1>Agents</h1>
+        <p className="page-sub">Today agents worked on <b>{view.today.orders} orders</b> and checked <b>{view.today.quietOrders.toLocaleString("en-GB")} more</b> with
+          simple rules. <b><CountWords teams={waitingTeams} one="suggestion is" many="suggestions are" /></b> waiting for you.</p>
+      </div>
+      <ViewSwitcher />
+    </div>
+    <nav className="ag-chips" aria-label="Sections">
+      <a className="ag-chip" href="#waiting">Waiting for you · <CountInView teams={waitingTeams} /></a>
+      <a className="ag-chip" href="#watching">Watching · <CountInView teams={watching.map((row) => row.team)} /></a>
+      <a className="ag-chip" href="#done">Done today · <CountInView teams={done.map((row) => row.team)} /></a>
+      <a className="ag-chip" href="#quiet">Quiet checks · {view.quiet.runs.toLocaleString("en-GB")}</a>
+      <a className="ag-chip" href="#who">Who the agents are</a>
+    </nav>
+
+    <AnyInView teams={waitingTeams}><section id="waiting" className="ag-banner" aria-label="Waiting for you">
+      <span className="ag-badge num"><CountInView teams={waitingTeams} /></span>
+      <span className="ag-banner-text">
+        <b><CountWords teams={waitingTeams} one="suggestion is" many="suggestions are" /> waiting for your decision</b>
+        <span>Each one is in For you, with what the agent found and what it wants to do.</span>
+      </span>
+      <Link className="btn primary" href="/">Open For you</Link>
+    </section></AnyInView>
+
+    <section id="watching" className="ag-section" aria-label="Watching">
+      <h2>Watching · <CountInView teams={watching.map((row) => row.team)} /></h2>
+      <p className="ag-sub">Agents are handling these without you and will look again at the next check. Open one to see every step.</p>
+      <TeamList rows={watchRows} listClassName="ag-list" hint="Agents may be watching orders in other markets or at other desks." />
+    </section>
+
+    <section id="done" className="ag-section" aria-label="Done today">
+      <h2>Done today · <CountInView teams={done.map((row) => row.team)} /></h2>
+      <p className="ag-sub">Finished without anyone needing to step in.{view.classifierToday ? ` The Classifier also read ${view.classifierToday} messages today, one run each.` : ""} <Link href="/agents?show=done">Every finished run</Link></p>
+      <ShowMore rows={doneRows} initial={3} className="ag-list ag-done-list" empty="Nothing finished today in this view." />
+    </section>
+
+    <section id="quiet" className="ag-section" aria-label="Quiet checks">
+      <h2>Quiet checks · {view.quiet.runs.toLocaleString("en-GB")}</h2>
+      <p className="ag-sub">Orders with nothing open, checked by code without a language model: alerts, tasks, incidents, handover claims, the support inbox and conversations. Nothing found.</p>
+      <div className="ag-tiles">
+        {view.quiet.groups.map((group) => <div className="ag-tile" key={group.key}>
+          <b className="num">{group.n.toLocaleString("en-GB")}</b>
+          <span>{group.label}</span>
+        </div>)}
+      </div>
+      <p className="ag-model num">Model use today: {view.today.runs} runs, {tokenWords(view.today.tokens)}, {dollars(view.today.costUsd)}. Quiet checks cost nothing. <Link href="/agents?show=quiet">Each quiet check</Link></p>
+    </section>
+
+    <section id="who" className="ag-section" aria-label="Who the agents are">
+      <h2>Who the agents are</h2>
+      <div className="ag-who">
+        {WHO.map((agent) => <div className="ag-who-card" key={agent.key}>
+          <b><span className={`ag-dot ${agent.key}`} aria-hidden="true" />{agent.name}</b>
+          <p>{agent.text}</p>
+          <span className="ag-who-model">{agent.model}</span>
+        </div>)}
+      </div>
+      <p className="ag-sub ag-more-agents">Two more work behind them: the Verifier checks every fact on a proposal against its source before you see it, and the Narrator writes the one line you read for each run here.</p>
+    </section>
+    <p className="ag-totop"><a href="#top">Back to top ↑</a></p>
+  </>
+}
+
 export default async function Agents({ searchParams }: Props) {
   await connection()
   const { show } = await searchParams
-  const filter: RunFilter = show === "done" || show === "quiet" ? show : "active"
+  if (show !== "done" && show !== "quiet") {
+    const view = await agentsOverview()
+    return <main className="content narrow ag-page" id="top">
+      {view.total === 0 ? <>
+        <div className="ag-head"><div><h1>Agents</h1><p className="page-sub">What the agents are doing right now.</p></div><ViewSwitcher /></div>
+        <div className="empty">
+          <h2>No agent has run yet.</h2>
+          <p>{hasApiKey() ? "Run the backfill (npm run agents:backfill) or play a scenario on the Demo page." : "Load the recorded runs with npm run fixtures:load, or add an API key to run agents live."}</p>
+        </div>
+      </> : <OverviewPage view={view} />}
+    </main>
+  }
+  const filter: RunFilter = show
   const [{ now, rows: runRows, counts, today, more }, held] = await Promise.all([agentsView(filter), clockNow().then(holdings)])
   // Each run's order: its market and route, and the desk of its open card (none when nothing is open on it).
   const routes = await orderRoutes([...new Set(runRows.map((row) => row.orderId).filter((id): id is string => !!id))])
@@ -110,12 +266,11 @@ export default async function Agents({ searchParams }: Props) {
   return <main className="content narrow">
     <div className="page-head">
       <div>
-        <h1>Agents</h1>
+        <p className="ag-back"><Link href="/agents">← Agents</Link></p>
+        <h1>{filter === "done" ? "Every finished run" : "Quiet checks, one sentence each"}</h1>
         <p className="page-sub">
           {nothingYet ? "What the agents are doing right now." : <>Today: <b>{today.runs} runs used a model</b>, {dollars(today.costUsd)} in model cost ({tokenWords(today.tokens)}); {today.codeRuns} more ran as code without a model{today.codeRuns > today.quietRuns ? ` (${today.quietRuns} quiet checks, ${today.codeRuns - today.quietRuns} by the Monitor's rules)` : ""}. Run times in Helsinki time.</>}
         </p>
-        <p className="page-explain">The Classifier reads every message, the Investigator looks into an order with a problem, Driver support answers drivers,
-          the Monitor&apos;s rules watch the feeds and the cars, and quiet checks look over orders with nothing open. Open a row to see every step.</p>
         <ViewSwitcher />
       </div>
     </div>
@@ -132,7 +287,6 @@ export default async function Agents({ searchParams }: Props) {
       {rows.length === 0 ? <div className="empty"><h2>{EMPTY[filter].title}</h2><p>{EMPTY[filter].text}</p></div>
         : <RunGroups filter={filter} rows={rows} now={now} />}
       {more > 0 && <p className="queue-end">And {more.toLocaleString("en-GB")} more quiet checks, older; each order is on the Orders page.</p>}
-      {rows.length > 0 && filter === "active" && <p className="queue-end">Finished runs are under Done; the checks code makes on quiet orders are under Quiet checks.</p>}
     </>}
   </main>
 }

@@ -1,7 +1,7 @@
 // The Agents view (SPEC 8.2): every run, what it is doing in one sentence, when it
 // looks again, and what it cost. Plus one run's steps in plain words for the trace page.
 
-import { and, asc, desc, eq, inArray } from "drizzle-orm"
+import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm"
 import { now as clockNow } from "./clock"
 import { db } from "./db"
 import { MODELS, modelName } from "./models"
@@ -116,6 +116,85 @@ export async function agentsView(filter: RunFilter) {
       runs: today.length, codeRuns: todayAll.length - today.length, quietRuns: todayAll.filter(quiet).length,
       tokens: today.reduce((sum, run) => sum + tokensOf(run), 0), costUsd: today.reduce((sum, run) => sum + run.costUsd, 0),
     },
+  }
+}
+
+/** What a quiet check found, by the order's stage: the three tiles on the Agents page. */
+const QUIET_GROUPS: { key: string; label: string; stages: string[] }[] = [
+  { key: "road", label: "On the road, nothing open: last position and delivery promise checked", stages: ["moving", "at_transfer"] },
+  { key: "before", label: "Before pickup, nothing open: pickup time and driver checked", stages: ["intake", "ready", "finding_driver", "driver_booked"] },
+  { key: "finished", label: "Delivered or cancelled: nothing left to do", stages: ["delivered", "cancelled"] },
+]
+
+export type OverviewRow = RunRow & { finishedAt: string | null }
+
+/**
+ * The Agents page in one read: what waits for a person, what agents watch, what they finished today, what the quiet
+ * checks found, and the day's model use. Every number comes from the runs table.
+ */
+export async function agentsOverview() {
+  const at = await clockNow()
+  const [runs, orderRows, openCards, quietStages] = await Promise.all([
+    db.select().from(agentRuns).orderBy(desc(agentRuns.startedAt)),
+    db.select({ id: orders.id, reference: orders.reference, make: vehicles.make, model: vehicles.model })
+      .from(orders).leftJoin(orderItems, and(eq(orderItems.orderId, orders.id), eq(orderItems.role, "PRIMARY"))).leftJoin(vehicles, eq(vehicles.id, orderItems.vehicleId)),
+    db.select({ runId: cards.runId, severity: cards.severity }).from(cards).where(eq(cards.status, "open")),
+    db.select({ stage: sql<string>`${agentSteps.output}->>'stage'`, n: count() }).from(agentSteps).where(eq(agentSteps.tool, "quiet_check")).groupBy(sql`1`),
+  ])
+  const safetyRuns = new Set(openCards.filter((card) => card.severity === "safety").map((card) => card.runId))
+  const byOrder = new Map(orderRows.map((row) => [row.id, row]))
+  // A working run has no narration yet: show its latest step, so the row moves while it works.
+  const working = runs.filter((run) => run.status === "running").map((run) => run.id)
+  const latest = new Map<string, string>()
+  if (working.length) {
+    const steps = await db.select({ runId: agentSteps.runId, idx: agentSteps.idx, summary: agentSteps.summary, tool: agentSteps.tool })
+      .from(agentSteps).where(and(inArray(agentSteps.runId, working), inArray(agentSteps.type, ["tool_result", "message"]))).orderBy(asc(agentSteps.idx))
+    for (const step of steps) if (step.summary && !CARD_TOOLS.has(step.tool ?? "")) latest.set(step.runId, step.summary)
+  }
+  const quiet = (run: typeof runs[number]) => run.agent === QUIET_AGENT
+  const watchingRun = (run: typeof runs[number]) => !quiet(run) && run.status === "done" && !!run.nextCheckAt && run.nextCheckAt > at
+  const active = (run: typeof runs[number]) => !quiet(run) && (ACTIVE.includes(run.status) || watchingRun(run))
+  const group = (run: typeof runs[number]) => watchingRun(run) ? ACTIVE.length : ACTIVE.indexOf(run.status)
+  const today = (run: typeof runs[number]) => dayKey(run.startedAt) === dayKey(at)
+  const row = (run: typeof runs[number]): OverviewRow => {
+    const order = run.orderId ? byOrder.get(run.orderId) : null
+    return {
+      id: run.id, orderId: run.orderId, agent: run.agent, status: run.status,
+      statusLabel: quiet(run) ? "Checked" : watchingRun(run) ? "Watching" : RUN_STATUS[run.status] ?? run.status,
+      sentence: run.status === "running" ? `${latest.get(run.id) ?? "Reading the order's records"}…`
+        : run.narration ?? (run.status === "waiting_person" && run.outcomeSummary ? `Wrote a proposal for a person: ${run.outcomeSummary.replace(/\.?$/, ".")}` : run.outcomeSummary ?? run.trigger),
+      reference: order?.reference ?? null, car: order?.make ? `${order.make} ${order.model}` : null,
+      startedAt: run.startedAt.toISOString(), nextCheckAt: run.nextCheckAt?.toISOString() ?? null, finishedAt: run.finishedAt?.toISOString() ?? null,
+      model: modelLine(run), tokens: tokensOf(run), costUsd: run.costUsd, replay: run.replay, safety: safetyRuns.has(run.id),
+    }
+  }
+  // Working first, then waiting on someone, a safety stop before the rest; newest first inside each.
+  const sorted = (list: typeof runs) => [...list].sort((a, b) => group(a) - group(b) || Number(safetyRuns.has(b.id)) - Number(safetyRuns.has(a.id))
+    || b.startedAt.getTime() - a.startedAt.getTime() || (a.orderId ?? "").localeCompare(b.orderId ?? ""))
+  // Waiting for a person: each is a proposal on For you, so the page shows them as one banner, not as rows.
+  const waiting = runs.filter((run) => active(run) && run.status === "waiting_person")
+  const watching = sorted(runs.filter((run) => active(run) && run.status !== "waiting_person"))
+  // Done today: finished without anyone, newest first. The Classifier's message reading is many similar lines: counted, not listed.
+  const finished = runs.filter((run) => !quiet(run) && !active(run) && today(run))
+  const doneToday = finished.filter((run) => run.agent !== "Classifier")
+  const todayRuns = runs.filter(today)
+  const modelRuns = todayRuns.filter((run) => run.model)
+  const workedOn = new Set(todayRuns.filter((run) => !quiet(run)).map((run) => run.orderId).filter((id): id is string => !!id))
+  const quietOrders = new Set(todayRuns.filter(quiet).map((run) => run.orderId).filter((id): id is string => !!id && !workedOn.has(id)))
+  const stageCount = new Map(quietStages.map((item) => [item.stage, Number(item.n)]))
+  return {
+    now: at.toISOString(),
+    waiting: waiting.map(row), watching: watching.map(row), doneToday: doneToday.map(row),
+    classifierToday: finished.length - doneToday.length,
+    quiet: {
+      runs: runs.filter(quiet).length,
+      groups: QUIET_GROUPS.map((item) => ({ key: item.key, label: item.label, n: item.stages.reduce((sum, stage) => sum + (stageCount.get(stage) ?? 0), 0) })),
+    },
+    today: {
+      orders: workedOn.size, quietOrders: quietOrders.size,
+      runs: modelRuns.length, tokens: modelRuns.reduce((sum, run) => sum + tokensOf(run), 0), costUsd: modelRuns.reduce((sum, run) => sum + run.costUsd, 0),
+    },
+    total: runs.length,
   }
 }
 

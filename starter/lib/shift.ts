@@ -2,7 +2,7 @@
 // colleagues are fictional, like every name here, and their claims are seeded with the recorded morning so For you
 // can show what a team looks like: one colleague working on an order, one whose claim has gone quiet.
 
-import { and, count, desc, eq, gte, inArray, isNull, notInArray, sql } from "drizzle-orm"
+import { and, count, desc, eq, gt, gte, inArray, isNull, notInArray, or, sql } from "drizzle-orm"
 import { randomUUID } from "node:crypto"
 import { writeEntry } from "./agents/entries"
 import { now as clockNow } from "./clock"
@@ -65,7 +65,9 @@ export async function railCounts(): Promise<RailCounts> {
   const runsWithCard = db.select({ id: cards.runId }).from(cards).where(sql`${cards.runId} is not null`)
   const [[orderRow], [workingRow], [handledRow], open] = await Promise.all([
     db.select({ n: count() }).from(orders),
-    db.select({ n: count() }).from(agentRuns).where(inArray(agentRuns.status, ["running", "waiting_driver", "waiting_site"])),
+    // At work: running or waiting for a driver or site, or done for now with a next check still to come (Agents' "Watching").
+    // Only agents that work a case, as Agents' "Watching" counts them: a quiet check's next look is not work.
+    db.select({ n: count() }).from(agentRuns).where(and(inArray(agentRuns.agent, ["Investigator", "Driver support"]), or(inArray(agentRuns.status, ["running", "waiting_driver", "waiting_site"]), and(eq(agentRuns.status, "done"), gt(agentRuns.nextCheckAt, at))))),
     db.select({ n: count() }).from(agentRuns).where(and(gte(agentRuns.startedAt, midnight), eq(agentRuns.status, "done"), notInArray(agentRuns.id, runsWithCard))),
     db.select({ takenBy: takeovers.takenBy, n: count() }).from(takeovers).where(isNull(takeovers.handedBackAt)).groupBy(takeovers.takenBy).orderBy(desc(count())),
   ])

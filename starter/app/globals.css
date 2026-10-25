@@ -1059,3 +1059,8 @@ html, body, .app, .main { background: var(--bg); }
 .cd-facts .facts-compact li .fact-text { order: 1; }
 @media (max-width: 1100px) { .cd-crd { grid-template-columns: repeat(2, minmax(0, 1fr)); } .journey ol { grid-auto-flow: row; } .journey li::before { display: none; } }
 @media (max-width: 1000px) { .fy-head { padding-right: 0; } .inbox-detail { padding: 16px; } }
+
+/* The search sits at the top right of For you, as in the mock; on every other page it has its own row, so it never
+   covers a page's own controls. */
+.main:not(:has(.inbox-page)) .topbar { position: static; width: auto; display: flex; justify-content: flex-end; padding: 20px 32px 0; }
+.main:not(:has(.inbox-page)) .topbar .search { width: 300px; flex: none; }
