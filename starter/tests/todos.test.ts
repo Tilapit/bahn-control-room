@@ -10,7 +10,8 @@ import { eq, sql } from "drizzle-orm"
 import { closeDb, db } from "@/lib/db"
 import { cards, decisions, orders, timelineEntries, todoLogs } from "@/lib/schema"
 import type { CardOption } from "@/lib/schema"
-import { callStep, isOpenTodo, logTodo, noteError, openTodos, TodoError } from "@/lib/todos"
+import { simulatedCall } from "@/lib/sim-call"
+import { callStep, callTodo, isOpenTodo, logTodo, noteError, openTodos, TodoError } from "@/lib/todos"
 
 const call: CardOption = {
   id: "opt-1", label: "Approve: call the dealer about recovery", action: "call_customer", params: { to: "Marvellin Motorhandel (service contact)", text: "Ask who collects the car." }, kind: "approve",
@@ -32,6 +33,11 @@ describe("to-dos, the rule", () => {
     assert.equal(isOpenTodo({ ...done, choice: "opt-1", finalizedAt: null }, [call], false), false, "still in the undo window")
     assert.equal(isOpenTodo({ ...done, choice: "opt-1", undoneAt: new Date() }, [call], false), false, "undone")
     assert.equal(isOpenTodo({ ...done, choice: "opt-1", executedEffect: { ok: false } }, [call], false), false, "not carried out")
+  })
+  it("the demo has a simulated call only where it wrote one (the Bentley's owner, CD-420322)", () => {
+    const script = simulatedCall("CD-420322")
+    assert.ok(script && script.lines.some((line) => line.who === "them"))
+    assert.equal(simulatedCall("CD-420004"), null)
   })
   it("a log needs words: empty, blank or a word or two is refused", () => {
     for (const note of ["", "   ", "ok", "done.", null, undefined]) assert.ok(noteError(note), `refused: ${JSON.stringify(note)}`)
@@ -74,5 +80,10 @@ describe("to-dos, on the real path", async () => {
     assert.equal((await db.select().from(todoLogs).where(eq(todoLogs.decisionId, decisionId))).length, 0, "no log row")
     assert.equal((await db.select().from(timelineEntries).where(eq(timelineEntries.id, `todo:${decisionId}`))).length, 0, "no timeline entry")
     assert.ok((await openTodos()).some((item) => item.id === decisionId), "still a to-do")
+  })
+
+  it("a simulated call is refused on an order without a script, and nothing is written", { skip: !reachable && "no database" }, async () => {
+    await assert.rejects(callTodo(decisionId, 5), (error: unknown) => error instanceof TodoError && /no simulated call/.test(error.message))
+    assert.equal((await db.select().from(todoLogs).where(eq(todoLogs.decisionId, decisionId))).length, 0)
   })
 })

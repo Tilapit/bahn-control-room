@@ -2420,3 +2420,30 @@ the merge with the theme (me).
 uncoloured "1 h 7 min ago"; it is strictly under an hour now.
 
 **Not done.** The People and Agents counts include scale mode's synthetic orders, straight from the timeline.
+
+### 6. A simulated call from a to-do (done before 12:10, so included)
+
+Built by the to-do fork, right after item 2, in its worktree; merged here.
+
+**Built.** On the Bentley's to-do (CD-420322) a "Call Marvellin Motorhandel" button opens a panel labelled
+"Simulated call · fictional". A scripted conversation with the owner's service desk appears one line at a time:
+- the car is at Hollenmark services and must not be restarted;
+- a flatbed comes by 15:30;
+- there is no delivery today, and a new time comes by email before 17:00;
+- the keys go to the recovery driver.
+
+On End call the server takes the words from its own script (the browser sends only how many lines were heard), and
+Haiku summarises them with a new prompt (`lib/agents/prompts/call-summary.md`). The summary run is recorded with its
+tokens. The summary is logged through `logTodo`, so the timeline entry (source Call), the Classifier's agreements and
+the agent continuing work exactly as for a typed log, and the to-do is done. Without an API key the log is what the
+service desk said, word for word.
+
+**Checked.** Two tests: the script exists only for CD-420322, and a call on an order without a script is refused with
+nothing written. `npm test` 73/73 and all 11 eval groups after the merge. The fork ran the summary once live
+($0.0002); it kept every time and place.
+
+**Wrong first, and changed.** The first design sent the transcript from the browser, which would let any text reach
+the timeline as a call. The server now takes the lines from its own script.
+
+**Not done.** One scripted call exists. The full call → log → agent path was not run on the shared database before the
+footage, because it resumes CD-420322's recorded Opus run; the footage clip runs it.

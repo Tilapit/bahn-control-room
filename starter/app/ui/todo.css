@@ -13,3 +13,12 @@
 .todo-hint { font-size: 13px; color: var(--text-3); }
 .todo-error { font-size: 13px; color: var(--text); }
 .todo-done { font-size: 14px; color: var(--text-2); }
+/* The simulated call: labelled, one line at a time. */
+.todo-call { display: grid; gap: 12px; padding: 16px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); }
+.todo-call-head { font-size: 13px; color: var(--text-3); }
+.todo-call-head b { color: var(--text); font-weight: 600; }
+.todo-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 14px; }
+.todo-lines li { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; color: var(--text); }
+.todo-lines li[data-who="you"] { color: var(--text-2); }
+.todo-who { font-size: 12px; font-weight: 600; color: var(--text-3); padding-top: 2px; }
+.todo-typing { color: var(--text-3); }

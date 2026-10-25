@@ -8,9 +8,12 @@ import { getCase } from "./case"
 import { now as clockNow } from "./clock"
 import { db } from "./db"
 import { writeEntry } from "./agents/entries"
-import { hasApiKey } from "./agents/llm"
+import { callJson, hasApiKey, prompt } from "./agents/llm"
+import { addStep, addUsageToRun, createRun, updateRun } from "./agents/runs"
+import { ROLE_MODEL } from "./models"
 import { agentRuns, cards, decisions, todoLogs } from "./schema"
 import type { CardOption, CardStep } from "./schema"
+import { simulatedCall } from "./sim-call"
 import { agentBlockedOn } from "./takeover"
 
 export const CALL_ACTIONS = ["call_customer", "call_contact"] as const
@@ -148,6 +151,41 @@ export async function logTodo(id: string, note: string, actor = "Ops"): Promise<
   const content = `${actor} made the call you proposed (${contact}) and logged what happened, in their words: "${text}".${filed} Read the order again with get_case, then propose or resolve.`
   const next = await continueOnOrder(row.card.orderId, row.card.runId, content)
   return { ok: true, message: `Logged on the order's timeline.${filed} ${next}`, entryId, facts }
+}
+
+/**
+ * End a simulated call (the demo's scripted phone, lib/sim-call.ts, fictional). The transcript is the script's first
+ * `played` lines, taken on the server, never text from the browser. Haiku summarises it, and the summary is logged
+ * through the same path as a typed log: the timeline (source Call), the Classifier's facts, then the agent.
+ */
+export async function callTodo(id: string, played: number, actor = "Ops"): Promise<TodoResult> {
+  const [row] = await db.select({ decision: decisions, card: cards }).from(decisions).innerJoin(cards, eq(cards.id, decisions.cardId)).where(eq(decisions.id, id)).limit(1)
+  if (!row) throw new TodoError("This to-do no longer exists.", 404)
+  const file = await getCase(row.card.orderId)
+  const script = file ? simulatedCall(file.order.reference) : null
+  if (!script) throw new TodoError("There is no simulated call for this order; log what happened instead.")
+  const lines = script.lines.slice(0, Math.max(0, Math.min(script.lines.length, Math.floor(played))))
+  if (!lines.some((line) => line.who === "them")) throw new TodoError("Nobody has answered yet; let the call play before ending it.")
+  const transcript = lines.map((line) => `${line.who === "you" ? actor : script.them}: ${line.text}`).join("\n")
+  // Without a model the log is what the other side said, word for word.
+  let summary = lines.filter((line) => line.who === "them").map((line) => line.text).join(" ")
+  if (hasApiKey()) {
+    try {
+      const at = await clockNow()
+      const runId = await createRun({ orderId: row.card.orderId, agent: "Classifier", model: ROLE_MODEL.classifier, trigger: `Summarised ${actor}'s simulated call with ${script.them}`, at })
+      const result = await callJson<{ summary: string }>({
+        model: ROLE_MODEL.classifier, system: prompt("call-summary"), user: `CALL (simulated) between ${actor} at Bahn and ${script.them}\n${transcript}`,
+        schema: { type: "object", additionalProperties: false, required: ["summary"], properties: { summary: { type: "string" } } }, effort: "low",
+      })
+      await addUsageToRun(runId, result.model, result.usage)
+      await addStep(runId, 0, { at, type: "tool_result", tool: "summarise_call", input: { transcript }, output: result.value, summary: `Summarised the simulated call with ${script.them}` })
+      await updateRun(runId, { status: "done", finishedAt: await clockNow(), outcomeSummary: `Summarised the simulated call with ${script.them}` })
+      if (result.value.summary.trim()) summary = result.value.summary.trim()
+    } catch (error) {
+      console.error("call summary", error)
+    }
+  }
+  return logTodo(id, `Simulated call with ${script.them}. ${summary}`, actor)
 }
 
 /** The agent picks the order up again with the note: its waiting run if there is one, else a new look when something is still open. */
