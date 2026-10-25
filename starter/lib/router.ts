@@ -14,6 +14,25 @@ import { isSafety } from "./urgency"
 
 export type RouteDecision = { action: "resumed" | "investigator" | "driver_support" | "nothing"; runId?: string; reason: string }
 
+export type RouteInput = {
+  /** Who wrote the message: driver, site_contact, customer, operator… */
+  authorType: string | null
+  classification: Pick<Classification, "urgency" | "needs"> | null
+  /** The order already has a safety signal (a red warning light, a safety stop). */
+  orderSafety: boolean
+  /** An agent run is waiting for an answer from exactly this person on this order. */
+  waitingRun: boolean
+}
+
+/** Where a classified message goes. Code, in this order: a waiting run, safety or risk, a driver's routine question, nothing. */
+export function routeFor(input: RouteInput): RouteDecision["action"] {
+  const fromDriver = input.authorType === "driver"
+  if ((fromDriver || input.authorType === "site_contact") && input.waitingRun) return "resumed"
+  if (input.classification?.urgency === "safety" || (fromDriver && input.orderSafety) || input.classification?.needs === "investigator") return "investigator"
+  if (fromDriver && input.classification?.needs === "driver_support") return "driver_support"
+  return "nothing"
+}
+
 export async function route(entryId: string, classification: Classification | null): Promise<RouteDecision> {
   const [entry] = await db.select().from(timelineEntries).where(eq(timelineEntries.id, entryId)).limit(1)
   if (!entry?.orderId) return { action: "nothing", reason: "The message is not linked to an order." }
@@ -23,26 +42,26 @@ export async function route(entryId: string, classification: Classification | nu
   const fromDriver = entry.authorType === "driver"
   const fromSite = entry.authorType === "site_contact"
 
+  // A run may be waiting for exactly this person: on this order, or covering it with others (one cause, several
+  // orders) and waiting on this order's driver.
+  const [waiting] = fromDriver || fromSite ? await db.select().from(agentRuns)
+    .where(and(
+      or(eq(agentRuns.orderId, entry.orderId), sql`${agentRuns.state}->'pending' @> ${JSON.stringify([{ orderId: entry.orderId }])}::jsonb`),
+      eq(agentRuns.status, fromDriver ? "waiting_driver" : "waiting_site"),
+    ))
+    .orderBy(desc(agentRuns.startedAt)).limit(1) : []
+  const action = routeFor({ authorType: entry.authorType, classification, orderSafety: isSafety(file), waitingRun: !!waiting })
+
   // 1. A run is waiting for exactly this person: the message is its answer.
-  if (fromDriver || fromSite) {
-    // The run may be on this order, or cover it with others (one cause, several orders) and wait on this order's driver.
-    const [waiting] = await db.select().from(agentRuns)
-      .where(and(
-        or(eq(agentRuns.orderId, entry.orderId), sql`${agentRuns.state}->'pending' @> ${JSON.stringify([{ orderId: entry.orderId }])}::jsonb`),
-        eq(agentRuns.status, fromDriver ? "waiting_driver" : "waiting_site"),
-      ))
-      .orderBy(desc(agentRuns.startedAt)).limit(1)
-    if (waiting) {
-      const outcome = await answerFromMessage(waiting.id, entryId, { autoReply })
-      return { action: "resumed", runId: waiting.id, reason: `The Investigator was waiting for this reply (${outcome?.status ?? "resumed"}).` }
-    }
+  if (action === "resumed" && waiting) {
+    const outcome = await answerFromMessage(waiting.id, entryId, { autoReply })
+    return { action: "resumed", runId: waiting.id, reason: `The Investigator was waiting for this reply (${outcome?.status ?? "resumed"}).` }
   }
 
   const text = entry.body ?? entry.summary
   const who = entry.authorLabel ?? "Someone"
-  const safety = classification?.urgency === "safety" || (fromDriver && isSafety(file))
   // 2. Safety, risk or a change: the Investigator. Code picks Opus for safety inside startInvestigation.
-  if (safety || classification?.needs === "investigator") {
+  if (action === "investigator") {
     await supersedeWaitingRuns(entry.orderId)
     const outcome = await startInvestigation(file.order.reference, {
       trigger: `New message from ${who} (${entry.source === "driver_chat" ? "driver chat" : entry.source}): “${text}”. Classifier: ${classification?.reason ?? "safety signal on this order"}`,
@@ -51,7 +70,7 @@ export async function route(entryId: string, classification: Classification | nu
     return { action: "investigator", runId: outcome.runId, reason: classification?.reason ?? "Safety signal on this order." }
   }
   // 3. A driver's routine question: Driver support answers, or hands over.
-  if (fromDriver && classification?.needs === "driver_support") {
+  if (action === "driver_support") {
     const support = await runDriverSupport(file.order.reference, entryId, text)
     if (support.status === "handed_off" && support.handOff) {
       await supersedeWaitingRuns(entry.orderId)

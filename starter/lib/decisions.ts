@@ -87,12 +87,22 @@ export async function decide(cardId: string, optionId: string, replyText: string
   }
 }
 
+type Window = { executeAfter: Date | null; finalizedAt: Date | null; undoneAt: Date | null }
+
+/** Inside the undo window: nobody undid it, it was not carried out, and the 8 seconds have not passed (real time). */
+export function canUndo(decision: Window, nowMs: number): boolean {
+  return !decision.undoneAt && !decision.finalizedAt && !!decision.executeAfter && decision.executeAfter.getTime() >= nowMs
+}
+
+/** Due to be carried out: the window has closed, nobody undid it, and nobody carried it out yet. */
+export function isDue(decision: Window, nowMs: number): boolean {
+  return !decision.undoneAt && !decision.finalizedAt && (!decision.executeAfter || decision.executeAfter.getTime() <= nowMs)
+}
+
 export async function undo(decisionId: string) {
   const [decision] = await db.select().from(decisions).where(and(eq(decisions.id, decisionId), isNull(decisions.undoneAt))).limit(1)
   if (!decision) throw new DecisionError("Nothing to undo.", 404)
-  if (decision.finalizedAt || (decision.executeAfter && decision.executeAfter.getTime() < Date.now())) {
-    throw new DecisionError("This was already carried out and cannot be undone here.", 409)
-  }
+  if (!canUndo(decision, Date.now())) throw new DecisionError("This was already carried out and cannot be undone here.", 409)
   const at = await clockNow()
   await db.transaction(async (tx) => {
     await tx.update(decisions).set({ undoneAt: at }).where(eq(decisions.id, decisionId))
@@ -105,8 +115,7 @@ export async function undo(decisionId: string) {
 /** Carry out a decision whose undo window has closed. Safe to call more than once: only the first call does the work. */
 export async function finalizeDecision(decisionId: string): Promise<{ done: boolean; ok?: boolean; summary?: string }> {
   const [decision] = await db.select().from(decisions).where(eq(decisions.id, decisionId)).limit(1)
-  if (!decision || decision.undoneAt || decision.finalizedAt) return { done: false }
-  if (decision.executeAfter && decision.executeAfter.getTime() > Date.now()) return { done: false }
+  if (!decision || !isDue(decision, Date.now())) return { done: false }
   // Claim it in one statement, so two callers cannot both execute.
   const claimed = await db.update(decisions).set({ finalizedAt: await clockNow() })
     .where(and(eq(decisions.id, decisionId), isNull(decisions.finalizedAt), isNull(decisions.undoneAt))).returning()

@@ -67,7 +67,7 @@ export type StartOptions = {
   log?: (line: string) => void
 }
 
-function initialModel(safety: boolean): string {
+export function initialModel(safety: boolean): string {
   return safety ? ROLE_MODEL.investigatorSenior : ROLE_MODEL.investigator
 }
 

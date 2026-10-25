@@ -61,27 +61,41 @@ export function describe(action: string): PolicyAction | null {
 }
 
 /**
- * The level that applies now. Unknown actions are never allowed; customer contact is never automatic.
- * An automatic action with a cost limit needs approval again when it costs more, or when its cost is not known.
+ * The level that applies, given the table's row for the action (or none). Unknown actions are never allowed; customer
+ * contact and a promised date are never automatic, whatever the row says. An automatic action with a cost limit needs
+ * approval again when it costs more, or when its cost is not known.
  */
-export async function levelFor(action: string, costEur?: number | null): Promise<Level> {
+export function effectiveLevel(action: string, row: { level: string; autoLimitEur: number | null } | null | undefined, costEur?: number | null): Level {
   const known = BY_ACTION.get(action)
   if (!known) return "never"
-  const [row] = await db.select().from(policies).where(eq(policies.action, action)).limit(1)
   const level = (row?.level ?? known.level) as Level
   if ((known.customerContact || NEVER_AUTO.has(action)) && level === "auto") return "approval"
   if (level === "auto" && row?.autoLimitEur != null && (costEur == null || costEur > row.autoLimitEur)) return "approval"
   return level
 }
 
+/** The level that applies now, from the policies table. */
+export async function levelFor(action: string, costEur?: number | null): Promise<Level> {
+  const [row] = await db.select().from(policies).where(eq(policies.action, action)).limit(1)
+  return effectiveLevel(action, row, costEur)
+}
+
 /** Never automatic, whatever the table says: contact with a customer, the date a customer was promised, and a call (a person makes it). */
 export const NEVER_AUTO = new Set(["message_customer", "call_customer", "change_delivery_time", "call_contact"])
 
+/** Why a person may not set this level, or null when they may. */
+export function refusal(action: string, level: Level): string | null {
+  const known = BY_ACTION.get(action)
+  if (!known) return `Unknown action ${action}`
+  if (level === "auto" && (known.customerContact || NEVER_AUTO.has(action))) return `${known.label} always needs a person.`
+  return null
+}
+
 /** Change what an agent may do on its own. Logged with who and why; customer contact cannot become automatic. */
 export async function setPolicy(action: string, level: Level, options: { limitEur?: number | null; actor: string; reason: string; at: Date }): Promise<void> {
-  const known = BY_ACTION.get(action)
-  if (!known) throw new Error(`Unknown action ${action}`)
-  if (level === "auto" && (known.customerContact || NEVER_AUTO.has(action))) throw new Error(`${known.label} always needs a person.`)
+  const refused = refusal(action, level)
+  if (refused) throw new Error(refused)
+  const known = BY_ACTION.get(action)!
   await ensurePolicies()
   const [row] = await db.select().from(policies).where(eq(policies.action, action)).limit(1)
   const limit = level === "auto" ? options.limitEur ?? null : null
