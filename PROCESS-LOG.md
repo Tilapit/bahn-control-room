@@ -2500,3 +2500,52 @@ At 2000 px the layout sat on the left with about 500 px empty on the right, and 
   script of mine was running then; the shared dev server suggests someone was using the app in a browser. To check, I
   took all the screenshots again on a reloaded recorded morning and counted decisions afterwards: 0. So the
   screenshots do not approve anything. The reload removed that approval and its to-do.
+
+### The operator loop, proven end to end before recording
+
+**`npm run check:loop`** (`scripts/loop-check.ts`, Playwright, not footage) runs against the app from
+`npm run demo:reset` and reports each step PASS / FAIL with a screenshot (in `screens/loop/`):
+
+| | Step | Result |
+|---|---|---|
+| A1 | Demo controls: replay the recorded red-warning-light run for CD-420322 | PASS |
+| A2 | Agents shows the Investigator working on CD-420322 (Opus, "Working") | PASS |
+| A3 | The replay ends (3:27): no longer working, and For you shows its card | PASS |
+| A4 | Approve: "tell driver to wait, call customer for recovery call" | PASS |
+| A5 | Mine shows "To do: call Marvellin Motorhandel" | PASS |
+| A6 | Log what happened ("Dealer sends their own roadside assistance, arriving 14:30; they accept late delivery.") | PASS: "Logged on the order's timeline. The Classifier filed 2 facts from it. The agent continues with your note." |
+| A7 | The agent resumes, live, and proposes a new card: "Ops note: dealer's roadside help due 14:30", citing the call log as a Call source | PASS |
+| A8 | Approve the new card | PASS |
+| A9 | The order's timeline holds the warning-light message, the call log in the person's words, the decisions by Ops and the agent's steps | PASS |
+| B1 | CD-420299: approve "book Sat 24 Oct 14:00 ferry (€387) and Hamburg hotel (€96), tell driver" | PASS |
+| B2 | After the undo window the order shows the ferry as Booked, and the booking is on the timeline | PASS |
+
+**What broke, and the fixes.** Three runs:
+- **Run 1: 6 of 11, with false passes.** The script went on while the replay was still playing, so it found the
+  recorded card instead of the replay's. The script now waits for the replay to end, compares card ids so "the next
+  card" really is a new one, and checks the exact logged words on the timeline.
+- **Run 2: 10 of 11.** "Log what happened" never showed its confirmation, and this was a real bug. The panel called
+  `onDone()` right after "Logged…", and a live refresh dropped the logged to-do from the list, so the panel
+  disappeared at once. The person never saw what happened to their log. Now For you keeps the selected to-do itself in
+  state, and the confirmation stays for 3.5 s before the list moves on.
+- **Run 3: 11 of 11.**
+
+**Live, not recorded.** The resumed agent is a live Opus run (the API key is set); it took 1–3 minutes each time.
+Without a key the log is kept and the timeline says no agent continued; the resumed run is not in the fixtures.
+
+**Not what the brief expected.** In both live runs the resumed agent's next card asked to call Marvellin again
+("call Marvellin Motorhandel for roadside details"). It did not propose a driver message or a customer email with a
+new delivery time. The loop works; what the agent proposes after the call is a prompt question that was not changed
+here.
+
+**Also fixed (CSS and copy).**
+- Card times are short and stay on one line: "27m", "1h 2m", "1d 21h", "missed 2h"; the panel says them in full.
+- The For you badge number is centred.
+- On shift shows "Mikko P." in full, with the status on the right.
+- On Agents, a running row's "Working ·" sat in a full-width grey bar: the rail box's class `.running` also matched
+  the status span `ag-state running`. The rail box is `.rail-running` now.
+
+**`npm run demo:reset`** (in the README): loads the recorded morning, which clears decisions, to-dos, takeovers and
+live runs and seeds the colleagues' claims; puts the demo clock back to the demo's start; and sets a playbook rule
+approved in a demo back to suggested. The check's own trace rewrites were set back, and the demo was reset after
+it. `npm test` 73/73 and all 11 eval groups.

@@ -43,7 +43,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <ul className="shift" aria-label="On shift">
               {rail.shift.map((member) => <li key={member.name}><span className={`avatar ${member.tone}`} aria-hidden="true">{member.initials}</span><span className="shift-name">{member.name}</span><span className="shift-status">{member.status}</span></li>)}
             </ul>
-            <div className="running">
+            <div className="rail-running">
               <b><span className="live-dot" aria-hidden="true" />Agents running</b>
               <span>{rail.handledToday.toLocaleString("en-GB")} handled today without you</span>
             </div>

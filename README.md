@@ -57,11 +57,13 @@ If port 5438 or 9009 is taken, change it in `starter/compose.yaml` and the match
 ## Tests and evals
 
 ```sh
-npm test                     # 46 unit tests (urgency, routing, policies, taking an order over, the undo window) + the evals on recorded runs
+npm test                     # 73 unit tests (urgency, routing, policies, taking an order over, the undo window, to-dos, teams) + the evals on recorded runs
 npm run evals                # the eval cases and prompt-injection checks: recorded without a key, live with one
 npm run evals -- --live      # play every case on the live models first, then check (about $2)
 npm run eval:injection       # the prompt-injection test alone; its result shows on Settings → Learning
 npm run typecheck && npm run smoke   # types, and For you, all order pages and search against a running app
+npm run demo:reset                   # before a demo: the recorded morning again, no decisions, to-dos or takeovers, clock at the start
+npm run check:loop                   # the operator loop in a browser, step by step with screenshots (needs the app running; live API key for the resumed agent)
 ```
 
 `npm run fixtures:load` brings back the recorded morning after any live run.

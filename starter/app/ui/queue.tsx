@@ -67,8 +67,9 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
   // Unclaimed: nobody holds it. Mine: you took it. All: everything in the view, whoever holds it.
   const [tab, setTab] = useState<"unclaimed" | "mine" | "all">("all")
   // A to-do selected in the list shows in the panel instead of a card.
-  const [todoId, setTodoId] = useState<string | null>(null)
-  const todo = todos.find((item) => item.id === todoId) ?? null
+  // The selected to-do itself, so its panel (and "Logged…") stays while a refresh drops it from the list.
+  const [todo, setTodo] = useState<Todo | null>(null)
+  const todoId = todo?.id ?? null
   const visible = items.filter((item) => !hidden.has(item.card.id))
   // The view (market and desks) decides what is listed; what it leaves out is counted in one muted row, never hidden
   // silently. A person's safety is listed in every view, with its country. Your own orders are listed whatever the view.
@@ -126,7 +127,7 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
 
   const select = useCallback((id: string, open = false) => {
     setSelectedId(id)
-    setTodoId(null)
+    setTodo(null)
     setActiveId(open ? id : null)
     if (open) setOpened(true)
     requestAnimationFrame(() => document.querySelector(`.inbox-row[data-card="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" }))
@@ -196,7 +197,7 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
       {tab !== "unclaimed" && todos.length > 0 && <section aria-label="To do">
         <h2 className="fy-section">To do</h2>
         <ul className="inbox-rows">{todos.map((item) => <li className="inbox-row todo-row" key={item.id} data-selected={todoId === item.id}>
-          <button type="button" onClick={() => { setTodoId(item.id); setOpened(true) }} aria-current={todoId === item.id ? "true" : undefined}>
+          <button type="button" onClick={() => { setTodo(item); setOpened(true) }} aria-current={todoId === item.id ? "true" : undefined}>
             <span className="fy-card-top"><span className="tag desk">To do</span><span className="row-ref">{item.reference}</span></span>
             <span className="fy-card-title">To do: call {item.contact}</span>
             <span className="fy-card-car">{item.car} · {item.route}</span>
@@ -230,7 +231,7 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
     <div className="inbox-detail" ref={detailRef} tabIndex={-1} aria-label="Selected case">
       <button type="button" className="btn quiet inbox-back" onClick={() => setOpened(false)}><Icon name="chevron" size={14} className="back-chevron" />Back to the list</button>
       {todo
-        ? <TodoDetail key={todo.id} todo={todo} onDone={() => { setTodoId(null); router.refresh() }} />
+        ? <TodoDetail key={todo.id} todo={todo} onDone={() => { setTodo(null); router.refresh() }} />
         : selected
         ? <CaseDetail key={selected.card.id} item={selected} now={now} keys onDecided={decided} />
         : <div className="empty"><h2>Nothing needs you now.</h2><p>{later.length ? `${later.length} more can wait under Later.` : emptyLine}</p></div>}

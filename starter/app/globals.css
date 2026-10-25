@@ -996,12 +996,12 @@ html, body, .app, .main { background: var(--bg); }
 .avatar.blue { background: #2f5e8c; }
 .avatar.none { background: transparent; border: 1.5px dashed var(--text-3); color: transparent; }
 .avatar.agent { background: var(--press); color: transparent; }
-.running { display: grid; gap: 2px; padding: 12px; border-radius: var(--radius); background: var(--press); font-size: 12.5px; color: var(--text-2); line-height: 1.4; }
-.running b { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text); }
+.rail-running { display: grid; gap: 2px; padding: 12px; border-radius: var(--radius); background: var(--press); font-size: 12.5px; color: var(--text-2); line-height: 1.4; }
+.rail-running b { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text); }
 .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #2e9d6a; }
 .running-note, .running-clock { font-size: 11.5px; color: var(--text-3); }
-.running .demo-mode { justify-self: start; margin-top: 4px; }
-.running .rail-demo { margin-top: 4px; font-size: 12px; }
+.rail-running .demo-mode { justify-self: start; margin-top: 4px; }
+.rail-running .rail-demo { margin-top: 4px; font-size: 12px; }
 
 /* No top bar: the search sits at the top right of the page, as in the mocks. */
 .main { position: relative; }
@@ -1139,7 +1139,7 @@ html[data-theme] .inbox-detail { background-color: var(--surface); }
 @media (max-width: 1100px) { .orders-page .o-row { grid-template-columns: minmax(0, 1.2fr) 104px minmax(0, 1.3fr) minmax(0, 2.4fr) 104px 104px; } }
 @media (max-width: 760px) { .orders-page .o-row { grid-template-columns: minmax(0, 1fr) auto; } }
 /* The rail's foot: one box, then one small muted line. */
-.running { gap: 2px; }
+.rail-running { gap: 2px; }
 .rail-note { margin: 8px 10px 0; font-size: 11.5px; line-height: 1.5; color: var(--text-3); }
 .rail-note .rail-demo, .rail-note .demo-mode { display: inline; margin: 0; padding: 0; background: none; border: 0; color: var(--text-3); font-size: 11.5px; font-weight: 400; text-decoration: underline; text-underline-offset: 2px; }
 .theme-toggle { display: flex; gap: 2px; margin-top: 6px; }
@@ -1170,3 +1170,11 @@ html[data-theme] .inbox-detail { background-color: var(--surface); }
 .shift-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .shift-status { white-space: nowrap; text-align: right; }
 .claim-banner p { max-width: none; }
+/* The badge number sits in the middle of its circle. */
+.nav-link .badge { display: inline-flex; align-items: center; justify-content: center; line-height: 1; padding: 0 6px; font-variant-numeric: tabular-nums; }
+/* On shift: the whole name, then the status on the right. */
+.shift li { grid-template-columns: 24px max-content minmax(0, 1fr); }
+.shift-name { overflow: visible; }
+.shift-status { justify-self: end; font-size: 11.5px; }
+/* A card's time stays on the card's first line. */
+.fy-card-top .when { flex: none; }

@@ -122,6 +122,17 @@ function proposalLine(item: QueueItem): string {
   return card.proposal?.effect_text ? `Next step noted: ${card.proposal.effect_text}` : "Built from an alert; no agent has worked on it yet"
 }
 
+/** A card's time left, short enough for one line: "27m", "1h 2m", "1d 21h", "missed 2h". The pane says it in full. */
+function compactWhen(at: string | null, relative: string, now: string): string {
+  if (!at || !relative) return "no deadline"
+  const minutes = Math.round((new Date(at).getTime() - new Date(now).getTime()) / 60_000)
+  const size = Math.abs(minutes)
+  if (minutes < 0) return `missed ${size < 60 ? `${size}m` : `${Math.round(size / 60)}h`}`
+  if (size < 60) return `${size}m`
+  if (size < 24 * 60) return `${Math.floor(size / 60)}h${size % 60 ? ` ${size % 60}m` : ""}`
+  return `${Math.floor(size / 1440)}d ${Math.floor((size % 1440) / 60)}h`
+}
+
 /** "Stopped on red warning": the problem with a capital, for a card's title. */
 const titleCase = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
 
@@ -151,8 +162,7 @@ function ClaimLine({ item, now }: { item: QueueItem; now: string }) {
 export function CaseListRow({ item, now, selected, onSelect }: { item: QueueItem; now: string; selected: boolean; onSelect: () => void }) {
   const { card, order, urgency } = item
   const tone = urgency.safety ? "safety" : urgency.timeRisk ? "time" : ""
-  const missed = !!urgency.at && urgency.relative.endsWith("ago")
-  const when = missed ? `missed ${urgency.relative.replace(/ ago$/, "")} ago` : urgency.relative.replace(/^in /, "")
+  const when = compactWhen(urgency.at, urgency.relative, now)
   const [view] = useTeamView()
   const through = passesThrough(item.team, view)
   const foreign = !inView(item.team, view)

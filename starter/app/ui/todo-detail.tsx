@@ -39,7 +39,8 @@ export function TodoDetail({ todo, onDone }: { todo: Todo; onDone: () => void })
       if (!response.ok || !result.ok) throw new Error(result.error ?? "The log was not saved.")
       setCalling(false)
       setDone(result.message ?? "Logged.")
-      onDone()
+      // Long enough to read what happened before For you moves on.
+      setTimeout(onDone, 3500)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The log was not saved.")
     } finally {
