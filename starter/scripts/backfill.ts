@@ -1,4 +1,4 @@
-// npm run agents:backfill [-- --concurrency 4] [--resume]
+// npm run agents:backfill [-- --concurrency 4] [--resume] [--orders CD-420299,CD-420322]
 // The morning's work, done by the agents (SPEC 4, 7):
 //   1. the Classifier reads every message already on an order, oldest first (one run per order);
 //   2. the Investigator looks into every order with a live signal (4 at a time, the simulated
@@ -6,7 +6,9 @@
 //   3. every other order gets a quiet check by code.
 // Then everything is exported to fixtures/agent-runs.json, every agent run to traces/, and a
 // report to fixtures/backfill-report.json. Starts from a clean slate, unless --resume: then only
-// orders whose backfill run failed or never ran are done again (and the report covers all runs).
+// orders whose backfill run failed or never ran are done again (and the report covers all runs). --orders: only
+// these orders are investigated again (after a prompt changed, say); their Classifier runs and the rest of the
+// recording stay, and no Monitor rule or quiet check runs again.
 
 import "dotenv/config"
 import { writeFile } from "node:fs/promises"
@@ -15,7 +17,7 @@ import { and, asc, eq, inArray } from "drizzle-orm"
 import { classifyEntry } from "@/lib/agents/classifier"
 import { startInvestigation } from "@/lib/agents/investigator"
 import { hasApiKey } from "@/lib/agents/llm"
-import { resetAllLiveState, resetOrderLiveState } from "@/lib/agents/reset"
+import { forgetInvestigations, resetAllLiveState, resetOrderLiveState } from "@/lib/agents/reset"
 import { createRun, exportTrace, updateRun } from "@/lib/agents/runs"
 import { getCase, getCases } from "@/lib/case"
 import { now, resetClock, setDemoStart } from "@/lib/clock"
@@ -87,12 +89,20 @@ async function main() {
   if (!reportOnly && !hasApiKey()) throw new Error("The backfill runs real agents: set ANTHROPIC_API_KEY in starter/.env. Without a key, npm run fixtures:load shows the recorded runs.")
   const concurrency = option(args, "--concurrency", 4)
   const resume = args.includes("--resume")
+  const listed = args.includes("--orders") ? (args[args.indexOf("--orders") + 1] ?? "").split(",").map((reference) => reference.trim().toUpperCase()).filter(Boolean) : null
   await ensurePolicies()
   const wallStart = Date.now()
   let files = await getCases()
   let todo: typeof files = []
   if (reportOnly) {
     console.log("Report only: no agents run.")
+  } else if (listed) {
+    todo = files.filter((file) => listed.includes(file.order.reference))
+    if (todo.length !== listed.length) throw new Error(`Not found: ${listed.filter((reference) => !todo.some((file) => file.order.reference === reference)).join(", ")}`)
+    for (const file of todo) await forgetInvestigations(file.order.id)
+    console.log(`Investigating again: ${todo.map((file) => file.order.reference).join(", ")}. Their Classifier runs and the rest of the recording stay.`)
+    files = await getCases()
+    todo = files.filter((file) => listed.includes(file.order.reference))
   } else if (resume) {
     // Done: a backfill Investigator run that ended with a card or closed the case. Everything else on a
     // live-signal order (a failed run, a run stuck waiting, no run) is forgotten and done again.
@@ -114,7 +124,7 @@ async function main() {
     todo = files
   }
 
-  if (!reportOnly) await classifyAll(8, resume ? new Set(todo.map((file) => file.order.id)) : null)
+  if (!reportOnly && !listed) await classifyAll(8, resume ? new Set(todo.map((file) => file.order.id)) : null)
 
   files = await getCases()
   const todoIds = new Set(todo.map((file) => file.order.id))
@@ -137,7 +147,7 @@ async function main() {
     }
   })
 
-  if (!reportOnly) {
+  if (!reportOnly && !listed) {
     // The Monitor's rules run on the whole morning: a notice in the feed can touch an order nobody has reported on.
     console.log("\nMonitor rules")
     await runMonitor({ startAgents: true, wait: true, log: (line) => console.log(`  ${line}`) })

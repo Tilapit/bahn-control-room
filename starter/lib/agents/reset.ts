@@ -65,3 +65,28 @@ export async function resetAllLiveState(): Promise<void> {
     await tx.update(policies).set({ approvedUnchangedCount: 0, decidedCount: 0 })
   })
 }
+
+/**
+ * Forget the investigations on one order (Investigator and Driver support runs, their cards and decisions, and the
+ * live entries, demo events and facts they wrote) and reopen its alert card. The Classifier's reading of the order's
+ * own messages stays: `npm run agents:backfill -- --orders` investigates again without reading the messages again.
+ */
+export async function forgetInvestigations(orderId: string): Promise<void> {
+  const runs = await db.select({ id: agentRuns.id }).from(agentRuns).where(and(eq(agentRuns.orderId, orderId), inArray(agentRuns.agent, ["Investigator", "Driver support"])))
+  const runIds = runs.map((run) => run.id)
+  const cardIds = (await db.select({ id: cards.id }).from(cards).where(and(eq(cards.orderId, orderId), eq(cards.origin, "agent")))).map((card) => card.id)
+  await db.transaction(async (tx) => {
+    if (runIds.length) await tx.delete(agentSteps).where(inArray(agentSteps.runId, runIds))
+    if (runIds.length) await tx.delete(agentRuns).where(inArray(agentRuns.id, runIds))
+    if (cardIds.length) {
+      await tx.delete(decisions).where(inArray(decisions.cardId, cardIds))
+      await tx.delete(evalCases).where(inArray(evalCases.cardId, cardIds))
+      await tx.delete(cards).where(inArray(cards.id, cardIds))
+    }
+    await tx.update(cards).set({ status: "open" }).where(and(eq(cards.orderId, orderId), eq(cards.origin, "alert")))
+    await tx.delete(facts).where(and(eq(facts.orderId, orderId), inArray(facts.origin, ["classifier", "agent"]),
+      sql`${facts.sourceEntryId} in (select id from timeline_entries where order_id = ${orderId} and origin = 'live')`))
+    await tx.delete(timelineEntries).where(and(eq(timelineEntries.orderId, orderId), eq(timelineEntries.origin, "live")))
+    await tx.delete(demoEvents).where(eq(demoEvents.orderId, orderId))
+  })
+}

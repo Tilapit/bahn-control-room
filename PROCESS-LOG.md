@@ -1748,3 +1748,36 @@ and what is unclear?" Its first click: the red safety row on For you, on the tit
 **Checked:** typecheck, `npm run smoke`, all screens retaken in light and dark at 1440×900 with scale mode on
 (`screens/`, the run page now points at CD-420603's new run) and looked at again: For you opened, an order, Orders,
 Sources, Agents. The reviewer's report is summarised above, not copied; its notes stayed in the session.
+
+### The earlier request, part 2: CD-420299, CD-420322, CD-420603 and CD-420449 recorded again
+
+**How.** `npm run agents:backfill -- --orders CD-420299,CD-420322,CD-420603,CD-420449` (a new option): it forgets only
+these orders' investigations (`forgetInvestigations` in `lib/agents/reset.ts`: their Investigator runs, cards, the live
+entries and demo events they wrote), keeps their Classifier runs and everything else in the recording, runs the
+Investigator again with the backfill's own trigger and the current prompts, tools and code checks (4 at a time, the
+simulated driver and sites answering), and then writes the traces, `fixtures/agent-runs.json` and
+`fixtures/backfill-report.json` as the full backfill does. No Monitor rule or quiet check runs again. The
+Classifier runs were kept on purpose: the Classifier prompt has not changed since they were recorded, and reading the
+messages again would only reshuffle the "Agreed and stated" facts the investigations build on. Then the two replays
+on these orders were recorded again from the new start of the demo (`npm run scenario:record -- scenario-1
+scenario-2`), and the recorded morning loaded back.
+
+**What the four runs did** (the recorded morning, now):
+- CD-420299 (Sonnet, 75 s): asked the ferry line first: no booking exists and the timed-out request charged nothing;
+  Sat 24 Oct 14:00 has space at €387, a Hamburg hotel €96. Card: "ferry sold out; Sat 24 Oct 14:00 sailing has
+  space, not booked".
+- CD-420322 (Opus from the start, safety, 157 s): asked the driver; "Hollenmark services on the A7 northbound, about
+  40 km south of Hannover" (the narration has the direction right this time); proposes calling the owner for a
+  service decision.
+- CD-420449 (Sonnet, 99 s): asked the driver, looked for Hamburg backups; card "Approve: switch driver to Ida
+  Ervanton (offer) and message Carl": `switch_driver` + `message_driver`, no travel cancelled (the new precondition).
+- CD-420603 (Opus, conflicting evidence): keeps the booked crossing; option 1 "keep booking, ask driver's arrival
+  time, recheck in 30 min"; option 2 moves the ferry to Thu 16:00 (a €469 quote) with a message to the customer.
+- The backfill's numbers moved with them: 30 investigations, $4.18 in all (was $4.01), median 80.6 s (was 75 s),
+  the longest 259.8 s. The How it works page reads them from the recording, so it shows the new figures.
+- The replays: scenario 1 now takes 195 s live (was 73 s: the agent asked the ferry line, checked sailings and a
+  hotel, and the Verifier sent a draft back once) and scenario 2 takes 207 s (was 215 s). Both end on a card waiting
+  for a person. Item 5 had already recorded scenario 5, the cancelled gig and the car that is not moving again.
+- **Checked:** the recorded evals, all 11 groups pass on the new fixtures and recordings (scenario 1 and 2 from their
+  new recordings, scenario 4 and 6 from the new morning runs). Traces of the new runs are in `traces/`; the old ones
+  stay, because this log cites some of them.
