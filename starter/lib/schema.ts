@@ -457,3 +457,18 @@ export const demoSettings = pgTable("demo_settings", {
   key: text("key").primaryKey(),
   value: jsonb("value").$type<unknown>().notNull(),
 })
+
+/**
+ * A call the person makes after approving a card (call_customer, call_contact) stays a to-do on For you until they
+ * log what happened (lib/todos.ts). One row per decision: the note, the timeline entry it became, and how many
+ * facts the Classifier filed from it.
+ */
+export const todoLogs = pgTable("todo_logs", {
+  decisionId: text("decision_id").primaryKey(),
+  orderId: text("order_id").notNull(),
+  note: text("note").notNull(),
+  loggedAt: timestamp("logged_at", { withTimezone: true }).notNull(),
+  actor: text("actor").notNull(),
+  entryId: text("entry_id"),
+  factsCount: integer("facts_count"),
+})

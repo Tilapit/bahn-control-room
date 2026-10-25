@@ -4,7 +4,7 @@
 
 import { and, eq, inArray, sql } from "drizzle-orm"
 import { db } from "../db"
-import { agentRuns, agentSteps, cards, decisions, demoEvents, evalCases, facts, pastDecisions, policies, takeovers, timelineEntries } from "../schema"
+import { agentRuns, agentSteps, cards, decisions, demoEvents, evalCases, facts, pastDecisions, policies, takeovers, timelineEntries, todoLogs } from "../schema"
 
 export async function resetOrderLiveState(orderId: string, options: { allFacts?: boolean } = {}): Promise<void> {
   const runs = await db.select({ id: agentRuns.id }).from(agentRuns).where(eq(agentRuns.orderId, orderId))
@@ -28,6 +28,7 @@ export async function resetOrderLiveState(orderId: string, options: { allFacts?:
     await tx.delete(timelineEntries).where(and(eq(timelineEntries.orderId, orderId), eq(timelineEntries.origin, "live")))
     await tx.delete(demoEvents).where(eq(demoEvents.orderId, orderId))
     await tx.delete(takeovers).where(eq(takeovers.orderId, orderId))
+    await tx.delete(todoLogs).where(eq(todoLogs.orderId, orderId))
   })
 }
 
@@ -44,6 +45,7 @@ export async function resetOrderDecisions(orderId: string): Promise<void> {
       await tx.delete(timelineEntries).where(and(eq(timelineEntries.orderId, orderId), sql`${timelineEntries.evidence}->>'table' = 'decisions'`))
       await tx.delete(decisions).where(inArray(decisions.id, decisionIds))
       await tx.delete(pastDecisions).where(inArray(pastDecisions.id, decisionIds))
+      await tx.delete(todoLogs).where(inArray(todoLogs.decisionId, decisionIds))
       await tx.delete(evalCases).where(inArray(evalCases.cardId, cardIds))
     }
     await tx.update(cards).set({ status: "open" }).where(eq(cards.id, newest.id))
@@ -65,6 +67,7 @@ export async function resetAllLiveState(): Promise<void> {
     await tx.delete(timelineEntries).where(eq(timelineEntries.origin, "live"))
     await tx.delete(demoEvents)
     await tx.delete(takeovers)
+    await tx.delete(todoLogs)
     await tx.update(policies).set({ approvedUnchangedCount: 0, decidedCount: 0 })
   })
 }

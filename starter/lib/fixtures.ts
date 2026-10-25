@@ -35,6 +35,7 @@ const TABLES: { table: string; where: string; clear?: string }[] = [
   { table: "policies", where: "true" },
   { table: "policy_changes", where: "true" },
   { table: "takeovers", where: REAL },
+  { table: "todo_logs", where: "true" },
 ]
 
 export type Fixture = { exportedAt: string; clock: string; tables: Record<string, Record<string, unknown>[]> }

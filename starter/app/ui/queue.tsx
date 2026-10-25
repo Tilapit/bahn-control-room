@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation"
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import type { QueueItem, YoursWithoutCard } from "@/lib/queue"
+import type { Todo } from "@/lib/todos"
+import { TodoDetail } from "./todo-detail"
 import { inView, type TeamView, viewWords } from "@/lib/teams"
 import { dayClockZone } from "@/lib/time"
 import { CaseDetail, CaseListRow, type Decided } from "./card-row"
@@ -29,7 +31,7 @@ function typing(event: KeyboardEvent): boolean {
  * A decision removes the case at once, the next one is selected, and the toast counts down the undo window.
  * Keyboard: J/K move, Enter opens, A approves, R replies, T takes over. Narrow screens show the list, then the case full width.
  */
-export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], initial = null, tail, hint, children, dateLine, onTrack }: {
+export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], initial = null, tail, hint, children, dateLine, onTrack, todos = [] }: {
   items: QueueItem[]; now: string; emptyLine: string; endLine?: string; yoursWithoutCard?: YoursWithoutCard[]
   /** The header line after the counts this view decides: "agents are handling 10 · nothing open on 966". */
   tail: string[]
@@ -37,6 +39,8 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
   dateLine: string
   /** Orders with no card for a person: on track, or with an agent. */
   onTrack: number
+  /** Calls the person approved and makes themselves: each stays under Mine until they log what happened. */
+  todos?: Todo[]
   /** The header line's hover text. */
   hint?: string
   /** Shown under the header (the autonomy suggestion). */
@@ -62,6 +66,9 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
   const [view, setView] = useTeamView()
   // Unclaimed: nobody holds it. Mine: you took it. All: everything in the view, whoever holds it.
   const [tab, setTab] = useState<"unclaimed" | "mine" | "all">("all")
+  // A to-do selected in the list shows in the panel instead of a card.
+  const [todoId, setTodoId] = useState<string | null>(null)
+  const todo = todos.find((item) => item.id === todoId) ?? null
   const visible = items.filter((item) => !hidden.has(item.card.id))
   // The view (market and desks) decides what is listed; what it leaves out is counted in one muted row, never hidden
   // silently. A person's safety is listed in every view, with its country. Your own orders are listed whatever the view.
@@ -77,15 +84,17 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
   const where = viewWords(view)
   const elsewhere = otherWords(view)
   // What needs you now: in your view, and not held by a colleague (the sidebar badge counts the same).
-  const ownNow = nowItems.filter((item) => inView(item.team, view) && (!item.takenOver || mine(item))).length
-  const withColleagues = nowItems.filter((item) => item.takenOver && !mine(item)).length
-  const safetyElsewhere = nowItems.filter((item) => !inView(item.team, view) && !mine(item)).length
+  // The header counts the whole view, whichever tab is open.
+  const allNow = all.filter(isNow)
+  const ownNow = allNow.filter((item) => inView(item.team, view) && (!item.takenOver || mine(item))).length
+  const withColleagues = allNow.filter((item) => item.takenOver && !mine(item)).length
+  const safetyElsewhere = allNow.filter((item) => !inView(item.team, view) && !mine(item)).length
   const line = [
     `${ownNow} need${ownNow === 1 ? "s" : ""} you now${where ? ` ${where}` : ""}`,
     withColleagues ? `${withColleagues} with colleagues` : null,
-    safetyElsewhere ? `+${safetyElsewhere} safety in ${groupWords(nowItems.filter((item) => !inView(item.team, view)), view).replace(/ \d+/g, "")}` : null,
+    safetyElsewhere ? `+${safetyElsewhere} safety in ${groupWords(allNow.filter((item) => !inView(item.team, view) && !mine(item)), view).replace(/ \d+/g, "")}` : null,
     outsideNow.length ? `${outsideNow.length} more in ${elsewhere}` : null,
-    `${later.length} can wait`,
+    `${all.length - allNow.length} can wait`,
     // What agents handle and what is quiet is counted across every market, so it is said only for everyone.
     ...(where ? [] : tail),
   ].filter(Boolean).join(" · ")
@@ -108,6 +117,7 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
 
   const select = useCallback((id: string, open = false) => {
     setSelectedId(id)
+    setTodoId(null)
     setActiveId(open ? id : null)
     if (open) setOpened(true)
     requestAnimationFrame(() => document.querySelector(`.inbox-row[data-card="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" }))
@@ -146,7 +156,7 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
 
   const tabs = [
     { key: "unclaimed" as const, label: "Unclaimed", n: all.filter((item) => !item.takenOver).length },
-    { key: "mine" as const, label: "Mine", n: all.filter(mine).length + yoursWithoutCard.length },
+    { key: "mine" as const, label: "Mine", n: all.filter(mine).length + yoursWithoutCard.length + todos.length },
     { key: "all" as const, label: "All", n: all.length },
   ]
   const head = <div className="fy-head">
@@ -177,6 +187,17 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
       <div className="fy-tabs" role="tablist" aria-label="Whose">
         {tabs.map((item) => <button key={item.key} type="button" role="tab" aria-selected={tab === item.key} onClick={() => setTab(item.key)}>{item.label}<span className="num">{item.n}</span></button>)}
       </div>
+      {tab !== "unclaimed" && todos.length > 0 && <section aria-label="To do">
+        <h2 className="fy-section">To do</h2>
+        <ul className="inbox-rows">{todos.map((item) => <li className="inbox-row todo-row" key={item.id} data-selected={todoId === item.id}>
+          <button type="button" onClick={() => { setTodoId(item.id); setOpened(true) }} aria-current={todoId === item.id ? "true" : undefined}>
+            <span className="fy-card-top"><span className="tag desk">To do</span><span className="row-ref">{item.reference}</span></span>
+            <span className="fy-card-title">To do: call {item.contact}</span>
+            <span className="fy-card-car">{item.car} · {item.route}</span>
+            <span className="claim you"><span className="avatar green" aria-hidden="true">Y</span>You approved it; log what happened</span>
+          </button>
+        </li>)}</ul>
+      </section>}
       {tab !== "unclaimed" && yoursWithoutCard.length > 0 && <ul className="inbox-rows">
         {yoursWithoutCard.map((item) => <li className="inbox-row" key={item.order.id}><Link href={`/orders/${item.order.reference}`}>
           <span className="fy-card-top"><span className="tag desk">Yours</span><span className="row-ref">{item.order.reference}</span></span>
@@ -203,7 +224,9 @@ export function Queue({ items, now, emptyLine, endLine, yoursWithoutCard = [], i
     </div>
     <div className="inbox-detail" ref={detailRef} tabIndex={-1} aria-label="Selected case">
       <button type="button" className="btn quiet inbox-back" onClick={() => setOpened(false)}><Icon name="chevron" size={14} className="back-chevron" />Back to the list</button>
-      {selected
+      {todo
+        ? <TodoDetail key={todo.id} todo={todo} onDone={() => { setTodoId(null); router.refresh() }} />
+        : selected
         ? <CaseDetail key={selected.card.id} item={selected} now={now} keys onDecided={decided} />
         : <div className="empty"><h2>Nothing needs you now.</h2><p>{later.length ? `${later.length} more can wait under Later.` : emptyLine}</p></div>}
     </div>

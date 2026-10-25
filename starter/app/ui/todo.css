@@ -1,0 +1,15 @@
+/* To do: a call the person approved and makes themselves (app/ui/todo-detail.tsx). Only the app's own tokens. */
+
+.todo { display: grid; gap: 16px; max-width: 760px; }
+.todo-kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent-text); }
+.todo-head h2 { margin-top: 4px; font-size: 20px; font-weight: 650; letter-spacing: -0.015em; color: var(--text); }
+.todo-meta { margin-top: 4px; font-size: 13px; color: var(--text-3); }
+.todo-script summary { cursor: pointer; font-size: 13px; font-weight: 500; color: var(--accent-text); }
+.todo-script p { margin-top: 8px; padding: 2px 0 2px 12px; border-left: 2px solid var(--line); font-size: 14px; color: var(--text-2); white-space: pre-wrap; }
+.todo-form { display: grid; gap: 8px; padding: 16px; border-radius: var(--radius); background: var(--accent-soft); }
+.todo-form label { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3); }
+.todo-form textarea { width: 100%; min-height: 72px; resize: vertical; padding: 8px 12px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; font-size: 14px; }
+.todo-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.todo-hint { font-size: 13px; color: var(--text-3); }
+.todo-error { font-size: 13px; color: var(--text); }
+.todo-done { font-size: 14px; color: var(--text-2); }

@@ -2282,3 +2282,44 @@ screen and the panel scrolled to the agent's steps, light and dark, looked at.
 
 **Not done.** "Later today" is "Later": some cards are due tomorrow or later, and "today" would be wrong. The
 agent's steps show an ask_driver question in full; long questions are long.
+
+### 2. To-dos: a call the person makes stays on For you until they log what happened (user research)
+
+**Where it came from.** Bahn's ops person: approving a card whose step is "you call the customer" left nothing behind
+on For you, so the call could be forgotten, and what was agreed on the phone never reached the timeline. Logged as
+user research.
+
+**Built** (the backend by a fork in its worktree; the For you part by me):
+- **What a to-do is**, decided by code (`isOpenTodo` in `lib/todos.ts`): a decision carried out after its undo window
+  and not undone, where the Executor reported ok, the chosen option has a call the person makes (`call_customer` or
+  `call_contact`), and nothing is logged yet. New table `todo_logs` (one row per decision, added with additive SQL;
+  `drizzle-kit push` then reported no changes). `fixtures:load` and the reset helpers clear it.
+- **`logTodo`** refuses an empty, blank or too-short note (under 8 characters) before anything is written. It then
+  claims the to-do (one log per decision, so two clicks cannot log twice), writes the note to the order's timeline in
+  the person's words (source Call), and the Classifier (Haiku) files the facts and agreements it states as said, not
+  confirmed. The agent then continues with the note, the way a hand-back does: its waiting run, or a new look if
+  something is still open. Nothing continues on an order someone has taken over. Without an API key the log is kept
+  and the timeline says no agent continued.
+- **On For you**: in Mine (and All), a "To do" section above Decide now: "To do: call Marvellin Motorhandel", car ·
+  route, "You approved it; log what happened". Selecting it shows `TodoDetail` in the panel: the call script, "Log what
+  happened" ("Who you spoke to and what you agreed"), and "Log it and let the agent continue", disabled until there
+  is text. Mine counts the to-dos.
+
+**Checked.**
+- `tests/todos.test.ts` (5): which decisions are to-dos, and a to-do cannot be done without a log. Empty, blank and
+  "ok" are refused; no log row and no timeline entry are written; the to-do stays open.
+- `npm test`: 71/71 and all 11 eval groups.
+- The fork logged once, live, on a scratch to-do on a delivered order (removed afterwards): 2 agreements filed, the
+  to-do closed, and a second log returned "Already logged".
+- In the browser I approved the Bentley card (CD-420322) and let the 8 seconds run out. Mine then showed one to-do,
+  and the panel showed it with the button disabled. Nothing was logged, so no agent run started, and the recorded
+  morning was loaded back.
+
+**Wrong first, and changed.**
+- The fork first planned to resume the card's own run, but a carried-out approval marks that run done. It now
+  continues the way a hand-back does.
+- Its first check filtered runs by the real date instead of the simulated one.
+- My header line counted only the open tab, so Mine read "0 need you now · 0 can wait". It counts the whole view now.
+
+**Not done.** The agent continuing after a log was not run live on the shared database: it would resume
+CD-420322's recorded Opus run. A to-do has no deadline of its own.

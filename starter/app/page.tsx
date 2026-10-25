@@ -3,6 +3,7 @@ import { connection } from "next/server"
 import { sweepDecisions } from "@/lib/decisions"
 import { autonomySuggestion } from "@/lib/autonomy"
 import { getQueue, type QueueCounts } from "@/lib/queue"
+import { openTodos } from "@/lib/todos"
 import { clock } from "@/lib/time"
 import { AutonomySuggestion } from "./ui/autonomy-suggestion"
 import { Queue } from "./ui/queue"
@@ -22,7 +23,7 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<{
   await connection()
   await sweepDecisions()
   const initial = (await searchParams).case ?? null
-  const [{ now, items, counts, yoursWithoutCard }, suggestion] = await Promise.all([getQueue(), autonomySuggestion()])
+  const [{ now, items, counts, yoursWithoutCard }, suggestion, todos] = await Promise.all([getQueue(), autonomySuggestion(), openTodos()])
   const others = [
     counts.decided ? `You decided ${counts.decided} in the last day.` : null,
     counts.handling ? `Agents are handling ${counts.handling} orders.` : null,
@@ -34,7 +35,7 @@ export default async function ForYou({ searchParams }: { searchParams: Promise<{
   // The orders a card asks a person about; every other order is on track or with an agent.
   const withCard = new Set(items.flatMap((item) => [item.order.id, ...(item.card.group ?? []).map((member) => member.order_id)]))
   return <main className="content inbox-page">
-    <Queue items={items} now={now} initial={initial} tail={countsTail(counts)} dateLine={dateLine} onTrack={counts.total - withCard.size} emptyLine={others} endLine={`That is everything that needs you. ${others}`} yoursWithoutCard={yoursWithoutCard}
+    <Queue items={items} now={now} initial={initial} tail={countsTail(counts)} dateLine={dateLine} onTrack={counts.total - withCard.size} todos={todos} emptyLine={others} endLine={`That is everything that needs you. ${others}`} yoursWithoutCard={yoursWithoutCard}
       hint="Each item is something an agent could not settle on its own, most urgent first. Nothing happens until you press a button, and you can undo for 8 seconds.">
       {suggestion && <AutonomySuggestion suggestion={suggestion} />}
     </Queue>
