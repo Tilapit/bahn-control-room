@@ -1303,3 +1303,48 @@ same size: "24 orders need you · agents are handling 10 more without you · 966
 driver can appear on 16 orders at once; that is fine for timing and for calm, not for realism. The
 Agents Done tab is not paged (it grows with model work, not with quiet orders). Scale mode is not
 part of the recording: it is generated on the machine in seconds.
+
+## After phase 8, task 3: "How it works", for an operations manager
+
+**What it is.** Settings → How it works (`app/settings/how-it-works/page.tsx`), a third tab next to
+Agent permissions and Learning. In order: two sentences on the idea (agents do the legwork, a person
+sees only a ready decision, nothing that books, costs, changes a date or contacts a customer happens
+without a yes); one diagram of the flow (message or signal → Classifier → code: urgency and routing →
+Investigator → Verifier → For you → you decide → Executor), with what hangs off it: the Monitor
+starting the same path when something goes quiet, Driver support for routine driver questions, the
+driver or site the Investigator may ask without approval, "closed, no card", a person's reply going
+back to the Investigator, and the order timeline at the end; the eight steps in plain words; a table
+of every kind of data, where it comes from today (the fictional snapshot, recorded runs, the
+simulator, three fictional notices) and which system would feed it in production (Intercom for
+support chat, Slack, the driver app's GPS feed, email, the phone system, the ferry, rail and hotel
+booking APIs, traffic and rail notices), with the number of timeline entries from each; which model
+does which job and why (code for rules and arithmetic, Haiku to read and to check, Sonnet to
+investigate, Opus for safety, costs over €500 and records that disagree; names from `lib/models.ts`);
+what an agent may do alone and what needs a yes, read from the live permissions table; and the
+measured numbers of the recorded backfill.
+
+**The numbers come from the recording, not from the text.** `lib/how-it-works.ts` reads
+`fixtures/agent-runs.json` (cached on its modified time): 30 backfill investigations, 22 became a
+card and 8 closed without one; 17 ended on Sonnet and 13 on Opus (1 safety from the start, 11 for
+records that disagree, 1 for a cost over €500); $4.01 in all, $0.134 on average; median 75 s, the
+longest 244 s (CD-420603, named from the data); closing without a card took 3–9 s; the Classifier
+read 251 messages in 54 runs for $0.078.
+
+**What was wrong first.**
+- The diagram was drawn 1,084 units wide inside the narrow column, so it rendered small, and three
+  subtitles ran out of their boxes ("Code: silence, notices", "Sonnet: routine questions"). Subtitles
+  now wrap inside the box, the boxes are wider, and the page uses the wide column with text kept at a
+  reading width. Checked in light and dark screenshots.
+- "The longest took 244 s (two questions to the driver and a check of the ferry)" was written by
+  hand; it now names the order from the data instead of describing it.
+- **The backfill report's Investigator average was wrong**: `fixtures/backfill-report.json` said
+  $4.47 total and $0.149 average, because the total summed every Investigator run, including the one
+  the Monitor started for the rail strike, and divided by the 30 backfill runs. The report code sums
+  the backfill's own runs now, and the two values in the saved report were recomputed from the
+  recorded runs ($4.01, $0.134); PROCESS-LOG's phase 7 figures were already right.
+- The new tab did not show at first; the dev server had not picked up the changed nav (see task 1's
+  note on in-place writes).
+
+**Not done.** The page does not explain the scale mode beyond one note in the data table, and the
+diagram is a fixed drawing (it does not change when permissions change; the permissions list under
+it does).

@@ -167,6 +167,7 @@ async function main() {
   const walls = backfillRuns.map((run) => run.wallMs)
   const totalCost = runs.reduce((sum, run) => sum + run.costUsd, 0)
   const agentCost = (agent: string) => runs.filter((run) => run.agent === agent).reduce((sum, run) => sum + run.costUsd, 0)
+  const backfillCost = backfillRuns.reduce((sum, run) => sum + run.costUsd, 0)
   const report = {
     finishedAt: new Date().toISOString(), wallClockMinutes: reportOnly ? null : Math.round((Date.now() - wallStart) / 600) / 100, simulatedClockAfter: (await now()).toISOString(),
     orders: {
@@ -181,7 +182,8 @@ async function main() {
       endedOnSonnet: finalModel(MODELS.sonnet).length, endedOnOpus: finalModel(MODELS.opus).length,
       startedOnOpusForSafety: backfillRuns.filter((run) => run.escalation?.startsWith("Safety case")).length,
       escalations,
-      costUsd: { total: agentCost("Investigator"), average: agentCost("Investigator") / Math.max(1, backfillRuns.length) },
+      // The backfill's own runs only: a run the Monitor started (the rail strike) is an Investigator run too, but not one of these.
+      costUsd: { total: backfillCost, average: backfillCost / Math.max(1, backfillRuns.length) },
       wallSeconds: { median: Math.round(median(walls) / 100) / 10, max: Math.round(Math.max(0, ...walls) / 100) / 10, perRun: backfillRuns.map((run) => ({ runId: run.id, seconds: Math.round(run.wallMs / 100) / 10 })) },
     },
     classifier: { runs: runs.filter((run) => run.agent === "Classifier").length, costUsd: agentCost("Classifier") },
