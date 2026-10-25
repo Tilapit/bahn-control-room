@@ -23,7 +23,7 @@ const DEFAULT_SHOTS = [
   "order-CD-420603=/orders/CD-420603",
   "order-CD-420123=/orders/CD-420123",
   "run=/agents/run_fcb33edc",
-  "orders-filter=/orders?q=Hamburg",
+  "how-it-works=/settings/how-it-works", "orders-filter=/orders?q=Hamburg",
   "settings=/settings",
   "learning=/settings/learning",
   "demo=/demo",

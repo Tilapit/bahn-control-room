@@ -1427,9 +1427,9 @@ timestamp. `npm run footage -- scenario-2 case-view` re-records only the clips n
 | `08-how-it-works.webm`: the How it works page | 0:55 |
 
 **How it was checked.** Each clip's length and size were read from the files (99 MB in all, the
-largest 20 MB, so they are committed as they are), the shot list was read through, and frames were
-pulled out with Playwright's own ffmpeg and looked at (1440×900, cursor visible, "966 have nothing
-open" in the For you header).
+largest 20 MB, so they are committed as they are), the shot list was read through, and one frame of the
+For you clip was pulled out with Playwright's own ffmpeg and looked at (1440×900, cursor visible,
+"966 have nothing open" in the header); the other clips were not watched frame by frame.
 
 **What was wrong first.** Two clips stopped on a 30-second timeout in the first full run: the case
 view looked for the "Agreed" section, which task 1 renamed "Agreed and stated"; scenario 2 tried to
@@ -1439,3 +1439,18 @@ clip shows the replay and the safety card but not a person's one-sentence reply 
 step needs the live agent and was not recorded). The Agents rows lost their "Waiting for you" text in
 task 1 (the group heading says it); the text is back as screen-reader text, which the script also
 matches on.
+
+## After phase 8, task 6: README, and the merge into main
+
+The root `README.md` now says what the app is in three sentences, shows four screenshots (For you,
+an opened card, an order, How it works), gives the fresh-clone steps (Node 24, Docker, `npm ci`,
+`docker compose up`, `db:push`, `setup`, `dev`; an API key optional), scale mode, how to run the tests
+and evals, a short architecture summary, and links to this log, `traces/`, `fixtures/`, `SPEC.md` and
+the footage; the challenge packet's own files are listed at the end. `starter/README.md` described
+the original read-only starter (board lanes, Inbox, entity pages that no longer exist); it is now a
+short developer README with every command (each checked against `package.json`) and where things are.
+`screens/` was refreshed from the current app in light and dark (72 files, How it works added to the
+default shots). Checked: typecheck, `npm test`, every image link in the README resolves.
+
+**Left as it is.** 28 traces in `traces/` from development runs before the recording (not part of
+`fixtures/`) are still untracked, as they were after phase 8.
