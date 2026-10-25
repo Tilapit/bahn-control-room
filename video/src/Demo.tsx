@@ -11,12 +11,12 @@ const C = { bg: "#FAF8F3", green: "#1F5C45", ink: "#1B1B1B", muted: "#6B6A66", l
 type Box = { x: number; y: number; width: number; height: number }
 const boxes = boxesJson as unknown as Record<string, Record<string, Box | null>>
 
-// Scene length: the narration's audio plus 0.8 s; without audio, 168 s shared by text length.
+// Scene length: 0.8 s after the last word (each ElevenLabs clip ends in ~0.35 s of silence, measured); without audio, 168 s shared by text length.
 const audio = voDurations as (number | null)[]
 const hasAudio = scenes.every((_, i) => typeof audio[i] === "number")
 const chars = scenes.map((s) => s.vo.length)
 const sum = chars.reduce((a, b) => a + b, 0)
-const seconds = scenes.map((_, i) => (hasAudio ? (audio[i] as number) + 0.8 : Math.max(7, (chars[i] / sum) * 168)))
+const seconds = scenes.map((_, i) => (hasAudio ? (audio[i] as number) - 0.35 + 0.8 : Math.max(7, (chars[i] / sum) * 168)))
 const frames = seconds.map((s) => Math.round(s * FPS))
 const starts = frames.map((_, i) => frames.slice(0, i).reduce((a, b) => a + b, 0) - i * FADE)
 export const totalFrames = starts[starts.length - 1] + frames[frames.length - 1]
@@ -100,7 +100,7 @@ function PartView({ part, scene, length, offset, span }: { part: Part; scene: Sc
 function Title() {
   const frame = useCurrentFrame()
   const a = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: "clamp" })
-  const b = interpolate(frame, [40, 60], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+  const b = interpolate(frame, [18, 32], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
   return (
     <AbsoluteFill style={{ justifyContent: "center", paddingLeft: 200 }}>
       <div style={{ width: 64, height: 6, background: C.green, borderRadius: 3, marginBottom: 40, opacity: a }} />

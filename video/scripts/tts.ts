@@ -10,7 +10,7 @@ const key = env.ELEVENLABS_API_KEY ?? process.env.ELEVENLABS_API_KEY
 if (!key) { console.log("No ELEVENLABS_API_KEY in video/.env: the video renders without a voice."); process.exit(0) }
 
 async function main() {
-  let voice = env.ELEVENLABS_VOICE_ID
+  let voice = env.ELEVENLABS_VOICE_ID ?? process.env.ELEVENLABS_VOICE_ID
   if (!voice) {
     const res = await fetch("https://api.elevenlabs.io/v1/voices", { headers: { "xi-api-key": key! } })
     const { voices } = (await res.json()) as { voices: { voice_id: string; name: string; labels?: Record<string, string> }[] }
@@ -18,8 +18,11 @@ async function main() {
     voice = calm.voice_id
     console.log(`Voice: ${calm.name} (${voice})`)
   }
-  const durations: number[] = []
+  // Scene numbers as arguments re-record only those scenes; the others keep their audio.
+  const only = process.argv.slice(2).map(Number)
+  const durations: number[] = existsSync("src/vo-durations.json") ? JSON.parse(readFileSync("src/vo-durations.json", "utf8")) : []
   for (const [i, scene] of scenes.entries()) {
+    if (only.length && !only.includes(i + 1)) continue
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, {
       method: "POST",
       headers: { "xi-api-key": key!, "content-type": "application/json", accept: "audio/mpeg" },
@@ -29,7 +32,7 @@ async function main() {
     const file = `public/vo/scene-${i + 1}.mp3`
     writeFileSync(file, Buffer.from(await res.arrayBuffer()))
     const out = execFileSync("npx", ["remotion", "ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", file]).toString().trim()
-    durations.push(Number(out))
+    durations[i] = Number(out)
     console.log(file, out)
   }
   writeFileSync("src/vo-durations.json", JSON.stringify(durations))
