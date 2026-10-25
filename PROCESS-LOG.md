@@ -1454,3 +1454,45 @@ default shots). Checked: typecheck, `npm test`, every image link in the README r
 
 **Left as it is.** 28 traces in `traces/` from development runs before the recording (not part of
 `fixtures/`) are still untracked, as they were after phase 8.
+
+## Sunday morning, before the code freeze (11:30): six items in priority order
+
+The brief for this round: six items in priority order, each committed, screenshotted and logged, stopping
+after the last finished item if time runs out. An earlier request in the same session (a code check for the
+ill-driver eval, and re-recording four orders' runs) was queued behind this list; see the end of this log for
+whether it was reached.
+
+### 1. Orders: the 404, and the page rebuilt as a table
+
+**The 404 was not the code.** `/orders` and every `/orders/CD-…` returned 404 while `app/orders/page.tsx` and
+`app/orders/[reference]/page.tsx` were on disk and unchanged since the last commit. The dev server's log showed
+why: at some point after 03:51 it compiled an old starter `app/page.tsx` ("Can't resolve
+'./components/app-frame'"), as if the working tree had briefly held the original starter, and its route table
+never recovered after the files came back. Stopping it, deleting `.next` and starting `next dev` again brought
+both routes back (200). The same lesson as phase 2: a long-running dev server that has seen files swap under it
+is not to be trusted; restart it before believing a 404.
+
+**The page, as asked.** `/orders` is now a table: Car, Reference, Route (city → city), Customer, Status (one
+plain sentence) and Who has it (You / Agent / Nobody needed). The whole row opens the order. Filter chips with
+counts: All, Needs you, Agent working, Taken over, Quiet, Delivered, plus the search box, and the chip stays on
+while searching.
+- The status sentence is code (`listStatus` in `lib/status.ts`): "Waiting for you: ferry sold out", "Agent
+  working: unanswered message in driver chat", "Moving, 233 km to go", "Delivered Tue 20 Oct", "Driver booked,
+  pickup tomorrow 10:00 CEST". The problem comes from the card's headline without the car, cut at its first
+  ";" unless that leaves one word ("Waiting for you: delivered" said nothing; it now keeps "delivered; customer
+  awaits invoice reference check"). The countdown sits beside the sentence and is never cut by the ellipsis.
+- **Who has it uses the same rule as For you's header.** The first version counted 32 orders under Needs you
+  while For you said 24: the 8 orders an agent closed without a card (their dataset alert is still open) fell into
+  my fallback. The classification now lives in one place, `holdings()` in `lib/queue.ts`, with the header's rules
+  (a card waits; a person decided it in the last day; an agent works on it or watches it; nobody has looked yet),
+  so the two pages count the same orders: 24 need you, 10 with agents, 66 with nothing open (50 quiet, 16
+  delivered).
+- **1,000 orders.** Only the open orders and one page of 100 of the rest are compiled; the chips count from the
+  database. Delivered uses the order record's status as a first cut and the compiled case file for each row.
+  Measured with scale mode on (dev server, warm): All 0.42 s (134 rows), Needs you 0.16 s, Agent working 0.12 s,
+  Quiet 0.29 s, Delivered 0.27 s, a search 0.32 s; "Show 100 more" pages on.
+- Taken over shows 0 until item 2 exists.
+
+**Checked:** typecheck; `npm run smoke` (For you, all 100 order pages, search); every chip and a search fetched at
+100 and at 1,000 orders; screenshots `screens/orders-*`, `orders-needs-you-*`, `orders-filter-*` in light and dark,
+looked at (the first had the countdown cut off by the ellipsis: "in 4 h 8 …"; fixed).

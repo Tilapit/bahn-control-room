@@ -397,6 +397,31 @@ time[title] { cursor: help; text-decoration: none; }
 .legend .mark { margin: 0 0 0 6px; }
 mark { background: var(--accent-soft); color: inherit; border-radius: 2px; padding: 0 1px; }
 
+/* ---------- Orders table ---------- */
+
+a.filter { text-decoration: none; }
+.filter[aria-current="true"] { background: var(--text); border-color: var(--text); color: var(--surface); }
+.orders-table { font-size: 14px; }
+.ot-row {
+  display: grid; grid-template-columns: minmax(0, 1.25fr) 96px minmax(0, 1.25fr) minmax(0, 1.15fr) minmax(0, 2.4fr) 112px;
+  gap: 16px; padding: 9px 12px; border-radius: var(--radius-s); align-items: baseline; color: inherit; text-decoration: none;
+}
+.ot-row > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ot-row:hover { background: var(--hover); }
+.ot-row + .ot-row { border-top: 1px solid var(--line); }
+.ot-head { font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; padding-top: 8px; padding-bottom: 8px; }
+.ot-head:hover { background: none; }
+.ot-car { font-weight: 500; display: flex; align-items: baseline; gap: 10px; }
+.ot-car .mark { margin-top: 0; align-self: center; }
+.ot-ref { font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.ot-row > .ot-status { display: flex; gap: 8px; align-items: baseline; }
+.ot-status .ot-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ot-status .when { flex: none; font-size: 13px; }
+.ot-who { font-size: 13px; color: var(--text-3); }
+.ot-who.you { color: var(--accent-text); font-weight: 600; }
+.ot-who.agent { color: var(--text-2); font-weight: 500; }
+.ot-snippet { grid-column: 1 / -1; font-size: 13px; color: var(--text-3); margin-top: -4px; white-space: normal !important; }
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 1100px) {

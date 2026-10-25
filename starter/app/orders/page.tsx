@@ -1,96 +1,140 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { connection } from "next/server"
-import { and, asc, eq, gt, inArray, notInArray, or } from "drizzle-orm"
-import { getCases, orderCount, ordersWithOpenItems, search, type SearchHit } from "@/lib/case"
+import { and, asc, eq, notInArray } from "drizzle-orm"
+import { getCases, orderCount, search, type SearchHit } from "@/lib/case"
 import { now as clockNow } from "@/lib/clock"
 import { db } from "@/lib/db"
-import { orderView } from "@/lib/queue"
-import { quietLine } from "@/lib/quiet-check"
-import { agentRuns, cards, orders } from "@/lib/schema"
+import { holdings, orderView } from "@/lib/queue"
+import { orders } from "@/lib/schema"
 import { liveSignals } from "@/lib/signals"
+import { type Holder, listStatus, problemPhrase } from "@/lib/status"
 import { compareUrgency, urgency, withProposalDeadline } from "@/lib/urgency"
 import { Marked } from "../ui/marked"
 
 export const metadata: Metadata = { title: "Orders" }
 
-type Props = { searchParams: Promise<{ q?: string; quiet?: string }> }
+type Show = "you" | "agent" | "taken" | "quiet" | "delivered"
+type Props = { searchParams: Promise<{ q?: string; show?: string; n?: string }> }
 
-/** Quiet orders shown per page: with 1,000 orders only the open ones and a page of quiet ones are compiled. */
-const QUIET_PAGE = 100
+const CHIPS: { id: Show; label: string }[] = [
+  { id: "you", label: "Needs you" }, { id: "agent", label: "Agent working" }, { id: "taken", label: "Taken over" },
+  { id: "quiet", label: "Quiet" }, { id: "delivered", label: "Delivered" },
+]
+/** Rows per page of orders with nothing open: with 1,000 orders only the open ones and one page of the rest are compiled. */
+const PAGE = 100
+const WHO: Record<Holder, string> = { you: "You", agent: "Agent", nobody: "Nobody needed" }
 
 export default async function Orders({ searchParams }: Props) {
   await connection()
-  const { q = "", quiet: quietParam } = await searchParams
-  const query = q.trim()
-  const quietShown = Math.min(Math.max(Number(quietParam) || QUIET_PAGE, QUIET_PAGE), 5000)
+  const params = await searchParams
+  const query = (params.q ?? "").trim()
+  const show = CHIPS.some((chip) => chip.id === params.show) ? params.show as Show : null
+  const shown = Math.min(Math.max(Number(params.n) || PAGE, PAGE), 5000)
   const at = await clockNow()
-  const [hits, openCards, agentWork, openIds, total] = await Promise.all([
+  const [hits, held, deliveredRows, total] = await Promise.all([
     query ? search(query, 100) : null,
-    db.select({ orderId: cards.orderId, group: cards.group, headline: cards.headline, options: cards.options }).from(cards).where(eq(cards.status, "open")),
-    // An agent on the order: working, waiting for a driver or site, or finished and looking again later.
-    db.select({ orderId: agentRuns.orderId }).from(agentRuns).where(and(inArray(agentRuns.agent, ["Investigator", "Driver support"]),
-      or(inArray(agentRuns.status, ["running", "waiting_driver", "waiting_site"]), and(eq(agentRuns.status, "done"), gt(agentRuns.nextCheckAt, at))))),
-    ordersWithOpenItems(),
+    // Who has each open order, by the same rules as For you's header.
+    holdings(at),
+    // A cheap first cut for the Delivered chip: the order record's status. The compiled case file still decides each row.
+    db.select({ id: orders.id }).from(orders).where(eq(orders.status, "DELIVERED")),
     orderCount(),
   ])
-  // Open means a card waiting for a person, a live signal, or an agent still on it: the same orders For you counts.
-  const cardOf = new Map(openCards.flatMap((row) => [row.orderId, ...(row.group ?? []).map((member) => member.order_id)].map((id) => [id, row] as const)))
-  const agentOn = new Set(agentWork.map((row) => row.orderId).filter((id): id is string => !!id))
-  // Compile only what is shown: the matches, or every order with something open and one page of quiet ones.
-  const open = new Set([...openIds, ...cardOf.keys(), ...agentOn])
-  const quietIds = hits ? [] : (await db.select({ id: orders.id }).from(orders)
-    .where(open.size ? notInArray(orders.id, [...open]) : undefined).orderBy(asc(orders.reference)).limit(quietShown)).map((row) => row.id)
-  const files = await getCases(hits ? hits.map((hit) => hit.orderId) : [...open, ...quietIds])
-  const quietTotal = hits ? 0 : total - open.size
-  const byId = new Map(files.map((file) => [file.order.id, file]))
-  const rows = (hits ? hits.map((hit) => ({ file: byId.get(hit.orderId)!, snippet: hit.snippet })) : files.map((file) => ({ file, snippet: null as SearchHit["snippet"] })))
-    .filter((row) => !!row.file)
-    .map((row) => {
-      const card = cardOf.get(row.file.order.id) ?? null
-      const primary = card?.options.find((option) => option.kind !== "reject" && option.kind !== "answer") ?? null
-      return { ...row, card, urgency: withProposalDeadline(urgency(row.file, at), primary, at), open: !!card || agentOn.has(row.file.order.id) || liveSignals(row.file).length > 0 }
-    })
+  const takenOver = new Set<string>()
+  const { cardOf, holding } = held
+
+  // Who has each order, so the chips can count 1,000 orders while only the open ones are compiled.
+  const open = new Set([...holding.keys(), ...takenOver])
+  const delivered = new Set(deliveredRows.map((row) => row.id).filter((id) => !open.has(id)))
+  const groupOf = (id: string): Show => takenOver.has(id) ? "taken" : holding.get(id) === "agent" ? "agent" : open.has(id) ? "you" : delivered.has(id) ? "delivered" : "quiet"
+  const counts: Record<Show, number> = { you: 0, agent: 0, taken: 0, delivered: delivered.size, quiet: 0 }
+  for (const id of open) counts[groupOf(id)] += 1
+  counts.quiet = total - open.size - delivered.size
+
+  // Compile only what is shown: the matches, one chip's orders, or every open order and one page of the rest.
+  let ids: string[]
+  if (hits) ids = hits.map((hit) => hit.orderId).filter((id) => !show || groupOf(id) === show)
+  else if (show === "you" || show === "agent" || show === "taken") ids = [...open].filter((id) => groupOf(id) === show)
+  else if (show === "delivered") ids = (await db.select({ id: orders.id }).from(orders).where(and(eq(orders.status, "DELIVERED"), open.size ? notInArray(orders.id, [...open]) : undefined)).orderBy(asc(orders.reference)).limit(shown)).map((row) => row.id)
+  else {
+    const exclude = show === "quiet" ? [...open, ...delivered] : [...open]
+    const rest = (await db.select({ id: orders.id }).from(orders).where(exclude.length ? notInArray(orders.id, exclude) : undefined).orderBy(asc(orders.reference)).limit(shown)).map((row) => row.id)
+    ids = show === "quiet" ? rest : [...open, ...rest]
+  }
+  const known = new Map(held.files.map((file) => [file.order.id, file]))
+  const files = [...ids.filter((id) => known.has(id)).map((id) => known.get(id)!), ...await getCases(ids.filter((id) => !known.has(id)))]
+  const snippets = new Map((hits ?? []).map((hit) => [hit.orderId, hit.snippet] as const))
+  const rows = files.map((file) => {
+    const id = file.order.id
+    const card = cardOf.get(id) ?? null
+    const primary = card?.options.find((option) => option.kind !== "reject" && option.kind !== "answer") ?? null
+    const group = groupOf(id)
+    const holder: Holder = group === "you" || group === "taken" ? "you" : group === "agent" ? "agent" : "nobody"
+    const problem = problemPhrase(card?.headline ?? liveSignals(file)[0])
+    return {
+      file, card, holder, snippet: snippets.get(id) ?? null as SearchHit["snippet"],
+      urgency: withProposalDeadline(urgency(file, at), primary, at), open: open.has(id),
+      status: listStatus(file, { holder, problem: holder === "nobody" ? null : problem, takenOver: takenOver.has(id) }, at),
+    }
+  })
   // Filtered or not, the order is the same: open first, then what is lost first.
   rows.sort((a, b) => Number(b.open) - Number(a.open) || compareUrgency(a.urgency, b.urgency) || a.file.order.reference.localeCompare(b.file.order.reference))
+  const paged = show === "quiet" || show === "delivered" || !show
+  const pageTotal = show === "quiet" ? counts.quiet : show === "delivered" ? counts.delivered : total - open.size
+  const shownRest = rows.filter((row) => !row.open).length
+  const href = (next: { show?: Show | null; n?: number }) => {
+    const search = new URLSearchParams()
+    if (query) search.set("q", query)
+    const chip = next.show === undefined ? show : next.show
+    if (chip) search.set("show", chip)
+    if (next.n) search.set("n", String(next.n))
+    const text = search.toString()
+    return text ? `/orders?${text}` : "/orders"
+  }
 
   return <main className="content wide">
     <div className="page-head">
       <div>
         <h1>Orders</h1>
-        <p className="page-sub">{hits ? <>{hits.length} order{hits.length === 1 ? "" : "s"} match “{query}”</> : <>All {total.toLocaleString("en-GB")} orders, open ones first: <span className="legend"><span className="mark safety" />safety <span className="mark time" />lost within 4 hours or already missed <span className="mark" />later</span></>}</p>
+        <p className="page-sub">{hits ? <>{rows.length} order{rows.length === 1 ? "" : "s"} match “{query}”</> : <>All {total.toLocaleString("en-GB")} orders, open ones first, then what is lost first</>}</p>
       </div>
       <form action="/orders" role="search" className="search" style={{ maxWidth: 360 }}>
-        <label className="search-box"><span className="sr-only">Filter orders</span><input name="q" defaultValue={query} placeholder="Filter: reference, name, city or any word" />
-          {query && <Link className="clear" href="/orders" aria-label="Clear the filter">Clear</Link>}</label>
+        {show && <input type="hidden" name="show" value={show} />}
+        <label className="search-box"><span className="sr-only">Search orders</span><input name="q" defaultValue={query} placeholder="Search: reference, plate, name, city or any word" />
+          {query && <Link className="clear" href={show ? `/orders?show=${show}` : "/orders"} aria-label="Clear the search">Clear</Link>}</label>
       </form>
     </div>
-    {rows.length === 0 && <div className="empty"><h2>No order matches “{query}”.</h2><p>Search covers references, plates, VINs, cars, customers, drivers, cities and every message.</p></div>}
-    {rows.length > 0 && <div className="list" role="list">
-      <div className="list-row list-head" aria-hidden="true"><span>Order</span><span>Car and customer</span><span>Route and stage</span><span>What is open, and when</span></div>
-      {rows.map(({ file, snippet, urgency: u, open, card }) => {
-        const view = orderView(file)
-        const tone = u.safety ? "safety" : u.timeRisk ? "time" : ""
-        // Who is on it, and what the problem is: the card's headline without the car, or the first open item.
-        const who = card ? "Needs you" : agentOn.has(file.order.id) ? "Agent on it" : null
-        const problem = card ? card.headline.replace(/^[^:]{2,60}:\s*/, "").replace(/^./, (c) => c.toUpperCase()) : liveSignals(file)[0]?.replace(/^./, (c) => c.toUpperCase()) ?? null
-        // A quiet order's line without the stage the column next to it already shows.
-        const quiet = quietLine(file, at).replace(/^Nothing open\.\s*/, "")
-        const quietNext = quiet.includes("; ") ? quiet.slice(quiet.indexOf("; ") + 2) : quiet
-        return <Link className="list-row" role="listitem" href={`/orders/${file.order.reference}`} key={file.order.id}>
-          <span className="ref"><span className={`mark ${u.safety && open ? "safety" : u.timeRisk && open ? "time" : open ? "" : "none"}`} aria-hidden="true" />{file.order.reference}</span>
-          <span><span className="car">{file.order.car.label}</span><br /><span className="sub">{file.order.customer.name}</span></span>
-          <span><span>{view.route}</span><br /><span className="sub">{file.order.stage.label}</span></span>
-          {open ? <span>
-            {(who || problem) && <span className="list-problem">{who && <b className={`who${card ? " you" : ""}`}>{who}</b>}{problem}</span>}
-            <span className="sub">{u.sentence}{u.relative && <span className={`when ${tone} nowrap`}>, {u.relative}</span>}</span>
-          </span> : <span className="sub">Nothing open: {quietNext.replace(/^./, (c) => c.toLowerCase())}</span>}
-          {snippet && <span className="snippet">{snippet.source} · {snippet.when}: “<Marked text={snippet.text} />”</span>}
+    <nav className="filters" aria-label="Show orders">
+      <Link className="filter" href={href({ show: null })} aria-current={!show ? "true" : undefined}>All <span className="n">{total.toLocaleString("en-GB")}</span></Link>
+      {CHIPS.map((chip) => <Link key={chip.id} className="filter" href={href({ show: chip.id })} aria-current={show === chip.id ? "true" : undefined}>
+        {chip.label} <span className="n">{counts[chip.id].toLocaleString("en-GB")}</span>
+      </Link>)}
+    </nav>
+    {rows.length === 0 && <div className="empty">
+      <h2>{query ? `No order matches “${query}”${show ? " in this filter" : ""}.` : "No orders here right now."}</h2>
+      <p>{query ? "Search covers references, plates, VINs, cars, customers, drivers, cities and every record on an order." : "Pick another filter, or All."}</p>
+    </div>}
+    {rows.length > 0 && <div className="orders-table" role="table" aria-label="Orders">
+      <div className="ot-row ot-head" role="row">
+        {["Car", "Reference", "Route", "Customer", "Status", "Who has it"].map((label) => <span role="columnheader" key={label}>{label}</span>)}
+      </div>
+      {rows.map(({ file, snippet, urgency: u, open: isOpen, holder, status }) => {
+        const tone = isOpen && u.safety ? "safety" : isOpen && u.timeRisk ? "time" : ""
+        return <Link className="ot-row" role="row" href={`/orders/${file.order.reference}`} key={file.order.id}>
+          <span role="cell" className="ot-car" title={file.order.car.label}><span className={`mark ${tone || (isOpen ? "" : "none")}`} aria-hidden="true" />{file.order.car.label}</span>
+          <span role="cell" className="ot-ref">{file.order.reference}</span>
+          <span role="cell" title={orderView(file).route}>{orderView(file).route}</span>
+          <span role="cell" title={file.order.customer.name}>{file.order.customer.name}</span>
+          <span role="cell" className="ot-status" title={isOpen && u.relative ? `${status}. ${u.sentence}, ${u.relative}` : status}>
+            <span className="ot-text">{status}</span>{isOpen && u.relative && <span className={`when ${tone}`}>{u.relative}</span>}
+          </span>
+          <span role="cell" className={`ot-who ${holder}`}>{WHO[holder]}</span>
+          {snippet && <span className="ot-snippet">{snippet.source} · {snippet.when}: “<Marked text={snippet.text} />”</span>}
         </Link>
       })}
     </div>}
-    {!hits && quietTotal > quietShown && <p className="queue-end">
-      Showing {quietShown.toLocaleString("en-GB")} of {quietTotal.toLocaleString("en-GB")} orders with nothing open. <Link className="link" href={`/orders?quiet=${quietShown + QUIET_PAGE}`}>Show {QUIET_PAGE} more</Link>
+    {!hits && paged && pageTotal > shownRest && <p className="queue-end">
+      Showing {shownRest.toLocaleString("en-GB")} of {pageTotal.toLocaleString("en-GB")} {show === "delivered" ? "delivered orders" : "orders with nothing open"}. <Link className="link" href={href({ n: shown + PAGE })}>Show {PAGE} more</Link>
     </p>}
   </main>
 }

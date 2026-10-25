@@ -157,6 +157,37 @@ export async function getQueue(): Promise<{ now: string; items: QueueItem[]; cou
   }
 }
 
+export type Holding = "card" | "decided" | "agent" | "unattended"
+
+/**
+ * Who has each order with something open, by the same rules as For you's header: a card waits for a person, a person
+ * decided it in the last day, an agent works on it or watches it, or nobody has looked yet. Orders not in the map have
+ * nothing open. Compiles only the orders that can have something open (the rest are counted, not compiled).
+ */
+export async function holdings(at: Date): Promise<{ files: CaseFile[]; cardOf: Map<string, typeof cards.$inferSelect>; holding: Map<string, Holding> }> {
+  const [openCards, openIds, ordersWithRun, decidedRows] = await Promise.all([
+    db.select().from(cards).where(eq(cards.status, "open")),
+    ordersWithOpenItems(),
+    db.selectDistinct({ orderId: agentRuns.orderId, nextCheckAt: agentRuns.nextCheckAt, status: agentRuns.status }).from(agentRuns).where(inArray(agentRuns.agent, HANDLING_AGENTS)),
+    db.select({ orderId: cards.orderId, group: cards.group }).from(decisions).innerJoin(cards, eq(cards.id, decisions.cardId))
+      .where(and(isNull(decisions.undoneAt), gte(decisions.decidedAt, new Date(at.getTime() - 24 * 3600_000)), sql`${decisions.actor} <> 'Agent, under your rule'`)),
+  ])
+  const cardOf = new Map(openCards.flatMap((row) => [row.orderId, ...(row.group ?? []).map((member) => member.order_id)].map((id) => [id, row] as const)))
+  const watching = new Set(ordersWithRun.filter((run) => run.status === "done" && run.nextCheckAt && run.nextCheckAt > at).map((run) => run.orderId))
+  const withRun = new Set(ordersWithRun.map((run) => run.orderId))
+  const decidedByYou = new Set(decidedRows.flatMap((row) => [row.orderId, ...(row.group ?? []).map((member) => member.order_id)]))
+  const ids = [...new Set([...openIds, ...watching, ...decidedByYou, ...cardOf.keys()].filter((id): id is string => !!id))]
+  const files = ids.length ? await getCases(ids) : []
+  const holding = new Map<string, Holding>()
+  for (const file of files) {
+    const id = file.order.id
+    if (cardOf.has(id)) holding.set(id, "card")
+    else if (!liveSignals(file).length && !watching.has(id)) continue
+    else holding.set(id, decidedByYou.has(id) ? "decided" : withRun.has(id) ? "agent" : "unattended")
+  }
+  return { files, cardOf, holding }
+}
+
 /** Open cards for the rail badge. */
 export async function openCardCount(): Promise<number> {
   const [row] = await db.select({ n: count() }).from(cards).where(eq(cards.status, "open"))
